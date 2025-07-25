@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview Press</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: #222; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+        
+        /* Header */
+        header { border-bottom: 1px solid #ddd; padding: 1.5rem 0; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.3rem; font-weight: normal; font-family: Georgia, serif; }
+        nav { display: flex; gap: 2.5rem; }
+        nav a { text-decoration: none; color: #555; font-size: 0.9rem; }
+        nav a:hover { color: #000; }
+        .auth-buttons { display: flex; gap: 1.5rem; }
+        .btn { padding: 0.4rem 0.8rem; border-radius: 2px; text-decoration: none; font-size: 0.9rem; }
+        .btn-primary { background: #ef4444; color: white; }
+        .btn-primary:hover { background: #dc2626; }
+        .btn-secondary { color: #555; border: 1px solid #ccc; }
+        .btn-secondary:hover { background: #f5f5f5; }
+        
+        /* Hero */
+        .hero { text-align: center; padding: 4rem 0; }
+        .hero h1 { font-size: 2rem; font-weight: normal; margin-bottom: 1rem; font-family: Georgia, serif; }
+        .hero p { font-size: 1rem; color: #666; font-style: italic; margin-bottom: 3rem; font-family: Georgia, serif; }
+        .search-box { background: #fafafa; padding: 2.5rem; border-radius: 2px; margin-bottom: 0; border: 1px solid #eee; }
+        .search-form { display: flex; max-width: 500px; margin: 0 auto; }
+        .search-input { flex: 1; padding: 0.6rem; border: 1px solid #ccc; border-radius: 2px 0 0 2px; }
+        .search-btn { padding: 0.6rem 1rem; background: #6b7280; color: white; border: none; border-radius: 0 2px 2px 0; }
+        .search-help { margin-top: 1.5rem; font-size: 0.85rem; color: #666; }
+        
+        /* Subjects */
+        .subjects { padding: 4rem 0; margin-bottom: 4rem; }
+        .subjects h2 { font-size: 1.3rem; font-weight: 500; margin-bottom: 1.5rem; color: #000; }
+        .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .subject-card { padding: 0.75rem 1rem; border: 1px solid #ddd; border-radius: 2px; display: flex; justify-content: space-between; background: #fafafa; }
+        .subject-name { font-weight: normal; font-size: 0.9rem; }
+        .subject-count { color: #666; font-size: 0.9rem; }
+        
+        /* Main content */
+        .main-content { display: grid; grid-template-columns: 2fr 1fr; gap: 4rem; }
+        
+        /* Recent submissions */
+        .recent h2 { font-size: 1.3rem; font-weight: 500; margin-bottom: 1rem; color: #000; }
+        .paper { padding: 2rem 0; border-bottom: 1px solid #eee; }
+        .paper:last-child { border-bottom: none; }
+        .paper-meta { font-size: 0.8rem; color: #666; margin-bottom: 0.75rem; }
+        .paper-title { font-size: 1.1rem; font-weight: normal; margin-bottom: 0.25rem; color: #000; font-family: Georgia, serif; }
+        .paper-authors { color: #555; margin-bottom: 1rem; font-size: 0.9rem; }
+        .paper-abstract { color: #333; margin-bottom: 1rem; font-size: 0.9rem; font-family: Georgia, serif; }
+        .paper-footer { display: flex; justify-content: space-between; align-items: center; }
+        .paper-tags { display: flex; gap: 0.5rem; }
+        .tag { background: #f0f0f0; padding: 0.15rem 0.4rem; border-radius: 2px; font-size: 0.75rem; color: #555; }
+        
+        /* Sidebar */
+        .sidebar { background: #f8f9fa; padding: 2.5rem; border-radius: 2px; }
+        .sidebar h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; color: #000; }
+        .stat-item { margin-bottom: 0.75rem; font-size: 0.85rem; color: #666; }
+        .stat-number { font-weight: normal; }
+        .activity-item { margin-bottom: 1rem; font-size: 0.85rem; color: #333; }
+        .quick-links { margin-top: 3rem; }
+        .quick-links a { display: block; color: #ef4444; margin-bottom: 0.75rem; text-decoration: underline; font-size: 0.9rem; }
+        .quick-links a:hover { color: #dc2626; }
+        
+        /* Footer */
+        footer { background: #fafafa; margin-top: 4rem; padding: 3rem 0; border-top: 1px solid #ddd; }
+        .footer-content { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3rem; }
+        .footer-section h4 { font-weight: normal; margin-bottom: 1.5rem; font-size: 0.95rem; }
+        .footer-section a { display: block; color: #555; margin-bottom: 0.75rem; text-decoration: none; font-size: 0.85rem; }
+        .footer-section a:hover { color: #000; }
+        .footer-bottom { text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #ddd; color: #666; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">Preview Press</div>
+                <nav>
+                    <a href="#">Browse</a>
+                    <a href="#">Recent</a>
+                    <a href="#">About</a>
+                    <a href="#">Help</a>
+                </nav>
+                <div class="auth-buttons">
+                    <a href="#" class="btn btn-secondary">Login</a>
+                    <a href="#" class="btn btn-primary">Upload your Preview</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="hero">
+            <h1>Preview Press</h1>
+            <p>Open access to research preprints in web-native formats</p>
+            
+            <div class="search-box">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="Search papers, authors, or subjects...">
+                    <button type="submit" class="search-btn">Search</button>
+                </form>
+                <div class="search-help">
+                    <a href="#" style="color: #ef4444;">Advanced search tips</a> | Search includes titles, authors, abstracts, and full text
+                </div>
+            </div>
+        </div>
+
+        <div class="subjects">
+            <h2>Browse by Subject</h2>
+            <div class="subject-grid">
+                <div class="subject-card">
+                    <span class="subject-name">Computer Science</span>
+                    <span class="subject-count">1,247</span>
+                </div>
+                <div class="subject-card">
+                    <span class="subject-name">Physics</span>
+                    <span class="subject-count">892</span>
+                </div>
+                <div class="subject-card">
+                    <span class="subject-name">Mathematics</span>
+                    <span class="subject-count">634</span>
+                </div>
+                <div class="subject-card">
+                    <span class="subject-name">Biology</span>
+                    <span class="subject-count">567</span>
+                </div>
+                <div class="subject-card">
+                    <span class="subject-name">Chemistry</span>
+                    <span class="subject-count">423</span>
+                </div>
+                <div class="subject-card">
+                    <span class="subject-name">Economics</span>
+                    <span class="subject-count">312</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="recent">
+                <h2>Recent Submissions</h2>
+                
+                <div class="paper">
+                    <div class="paper-title">Efficient Algorithms for Large-Scale Graph Neural Networks</div>
+                    <div class="paper-authors">John Smith, Li Chen, Maria Garcia</div>
+                    <div class="paper-abstract">We present a novel approach to scaling graph neural networks for datasets with millions of nodes. Our method reduces computational complexity from O(n²) to O(n log n) while maintaining accuracy comparable to existing approaches. Experimental results on five benchmark datasets demonstrate...</div>
+                    <div class="paper-footer">
+                        <div class="paper-tags">
+                            <span class="tag" style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;">Computer Science</span>
+                            <span class="tag">machine learning</span>
+                            <span class="tag">graph neural networks</span>
+                            <span class="tag">algorithms</span>
+                        </div>
+                        <div class="paper-meta">Submitted 2 hours ago | <span style="color: #ef4444;">v1</span></div>
+                    </div>
+                </div>
+
+                <div class="paper">
+                    <div class="paper-title">Quantum Entanglement in Room-Temperature Superconductors</div>
+                    <div class="paper-authors">Robert Watson, Sarah Kim</div>
+                    <div class="paper-abstract">Recent discoveries in room-temperature superconductivity have opened new avenues for quantum computing applications. This paper investigates the role of quantum entanglement in maintaining superconducting states at ambient conditions. Through theoretical modeling and experimental validation...</div>
+                    <div class="paper-footer">
+                        <div class="paper-tags">
+                            <span class="tag" style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;">Physics</span>
+                            <span class="tag">quantum physics</span>
+                            <span class="tag">superconductivity</span>
+                            <span class="tag">condensed matter</span>
+                        </div>
+                        <div class="paper-meta">Submitted 5 hours ago | <span style="color: #ef4444;">v1</span></div>
+                    </div>
+                </div>
+
+                <div class="paper">
+                    <div class="paper-title">CRISPR-Cas9 Applications in Treating Hereditary Diseases</div>
+                    <div class="paper-authors">Anita Patel, Michael Johnson, Takeshi Nakamura</div>
+                    <div class="paper-abstract">Gene editing technologies have shown remarkable promise in addressing genetic disorders. This comprehensive review examines recent clinical trials using CRISPR-Cas9 systems to treat sickle cell disease, beta-thalassemia, and Leber congenital amaurosis. We analyze success rates...</div>
+                    <div class="paper-footer">
+                        <div class="paper-tags">
+                            <span class="tag" style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;">Biology</span>
+                            <span class="tag">gene editing</span>
+                            <span class="tag">CRISPR</span>
+                            <span class="tag">hereditary diseases</span>
+                        </div>
+                        <div class="paper-meta">Submitted 1 day ago | <span style="color: #ef4444;">v2</span></div>
+                    </div>
+                </div>
+
+                <div class="paper">
+                    <div class="paper-title">A New Proof of the Riemann Hypothesis</div>
+                    <div class="paper-authors">Pavel Kowalski</div>
+                    <div class="paper-abstract">This paper presents a novel approach to proving the Riemann Hypothesis using advanced techniques from algebraic geometry and number theory. The proof relies on establishing a deep connection between the zeros of the Riemann zeta function and geometric properties of certain algebraic varieties...</div>
+                    <div class="paper-footer">
+                        <div class="paper-tags">
+                            <span class="tag" style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;">Mathematics</span>
+                            <span class="tag">number theory</span>
+                            <span class="tag">riemann hypothesis</span>
+                            <span class="tag">algebraic geometry</span>
+                        </div>
+                        <div class="paper-meta">Submitted 2 days ago | <span style="color: #ef4444;">v1</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <h3>Recent Activity</h3>
+                <div class="activity-item"><strong>3</strong> new comments on "Efficient Algorithms..."</div>
+                <div class="activity-item">Version 3 uploaded for "Climate Modeling..."</div>
+                <div class="activity-item">Li Chen published <strong>2 new papers</strong></div>
+                <div class="activity-item">Computer Science reached <strong>1,000</strong> papers</div>
+
+                <div class="quick-links">
+                    <h3>Popular Today</h3>
+                    <a href="#">Quantum Computing Breakthrough</a>
+                    <a href="#">Climate Change Models</a>
+                    <a href="#">CRISPR Gene Therapy</a>
+                    <a href="#">Machine Learning Efficiency</a>
+                    <a href="#">Cryptocurrency Analysis</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>About</h4>
+                    <a href="#">About Preview Press</a>
+                    <a href="#">Our Mission</a>
+                    <a href="#">Policies</a>
+                    <a href="#">Contact</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Authors</h4>
+                    <a href="#">Submit a Paper</a>
+                    <a href="#">Submission Guidelines</a>
+                    <a href="#">Supported Formats</a>
+                    <a href="#">Version Control</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <a href="#">Discussion Forum</a>
+                    <a href="#">GitHub</a>
+                    <a href="#">Blog</a>
+                    <a href="#">RSS Feeds</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Help</h4>
+                    <a href="#">Help Center</a>
+                    <a href="#">Search Tips</a>
+                    <a href="#">API Documentation</a>
+                    <a href="#">System Status</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2025 Preview Press. Part of the Aris ecosystem. Open access research publishing.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
