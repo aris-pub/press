@@ -1,0 +1,17 @@
+{# 
+Footer Section Component
+Usage: {% include "components/footer_section.html" with {
+    title: "About",
+    links: [
+        {text: "About Preview Press", href: "#"},
+        {text: "Our Mission", href: "#"}
+    ]
+} %}
+#}
+<div class="footer-section">
+    <h4>{{ title }}</h4>
+    {% for link in links %}
+        {% set text = link.text %}{% set href = link.href %}
+        {% include "components/footer_link.html" %}
+    {% endfor %}
+</div>

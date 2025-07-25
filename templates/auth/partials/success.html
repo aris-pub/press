@@ -1,0 +1,9 @@
+<div class="success-message">
+    <h2>{{ title }}</h2>
+    <p>{{ message }}</p>
+    
+    {% if action_url and action_text %}
+        {% set text = action_text %}{% set href = action_url %}{% set variant = "primary" %}
+        {% include "components/button.html" %}
+    {% endif %}
+</div>

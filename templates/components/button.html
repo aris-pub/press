@@ -1,0 +1,31 @@
+{# 
+Button Component
+Usage: {% include "components/button.html" with {
+    text: "Click me",
+    variant: "primary|secondary", 
+    type: "button|submit",
+    href: "/path",
+    hx_post: "/endpoint",
+    hx_target: "#target",
+    loading_text: "Loading...",
+    class: "extra-class",
+    disabled: true
+} %}
+#}
+{% set tag = 'a' if href else 'button' %}
+<{{ tag }} 
+    class="btn btn-{{ variant|default('primary') }}{% if class %} {{ class }}{% endif %}"
+    {% if type and tag == 'button' %}type="{{ type }}"{% endif %}
+    {% if href %}href="{{ href }}"{% endif %}
+    {% if hx_post %}hx-post="{{ hx_post }}"{% endif %}
+    {% if hx_get %}hx-get="{{ hx_get }}"{% endif %}
+    {% if hx_target %}hx-target="{{ hx_target }}"{% endif %}
+    {% if hx_swap %}hx-swap="{{ hx_swap|default('outerHTML') }}"{% endif %}
+    {% if hx_indicator %}hx-indicator="{{ hx_indicator }}"{% endif %}
+    {% if disabled %}disabled{% endif %}
+>
+    <span class="btn-text">{{ text }}</span>
+    {% if loading_text %}
+        <span class="htmx-indicator"{% if hx_indicator %} id="{{ hx_indicator.lstrip('#') }}"{% endif %}>{{ loading_text }}</span>
+    {% endif %}
+</{{ tag }}>

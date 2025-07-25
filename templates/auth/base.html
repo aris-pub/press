@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+    <script>
+        // Configure HTMX to process 422 responses for form validation errors
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle 4xx responses by swapping content
+            document.body.addEventListener('htmx:beforeSwap', function(evt) {
+                if (evt.detail.xhr.status === 422) {
+                    evt.detail.shouldSwap = true;
+                    evt.detail.isError = false;
+                }
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "auth/base.html" %}
+
+{% block title %}Register - Press{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-header">
+        <h1>Create Your Account</h1>
+        <p>Join the academic community on Press</p>
+    </div>
+
+    {% include "auth/partials/register_form.html" %}
+
+    <div class="auth-links">
+        <p>Already have an account? <a href="/login">Sign in here</a></p>
+    </div>
+
+    <div class="back-link">
+        <a href="/">← Back to Press</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{# 
+Complete Footer Component
+#}
+<footer>
+    <div class="container">
+        <div class="footer-content">
+            {% set title = "About" %}
+            {% set links = [
+                {"text": "About Preview Press", "href": "#"},
+                {"text": "Our Mission", "href": "#"},
+                {"text": "Policies", "href": "#"},
+                {"text": "Contact", "href": "#"}
+            ] %}
+            {% include "components/footer_section.html" %}
+            
+            {% set title = "Authors" %}
+            {% set links = [
+                {"text": "Submit a Paper", "href": "#"},
+                {"text": "Submission Guidelines", "href": "#"},
+                {"text": "Supported Formats", "href": "#"},
+                {"text": "Version Control", "href": "#"}
+            ] %}
+            {% include "components/footer_section.html" %}
+            
+            {% set title = "Community" %}
+            {% set links = [
+                {"text": "Discussion Forum", "href": "#"},
+                {"text": "GitHub", "href": "#"},
+                {"text": "Blog", "href": "#"},
+                {"text": "RSS Feeds", "href": "#"}
+            ] %}
+            {% include "components/footer_section.html" %}
+            
+            {% set title = "Help" %}
+            {% set links = [
+                {"text": "Help Center", "href": "#"},
+                {"text": "Search Tips", "href": "#"},
+                {"text": "API Documentation", "href": "#"},
+                {"text": "System Status", "href": "#"}
+            ] %}
+            {% include "components/footer_section.html" %}
+        </div>
+        <div class="footer-bottom">
+            © 2025 Preview Press. Part of the Aris ecosystem. Open access research publishing.
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,29 @@
+{# 
+Form Input Component
+Usage: {% include "components/form_input.html" with {
+    label: "Email",
+    name: "email",
+    type: "email|text|password",
+    value: "default_value",
+    required: true,
+    error: "Error message",
+    placeholder: "Enter email..."
+} %}
+#}
+<div class="form-group">
+    {% if label %}
+        <label for="{{ name }}" class="form-label">{{ label }}</label>
+    {% endif %}
+    <input 
+        type="{{ type|default('text') }}"
+        id="{{ name }}"
+        name="{{ name }}"
+        class="form-input{% if error %} error{% endif %}"
+        {% if value %}value="{{ value }}"{% endif %}
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+        {% if required %}required{% endif %}
+    >
+    {% if error %}
+        <div class="field-error">{{ error }}</div>
+    {% endif %}
+</div>

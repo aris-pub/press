@@ -1,0 +1,8 @@
+{# 
+Footer Link Component
+Usage: {% include "components/footer_link.html" with {
+    text: "About Press",
+    href: "/about"
+} %}
+#}
+<a href="{{ href|default('#') }}">{{ text }}</a>

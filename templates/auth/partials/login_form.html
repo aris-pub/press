@@ -1,0 +1,33 @@
+<div id="login-form-container">
+    {% if errors %}
+    <div class="form-errors">
+        <ul>
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form class="auth-form" 
+          action="/login-form" 
+          method="post"
+          hx-post="/login-form"
+          hx-target="#login-form-container"
+          hx-swap="outerHTML"
+          hx-indicator="#login-spinner">
+        
+        {% set label = "Email" %}{% set name = "email" %}{% set type = "email" %}{% set required = true %}
+        {% set value = form_data.email if form_data else "" %}
+        {% set error = field_errors.email[0] if field_errors and 'email' in field_errors else "" %}
+        {% include "components/form_input.html" %}
+
+        {% set label = "Password" %}{% set name = "password" %}{% set type = "password" %}{% set required = true %}
+        {% set value = "" %}
+        {% set error = field_errors.password[0] if field_errors and 'password' in field_errors else "" %}
+        {% include "components/form_input.html" %}
+
+        {% set text = "Sign In" %}{% set type = "submit" %}{% set hx_indicator = "#login-spinner" %}{% set loading_text = "Signing in..." %}
+        {% include "components/button.html" %}
+    </form>
+</div>
