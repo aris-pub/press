@@ -5,7 +5,8 @@
 {% block extra_styles %}
 /* Hero */
         .hero { text-align: center; padding: 4rem 0; }
-        .hero h1 { font-size: 2rem; font-weight: normal; margin-bottom: 1rem; font-family: Georgia, serif; }
+        .hero-title { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; }
+        .hero h1 { font-size: 2rem; font-weight: normal; margin-bottom: 0; font-family: Georgia, serif; }
         .hero p { font-size: 1rem; color: #666; font-style: italic; margin-bottom: 3rem; font-family: Georgia, serif; }
         .search-box { background: #fafafa; padding: 2.5rem; border-radius: 2px; margin-bottom: 0; border: 1px solid #eee; }
         .search-form { display: flex; max-width: 500px; margin: 0 auto; }
@@ -50,7 +51,10 @@
 
 {% block content %}
         <div class="hero">
-            <h1>Preview Press</h1>
+            <div class="hero-title">
+                <img src="/static/images/press-logo-64.svg" alt="Preview Press" width="40" height="40">
+                <h1>Preview Press</h1>
+            </div>
             <p>Open access to research preprints in web-native formats</p>
             
             <div class="search-box">
