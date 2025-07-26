@@ -1,0 +1,22 @@
+{# 
+Preview Card Component
+Usage: 
+{% from "components/preview_card.html" import preview_card %}
+{{ preview_card("Title", "Authors", "Abstract", ["tag1", "tag2"], "Computer Science", "2 hours ago", "v1") }}
+#}
+
+{% macro preview_card(title, authors, abstract, tags=[], subject="", time_ago="", version="") %}
+<div class="preview">
+  <div class="preview-title">{{ title }}</div>
+  <div class="preview-authors">{{ authors }}</div>
+  <div class="preview-abstract">{{ abstract }}</div>
+  <div class="preview-footer">
+    <div class="preview-tags">
+      {% for tag in tags %}
+      <span class="tag">{{ tag }}</span>
+      {% endfor %}
+    </div>
+    <div class="preview-meta">{% if subject %}<span style="color: #ef4444;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: #ef4444;">{{ version }}</span></div>
+  </div>
+</div>
+{% endmacro %}

@@ -23,13 +23,13 @@ Navbar Component
   <div class="auth-buttons">
     {% if current_user %}
     <span class="user-welcome">Welcome, {{ current_user.display_name }}!</span>
-    {{ link_button("Upload Preview", href="/upload", variant="primary") }}
+    {{ link_button("New Preview", href="/upload", variant="primary") }}
     <form style="display: inline;" action="/logout" method="post">
       {% from "components/button.html" import button %}
       {{ button("Logout", type="submit", variant="secondary") }}
     </form>
     {% else %}
-    {{ link_button("Upload your Preview", href="/register", variant="primary") }}
+    {{ link_button("New Preview", href="/register", variant="primary") }}
     {{ link_button("Login", href="/login", variant="secondary") }}
     {% endif %}
   </div>

@@ -1,5 +1,7 @@
 import asyncio
 
+from sqlalchemy import text
+
 from app.auth.utils import get_password_hash
 from app.database import AsyncSessionLocal, create_tables
 from app.models.user import User
@@ -10,7 +12,7 @@ async def seed_users():
     """Create mock users with UTC timestamps."""
     async with AsyncSessionLocal() as session:
         # Check if users already exist
-        existing_users = await session.execute("SELECT COUNT(*) FROM users")
+        existing_users = await session.execute(text("SELECT COUNT(*) FROM users"))
         if existing_users.scalar() > 0:
             print("Users already exist, skipping seed.")
             return

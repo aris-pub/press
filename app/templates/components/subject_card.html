@@ -1,0 +1,15 @@
+{# 
+Subject Card Macro
+Usage: 
+{% from "components/subject_card.html" import subject_card %}
+{{ subject_card("Computer Science", 1247) }}
+#}
+
+{% macro subject_card(name, count, href="#") %}
+<div class="subject-card">
+  <a href="{{ href }}" class="subject-link">
+    <span class="subject-name">{{ name }}</span>
+    <span class="subject-count">{{ "{:,}".format(count) }}</span>
+  </a>
+</div>
+{% endmacro %}
