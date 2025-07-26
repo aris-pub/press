@@ -1,9 +1,0 @@
-{# 
-Navigation Link Component
-Usage: {% include "components/nav_link.html" with {
-    text: "Browse",
-    href: "/browse",
-    active: true
-} %}
-#}
-<a href="{{ href|default('#') }}" class="nav-link{% if active %} active{% endif %}">{{ text }}</a>

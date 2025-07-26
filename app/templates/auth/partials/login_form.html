@@ -27,7 +27,7 @@
         {% set error = field_errors.password[0] if field_errors and 'password' in field_errors else "" %}
         {% include "components/form_input.html" %}
 
-        {% set text = "Sign In" %}{% set type = "submit" %}{% set hx_indicator = "#login-spinner" %}{% set loading_text = "Signing in..." %}
+        {% set text = "Sign In" %}{% set type = "submit" %}{% set name = "" %}{% set value = "" %}{% set hx_indicator = "#login-spinner" %}{% set loading_text = "Signing in..." %}
         {% include "components/button.html" %}
     </form>
 </div>

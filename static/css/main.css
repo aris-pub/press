@@ -1,0 +1,216 @@
+/* base.css: global styles for Preview Press  */
+
+/* Variables */
+:root {
+
+}
+
+/* CSS reset */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+
+/* Base styles */
+body {
+  font-family: "Source Sans 3", sans-serif;
+  line-height: 1.6;
+  color: #222;
+  background: #fff;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* Navbar */
+header.navbar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  border-bottom: 1px solid #ddd;
+  padding: 1.5rem 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .logo { font-size: 1.3rem; font-weight: normal; font-family: Georgia, serif; }
+  .logo a { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.25rem; }
+  nav { display: flex; gap: 2.5rem; }
+  nav a { text-decoration: none; color: #555; font-size: 0.9rem; }
+  nav a:hover { color: #000; }
+  .auth-buttons { display: flex; gap: 1.5rem; align-items: center; }
+  .user-welcome {
+    color: #4b5563;
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+  }
+
+}
+
+/* Footer */
+footer { background: #fafafa; margin-top: 4rem; padding: 3rem 0; border-top: 1px solid #ddd; }
+.footer-content { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3rem; }
+.footer-section h4 { font-weight: normal; margin-bottom: 1.5rem; font-size: 0.95rem; }
+.footer-section a { display: block; color: #555; margin-bottom: 0.75rem; text-decoration: none; font-size: 0.85rem; }
+.footer-section a:hover { color: #000; }
+.footer-bottom { text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #ddd; color: #666; font-size: 0.85rem; }
+
+
+/* Buttons */
+.btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 2px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+.btn-primary { background: #ef4444; color: white; }
+.btn-primary:hover:not(:disabled) { background: #dc2626; }
+.btn-secondary { color: #555; border: 1px solid #ccc; background: white; }
+.btn-secondary:hover { background: #f5f5f5; }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+
+/* Form styles */
+.auth-container {
+  max-width: 400px;
+  margin: 4rem auto;
+  padding: 3rem;
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 2px;
+}
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.auth-header h1 {
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: normal;
+  color: #222;
+  margin-bottom: 0.5rem;
+}
+.auth-header p {
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.form-label {
+  font-size: 0.9rem;
+  color: #444;
+  font-weight: 500;
+}
+.form-input {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  font-size: 0.9rem;
+  font-family: "Source Sans 3", sans-serif;
+}
+.form-input:focus {
+  outline: none;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+.form-input.error {
+  border-color: #dc2626;
+}
+.field-error {
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+.form-errors {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 2px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+.form-errors ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.form-errors li {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+.form-errors li:last-child {
+  margin-bottom: 0;
+}
+.success-message {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 2px;
+  padding: 1.5rem;
+  text-align: center;
+  color: #166534;
+}
+.success-message h2 {
+  font-family: Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: normal;
+  margin-bottom: 0.5rem;
+}
+.success-message p {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+.auth-links {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #ddd;
+}
+.auth-links a {
+  color: #ef4444;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.auth-links a:hover {
+  text-decoration: underline;
+}
+.back-link {
+  text-align: center;
+  margin-top: 2rem;
+}
+.back-link a {
+  color: #666;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.back-link a:hover {
+  color: #ef4444;
+}
+/* HTMX loading indicators */
+.htmx-indicator {
+  display: none;
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+.htmx-request .htmx-indicator {
+  display: inline;
+}
+.htmx-request .btn-text {
+  opacity: 0.6;
+}

@@ -1,0 +1,10 @@
+{# 
+Navigation Link Macro
+Usage: 
+  {% from "components/nav_link.html" import nav_link %}
+  {{ nav_link("Browse", "/browse", active=true) }}
+#}
+
+{% macro nav_link(text, href="#", active=false) %}
+<a href="{{ href }}" class="nav-link{% if active %} active{% endif %}">{{ text }}</a>
+{% endmacro %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Success - Preview Press{% endblock %}
+
+{% block content %}
+<div class="success-container" style="max-width: 600px; margin: 4rem auto; padding: 3rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; text-align: center;">
+    <h1 style="color: #15803d; margin-bottom: 1rem;">✅ Success!</h1>
+    <p style="color: #166534; font-size: 1.1rem; margin-bottom: 2rem;">{{ success_message }}</p>
+    
+    <div style="margin-bottom: 2rem;">
+        <p><strong>Title:</strong> {{ preview.title }}</p>
+        <p><strong>Status:</strong> {{ "Published" if is_published else "Draft" }}</p>
+        {% if is_published %}
+            <p><strong>Preview ID:</strong> {{ preview.preview_id }}</p>
+        {% endif %}
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+        <a href="{{ preview_url }}" class="btn btn-primary">View Preview</a>
+        <a href="/upload" class="btn btn-secondary">Upload Another</a>
+        <a href="/" class="btn btn-secondary">Go Home</a>
+    </div>
+</div>
+{% endblock %}

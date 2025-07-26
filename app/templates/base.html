@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Press - Modern Preprint Server{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/images/press-logo-64.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+    <script>
+      // 4xx responses contain useful info - instead of treating them as errors swap their content
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.addEventListener('htmx:beforeSwap', function(evt) {
+          if (evt.detail.xhr.status === 422) {
+            evt.detail.shouldSwap = true;
+            evt.detail.isError = false;
+          }
+        });
+      });
+    </script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+      {% block extra_styles %}{% endblock %}
+    </style>
+    
+    <!-- Extra head -->
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body>
+    {% include "components/navbar.html" %}
+
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+
+    {% include "components/footer.html" %}
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

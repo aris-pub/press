@@ -1,0 +1,37 @@
+{# 
+Navbar Component
+#}
+
+<header class="navbar">
+
+  <div class="logo">
+    <a href="/">
+      <img src="/static/images/press-logo-64.svg" alt="Preview Press" width="24" height="24">
+      Preview Press
+    </a>
+  </div>
+  
+  <nav>
+    {% from "components/nav_link.html" import nav_link %}
+    {{ nav_link("Browse") }}
+    {{ nav_link("Recent") }}
+    {{ nav_link("About") }}
+    {{ nav_link("Help") }}
+  </nav>
+  
+  <div class="auth-buttons">
+    {% if current_user %}
+    <span class="user-welcome">Welcome, {{ current_user.display_name }}!</span>
+    {% set text = "Upload Preview" %}{% set variant = "primary" %}{% set href = "/upload" %}
+    {% include "components/button.html" %}
+    {% set text = "Logout" %}{% set variant = "secondary" %}{% set href = "/logout" %}
+    {% include "components/button.html" %}
+    {% else %}
+    {% set text = "Login" %}{% set variant = "secondary" %}{% set href = "/login" %}
+    {% include "components/button.html" %}
+    {% set text = "Upload your Preview" %}{% set variant = "primary" %}{% set href = "/register" %}
+    {% include "components/button.html" %}
+    {% endif %}
+  </div>
+
+</header>

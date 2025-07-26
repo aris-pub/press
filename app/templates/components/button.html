@@ -16,6 +16,8 @@ Usage: {% include "components/button.html" with {
 <{{ tag }} 
     class="btn btn-{{ variant|default('primary') }}{% if class %} {{ class }}{% endif %}"
     {% if type and tag == 'button' %}type="{{ type }}"{% endif %}
+    {% if name and name != "" and tag == 'button' %}name="{{ name }}"{% endif %}
+    {% if value and value != "" and tag == 'button' %}value="{{ value }}"{% endif %}
     {% if href %}href="{{ href }}"{% endif %}
     {% if hx_post %}hx-post="{{ hx_post }}"{% endif %}
     {% if hx_get %}hx-get="{{ hx_get }}"{% endif %}
