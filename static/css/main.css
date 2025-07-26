@@ -59,7 +59,7 @@ footer { background: #fafafa; margin-top: 4rem; padding: 3rem 0; border-top: 1px
 
 
 /* Buttons */
-.btn {
+button.btn, a.btn {
   padding: 0.4rem 0.8rem;
   border-radius: 2px;
   text-decoration: none;

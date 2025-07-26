@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
-from typing import Optional
 import uuid
+
+from pydantic import BaseModel, EmailStr, Field
+
 
 class UserRegister(BaseModel):
     email: EmailStr

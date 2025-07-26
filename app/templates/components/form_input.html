@@ -1,29 +1,32 @@
 {# 
-Form Input Component
-Usage: {% include "components/form_input.html" with {
-    label: "Email",
-    name: "email",
-    type: "email|text|password",
-    value: "default_value",
-    required: true,
-    error: "Error message",
-    placeholder: "Enter email..."
-} %}
+Form Input Macro
+Usage: 
+{% from "components/form_input.html" import form_input %}
+{{ form_input("Email", "email", type="email", required=true) }}
 #}
+
+{% macro form_input(label, name, type="text", value="", required=false, error="", placeholder="") %}
 <div class="form-group">
-    {% if label %}
-        <label for="{{ name }}" class="form-label">{{ label }}</label>
-    {% endif %}
-    <input 
-        type="{{ type|default('text') }}"
-        id="{{ name }}"
-        name="{{ name }}"
-        class="form-input{% if error %} error{% endif %}"
-        {% if value %}value="{{ value }}"{% endif %}
-        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
-        {% if required %}required{% endif %}
-    >
-    {% if error %}
-        <div class="field-error">{{ error }}</div>
-    {% endif %}
+  
+  {% if label %}
+  <label for="{{ name }}" class="form-label">{{ label }}{% if required %} <span style="color: #ef4444;">*</span>{% endif %}</label>
+  {% endif %}
+  
+  <input 
+    class="form-input{% if error %} error{% endif %}"
+    {{ {
+      "type": type,
+      "id": name,
+      "name": name,
+      "value": value if value else none,
+      "placeholder": placeholder if placeholder else none,
+      "required": "required" if required else none
+    } | xmlattr }}
+  >
+  
+  {% if error %}
+  <div class="field-error">{{ error }}</div>
+  {% endif %}
+  
 </div>
+{% endmacro %}

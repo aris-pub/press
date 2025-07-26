@@ -1,6 +1,8 @@
 {# 
 Navbar Component
 #}
+{% from "components/nav_link.html" import nav_link %}
+{% from "components/button.html" import link_button %}
 
 <header class="navbar">
 
@@ -12,7 +14,6 @@ Navbar Component
   </div>
   
   <nav>
-    {% from "components/nav_link.html" import nav_link %}
     {{ nav_link("Browse") }}
     {{ nav_link("Recent") }}
     {{ nav_link("About") }}
@@ -22,15 +23,14 @@ Navbar Component
   <div class="auth-buttons">
     {% if current_user %}
     <span class="user-welcome">Welcome, {{ current_user.display_name }}!</span>
-    {% set text = "Upload Preview" %}{% set variant = "primary" %}{% set href = "/upload" %}
-    {% include "components/button.html" %}
-    {% set text = "Logout" %}{% set variant = "secondary" %}{% set href = "/logout" %}
-    {% include "components/button.html" %}
+    {{ link_button("Upload Preview", href="/upload", variant="primary") }}
+    <form style="display: inline;" action="/logout" method="post">
+      {% from "components/button.html" import button %}
+      {{ button("Logout", type="submit", variant="secondary") }}
+    </form>
     {% else %}
-    {% set text = "Login" %}{% set variant = "secondary" %}{% set href = "/login" %}
-    {% include "components/button.html" %}
-    {% set text = "Upload your Preview" %}{% set variant = "primary" %}{% set href = "/register" %}
-    {% include "components/button.html" %}
+    {{ link_button("Upload your Preview", href="/register", variant="primary") }}
+    {{ link_button("Login", href="/login", variant="secondary") }}
     {% endif %}
   </div>
 

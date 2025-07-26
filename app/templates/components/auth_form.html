@@ -1,0 +1,46 @@
+{# 
+Auth Form Macro
+Usage: 
+{% from "components/auth_form.html" import auth_form %}
+{{ auth_form("login", "/login-form", "Sign In", "Signing in...", 
+             fields=[{"label": "Email", "name": "email", "type": "email"}]) }}
+#}
+
+{% macro auth_form(form_type, action, submit_text, loading_text, fields, errors=[], form_data={}, field_errors={}) %}
+{% from "components/form_input.html" import form_input %}
+{% from "components/button.html" import button %}
+
+<div id="{{ form_type }}-form-container">
+  {% if errors %}
+  <div class="form-errors">
+    <ul>
+      {% for error in errors %}
+      <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form class="auth-form" 
+        action="{{ action }}" 
+        method="post"
+        hx-post="{{ action }}"
+        hx-target=".auth-container:has(#{{ form_type }}-form-container)"
+        hx-swap="innerHTML"
+        hx-indicator="#{{ form_type }}-spinner">
+    
+    {% for field in fields %}
+    {{ form_input(
+         field.label, 
+         field.name, 
+         type=field.type|default("text"),
+         required=field.required|default(true),
+         value=form_data[field.name] if form_data and field.name in form_data else "",
+         error=field_errors[field.name][0] if field_errors and field.name in field_errors else ""
+       ) }}
+    {% endfor %}
+
+    {{ button(submit_text, type="submit", hx_indicator="#" + form_type + "-spinner", loading_text=loading_text) }}
+  </form>
+</div>
+{% endmacro %}

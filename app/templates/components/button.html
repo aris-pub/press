@@ -1,33 +1,44 @@
 {# 
-Button Component
-Usage: {% include "components/button.html" with {
-    text: "Click me",
-    variant: "primary|secondary", 
-    type: "button|submit",
-    href: "/path",
-    hx_post: "/endpoint",
-    hx_target: "#target",
-    loading_text: "Loading...",
-    class: "extra-class",
-    disabled: true
-} %}
+Button Macros
+Usage: 
+{% from "components/button.html" import button, link_button %}
+{{ button("Submit", variant="primary", type="submit") }}
+{{ link_button("Login", href="/login", variant="secondary") }}
 #}
-{% set tag = 'a' if href else 'button' %}
-<{{ tag }} 
-    class="btn btn-{{ variant|default('primary') }}{% if class %} {{ class }}{% endif %}"
-    {% if type and tag == 'button' %}type="{{ type }}"{% endif %}
-    {% if name and name != "" and tag == 'button' %}name="{{ name }}"{% endif %}
-    {% if value and value != "" and tag == 'button' %}value="{{ value }}"{% endif %}
-    {% if href %}href="{{ href }}"{% endif %}
-    {% if hx_post %}hx-post="{{ hx_post }}"{% endif %}
-    {% if hx_get %}hx-get="{{ hx_get }}"{% endif %}
-    {% if hx_target %}hx-target="{{ hx_target }}"{% endif %}
-    {% if hx_swap %}hx-swap="{{ hx_swap|default('outerHTML') }}"{% endif %}
-    {% if hx_indicator %}hx-indicator="{{ hx_indicator }}"{% endif %}
-    {% if disabled %}disabled{% endif %}
+
+{% macro button(text, variant="primary", type="button", hx_post="", hx_get="", hx_target="", hx_swap="", hx_indicator="", loading_text="", class="", name="", value="", disabled=false) %}
+<button 
+  class="btn btn-{{ variant }}{% if class %} {{ class }}{% endif %}"
+  {{ {
+    "type": type,
+    "name": name if name else none,
+    "value": value if value else none,
+    "hx-post": hx_post if hx_post else none,
+    "hx-get": hx_get if hx_get else none,
+    "hx-target": hx_target if hx_target else none,
+    "hx-swap": hx_swap if hx_swap else none,
+    "hx-indicator": hx_indicator if hx_indicator else none,
+    "disabled": "disabled" if disabled else none
+  } | xmlattr }}
 >
-    <span class="btn-text">{{ text }}</span>
-    {% if loading_text %}
-        <span class="htmx-indicator"{% if hx_indicator %} id="{{ hx_indicator.lstrip('#') }}"{% endif %}>{{ loading_text }}</span>
-    {% endif %}
-</{{ tag }}>
+  <span class="btn-text">{{ text }}</span>
+  {% if loading_text %}
+  <span class="htmx-indicator" {{ {"id": hx_indicator.lstrip('#') if hx_indicator else none} | xmlattr }}>{{ loading_text }}</span>
+  {% endif %}
+</button>
+{% endmacro %}
+
+{% macro link_button(text, href, variant="primary", class="", hx_post="", hx_get="", hx_target="", hx_swap="") %}
+<a 
+  class="btn btn-{{ variant }}{% if class %} {{ class }}{% endif %}"
+  {{ {
+    "href": href,
+    "hx-post": hx_post if hx_post else none,
+    "hx-get": hx_get if hx_get else none,
+    "hx-target": hx_target if hx_target else none,
+    "hx-swap": hx_swap if hx_swap else none
+  } | xmlattr }}
+>
+  <span class="btn-text">{{ text }}</span>
+</a>
+{% endmacro %}
