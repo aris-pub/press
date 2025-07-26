@@ -90,7 +90,10 @@ async def seed_subjects():
             return
 
         subjects_data = [
-            {"name": "Computer Science", "description": "Computing, algorithms, and software engineering"},
+            {
+                "name": "Computer Science",
+                "description": "Computing, algorithms, and software engineering",
+            },
             {"name": "Physics", "description": "Theoretical and experimental physics"},
             {"name": "Mathematics", "description": "Pure and applied mathematics"},
             {"name": "Biology", "description": "Life sciences and biological research"},
@@ -98,12 +101,17 @@ async def seed_subjects():
             {"name": "Economics", "description": "Economic theory and quantitative analysis"},
             {"name": "Medicine", "description": "Medical research and healthcare"},
             {"name": "Engineering", "description": "Applied engineering and technology"},
+            {"name": "Psychology", "description": "Behavioral sciences and cognitive research"},
+            {
+                "name": "Environmental Science",
+                "description": "Climate, ecology, and sustainability research",
+            },
+            {"name": "Neuroscience", "description": "Brain research and neural systems"},
         ]
 
         for subject_data in subjects_data:
             db_subject = Subject(
-                name=subject_data["name"],
-                description=subject_data["description"]
+                name=subject_data["name"], description=subject_data["description"]
             )
             session.add(db_subject)
 
