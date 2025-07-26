@@ -1,0 +1,118 @@
+"""Preview and Subject models for academic preprints."""
+
+import uuid
+from datetime import datetime
+from typing import List
+
+from sqlalchemy import ARRAY, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
+from sqlalchemy.types import TypeDecorator
+
+from app.database import Base
+
+
+class GUID(TypeDecorator):
+    """Cross-platform UUID type that works with both PostgreSQL and SQLite."""
+    impl = String
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(UUID(as_uuid=True))
+        else:
+            return dialect.type_descriptor(String(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == 'postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                return str(uuid.UUID(value))
+            return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                return uuid.UUID(value)
+            return value
+
+
+class StringArray(TypeDecorator):
+    """Cross-platform string array type."""
+    impl = JSON
+    cache_ok = True
+    
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(ARRAY(String))
+        else:
+            return dialect.type_descriptor(JSON)
+
+
+class Subject(Base):
+    """Academic subject categories for previews."""
+    __tablename__ = "subjects"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationship
+    previews: Mapped[List["Preview"]] = relationship("Preview", back_populates="subject")
+
+    def __repr__(self):
+        return f"<Subject(name='{self.name}')>"
+
+
+class Preview(Base):
+    """Academic preview/preprint model."""
+    __tablename__ = "previews"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    preview_id: Mapped[str] = mapped_column(String(20), unique=True, nullable=True)  # Short public ID for published previews
+    
+    # Content fields
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    authors: Mapped[str] = mapped_column(String(1000), nullable=False)  # Comma-separated for now
+    abstract: Mapped[str] = mapped_column(Text, nullable=False)
+    keywords: Mapped[List[str]] = mapped_column(StringArray, nullable=True)
+    html_content: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # Metadata
+    status: Mapped[str] = mapped_column(String(20), default="draft")  # draft, published
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    
+    # Foreign keys
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("users.id"), nullable=False)
+    subject_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("subjects.id"), nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="previews")
+    subject: Mapped["Subject"] = relationship("Subject", back_populates="previews")
+
+    def __repr__(self):
+        return f"<Preview(title='{self.title[:50]}...', status='{self.status}')>"
+
+    def publish(self):
+        """Publish the preview by generating a public ID."""
+        if self.status == "published":
+            return
+        
+        # Generate a short, unique preview ID
+        import secrets
+        import string
+        
+        # Generate 8-character alphanumeric ID
+        self.preview_id = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+        self.status = "published"
+        self.published_at = func.now()
