@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "components/button.html" import button %}
 {% from "components/preview_card.html" import preview_card %}
+{% from "components/subject_card.html" import subject_card %}
 
 {% block title %}Home - Press{% endblock %}
 
@@ -23,51 +24,32 @@
   </div>
 </div>
 
-{% include "partials/browse_subjects.html" %}
+<div class="subjects">
+  <h2>Browse by Subject</h2>
+  <div class="subject-grid">
+    {% for subject in subjects %}
+    {{ subject_card(subject.name, subject.preview_count) }}
+    {% endfor %}
+  </div>
+</div>
 
 <div class="recent">
   <h2>Recent Submissions</h2>
   
   <div class="previews-grid">
+    {% for preview_row in previews %}
+    {% set preview = preview_row[0] %}
+    {% set subject_name = preview_row[1] %}
     {{ preview_card(
-      "Efficient Algorithms for Large-Scale Graph Neural Networks",
-      "John Smith, Li Chen, Maria Garcia",
-      "We present a novel approach to scaling graph neural networks for datasets with millions of nodes. Our method reduces computational complexity from O(n²) to O(n log n) while maintaining accuracy comparable to existing approaches. Experimental results on five benchmark datasets demonstrate...",
-      ["machine learning", "graph neural networks", "algorithms"],
-      "Computer Science",
-      "2 hours ago",
-      "v1"
-    ) }}
-
-    {{ preview_card(
-      "Quantum Entanglement in Room-Temperature Superconductors",
-      "Robert Watson, Sarah Kim",
-      "Recent discoveries in room-temperature superconductivity have opened new avenues for quantum computing applications. This paper investigates the role of quantum entanglement in maintaining superconducting states at ambient conditions. Through theoretical modeling and experimental validation...",
-      ["quantum physics", "superconductivity", "condensed matter"],
-      "Physics",
-      "5 hours ago",
-      "v1"
-    ) }}
-
-    {{ preview_card(
-      "CRISPR-Cas9 Applications in Treating Hereditary Diseases",
-      "Anita Patel, Michael Johnson, Takeshi Nakamura",
-      "Gene editing technologies have shown remarkable promise in addressing genetic disorders. This comprehensive review examines recent clinical trials using CRISPR-Cas9 systems to treat sickle cell disease, beta-thalassemia, and Leber congenital amaurosis. We analyze success rates...",
-      ["gene editing", "CRISPR", "hereditary diseases"],
-      "Biology",
-      "1 day ago",
-      "v2"
-    ) }}
-
-    {{ preview_card(
-      "A New Proof of the Riemann Hypothesis",
-      "Pavel Kowalski",
-      "This paper presents a novel approach to proving the Riemann Hypothesis using advanced techniques from algebraic geometry and number theory. The proof relies on establishing a deep connection between the zeros of the Riemann zeta function and geometric properties of certain algebraic varieties...",
-      ["number theory", "riemann hypothesis", "algebraic geometry"],
-      "Mathematics",
-      "2 days ago",
-      "v1"
-    ) }}
+                    preview.title,
+                    preview.authors,
+                    preview.abstract,
+                    preview.keywords,
+                    subject_name,
+                    "recently",
+                    "v" + preview.version|string
+       ) }}
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

@@ -9,7 +9,7 @@ from sqlalchemy import select, func
 
 from app.auth.session import get_current_user_from_session
 from app.database import get_db
-from app.models.preview import Subject
+from app.models.preview import Subject, Preview
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -34,7 +34,21 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
         .order_by(Subject.name)
     )
     subjects = subjects_result.all()
+    
+    # Get recent published previews with subjects
+    previews_result = await db.execute(
+        select(Preview, Subject.name.label("subject_name"))
+        .join(Subject)
+        .where(Preview.status == "published")
+        .order_by(Preview.created_at.desc())
+        .limit(4)
+    )
+    previews = previews_result.all()
 
     return templates.TemplateResponse(
-        request, "index.html", {"current_user": current_user, "subjects": subjects}
+        request, "index.html", {
+            "current_user": current_user, 
+            "subjects": subjects,
+            "previews": previews
+        }
     )
