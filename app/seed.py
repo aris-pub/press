@@ -84,7 +84,7 @@ async def seed_subjects():
     """Create academic subject categories."""
     async with AsyncSessionLocal() as session:
         # Check if subjects already exist
-        existing_subjects = await session.execute("SELECT COUNT(*) FROM subjects")
+        existing_subjects = await session.execute(text("SELECT COUNT(*) FROM subjects"))
         if existing_subjects.scalar() > 0:
             print("Subjects already exist, skipping seed.")
             return
