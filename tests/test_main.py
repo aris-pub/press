@@ -236,7 +236,11 @@ async def test_search_with_results(client: AsyncClient, test_db, test_user):
     assert response.status_code == 200
     assert "Search Results" in response.text
     # Check for highlighted terms instead of exact title
-    assert "Machine" in response.text and "Learning" in response.text and "Fundamentals" in response.text
+    assert (
+        "Machine" in response.text
+        and "Learning" in response.text
+        and "Fundamentals" in response.text
+    )
     assert "Dr. AI Researcher" in response.text
     assert "Showing" in response.text and "1" in response.text and "result" in response.text
 
@@ -289,11 +293,11 @@ async def test_search_only_published_previews(client: AsyncClient, test_db, test
     # Search for common term in both
     response = await client.get("/search?q=quantum+mechanics")
     assert response.status_code == 200
-    
+
     # Should find published paper
     assert "Published Physics Paper" in response.text
     assert "Published Author" in response.text
-    
+
     # Should not find draft paper
     assert "Draft Physics Paper" not in response.text
     assert "Draft Author" not in response.text
@@ -352,7 +356,11 @@ async def test_search_partial_matching(client: AsyncClient, test_db, test_user):
     response = await client.get("/search?q=algo")
     assert response.status_code == 200
     # Check for highlighted partial matches (title will be highlighted)
-    assert "Advanced" in response.text and "rithms" in response.text and "Machine Learning" in response.text
+    assert (
+        "Advanced" in response.text
+        and "rithms" in response.text
+        and "Machine Learning" in response.text
+    )
     assert "Dr. Algorithm Expert" in response.text
     assert "Showing" in response.text and "1" in response.text and "result" in response.text
     # Verify highlighting is working for partial matches
@@ -382,3 +390,302 @@ async def test_health_check(client: AsyncClient):
     assert "subject_count" in data["metrics"]
     assert "preview_count" in data["metrics"]
     assert data["version"] == "0.1.0"
+
+
+# Dashboard Tests (TDD)
+
+
+async def test_dashboard_redirects_unauthenticated_users(client: AsyncClient):
+    """Test 1: GET /dashboard redirects unauthenticated users to /login."""
+    response = await client.get("/dashboard", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["location"] == "/login"
+
+
+async def test_dashboard_shows_title_for_authenticated_users(authenticated_client: AsyncClient):
+    """Test 2: GET /dashboard shows 'Your Previews' title for authenticated users."""
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    assert "Your Previews" in response.text
+
+
+async def test_dashboard_shows_users_published_papers(
+    authenticated_client: AsyncClient, test_db, test_user
+):
+    """Test 3: Dashboard shows user's published papers using preview_card component."""
+    # Create test subject and published preview for the authenticated user
+    subject = Subject(name="Computer Science", description="CS research")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    preview = Preview(
+        title="Efficient Algorithms for Large-Scale Graph Neural Networks",
+        authors="John Smith, Li Chen, Maria Garcia",
+        abstract="We present a novel approach to scaling graph neural networks",
+        html_content="<h1>Test Content</h1>",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="published",
+        preview_id="graph123",
+    )
+    test_db.add(preview)
+    await test_db.commit()
+
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    assert "Efficient Algorithms for Large-Scale Graph Neural Networks" in response.text
+    assert "John Smith, Li Chen, Maria Garcia" in response.text
+    assert "We present a novel approach to scaling graph neural networks" in response.text
+    assert "Computer Science" in response.text
+
+
+async def test_dashboard_only_shows_current_users_papers(
+    authenticated_client: AsyncClient, test_db, test_user
+):
+    """Test 4: Dashboard only shows current user's papers, not other users' papers."""
+    # Create test subject
+    subject = Subject(name="Physics", description="Physics research")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Create another user
+    from app.models.user import User
+
+    other_user = User(
+        email="other@example.com",
+        display_name="Other User",
+        password_hash="fake_hash",
+        email_verified=True,
+    )
+    test_db.add(other_user)
+    await test_db.commit()
+    await test_db.refresh(other_user)
+
+    # Create preview for current user
+    user_preview = Preview(
+        title="Current User's Paper",
+        authors="Current User",
+        abstract="This is the current user's paper",
+        html_content="<h1>Current User Content</h1>",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="published",
+        preview_id="user123",
+    )
+
+    # Create preview for other user
+    other_preview = Preview(
+        title="Other User's Paper",
+        authors="Other User",
+        abstract="This is another user's paper",
+        html_content="<h1>Other User Content</h1>",
+        user_id=other_user.id,
+        subject_id=subject.id,
+        status="published",
+        preview_id="other123",
+    )
+
+    test_db.add(user_preview)
+    test_db.add(other_preview)
+    await test_db.commit()
+
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    # Should show current user's paper (check for both regular and HTML-escaped versions)
+    assert "Current User's Paper" in response.text or "Current User&#39;s Paper" in response.text
+    assert "Current User" in response.text  # Check for author name which appears unescaped
+    # Should NOT show other user's paper
+    assert (
+        "Other User's Paper" not in response.text and "Other User&#39;s Paper" not in response.text
+    )
+    assert "Other User" not in response.text  # Check author doesn't appear
+
+
+async def test_dashboard_shows_empty_state_when_no_published_papers(
+    authenticated_client: AsyncClient,
+):
+    """Test 5: Dashboard shows empty state when user has no published papers."""
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    assert "Your Previews" in response.text
+    assert "No published papers yet" in response.text
+    assert "Upload Your First Preview" in response.text
+
+
+async def test_dashboard_does_not_show_draft_papers(
+    authenticated_client: AsyncClient, test_db, test_user
+):
+    """Test 6: Dashboard does not show draft papers, only published ones."""
+    # Create test subject
+    subject = Subject(name="Mathematics", description="Math research")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Create draft preview (should not appear)
+    draft_preview = Preview(
+        title="Draft Mathematics Paper",
+        authors="Test Author",
+        abstract="This is a draft paper",
+        html_content="<h1>Draft Content</h1>",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="draft",  # Draft status
+    )
+
+    # Create published preview (should appear)
+    published_preview = Preview(
+        title="Published Mathematics Paper",
+        authors="Test Author",
+        abstract="This is a published paper",
+        html_content="<h1>Published Content</h1>",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="published",
+        preview_id="math123",
+    )
+
+    test_db.add(draft_preview)
+    test_db.add(published_preview)
+    await test_db.commit()
+
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    # Should show published paper
+    assert "Published Mathematics Paper" in response.text
+    assert "This is a published paper" in response.text
+    # Should NOT show draft paper
+    assert "Draft Mathematics Paper" not in response.text
+    assert "This is a draft paper" not in response.text
+
+
+async def test_dashboard_papers_ordered_by_created_at_descending(
+    authenticated_client: AsyncClient, test_db, test_user
+):
+    """Test 7: Papers are ordered by created_at descending (newest first)."""
+    import datetime
+
+    from sqlalchemy import update
+
+    # Create test subject
+    subject = Subject(name="Engineering", description="Engineering research")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Create multiple published previews
+    older_preview = Preview(
+        title="Older Paper",
+        authors="Test Author",
+        abstract="This is an older paper",
+        html_content="<h1>Older Content</h1>",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="published",
+        preview_id="old123",
+    )
+
+    newer_preview = Preview(
+        title="Newer Paper",
+        authors="Test Author",
+        abstract="This is a newer paper",
+        html_content="<h1>Newer Content</h1>",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="published",
+        preview_id="new123",
+    )
+
+    test_db.add(older_preview)
+    test_db.add(newer_preview)
+    await test_db.commit()
+
+    # Manually set different created_at timestamps
+    older_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+    newer_time = datetime.datetime.now(datetime.timezone.utc)
+
+    await test_db.execute(
+        update(Preview).where(Preview.id == older_preview.id).values(created_at=older_time)
+    )
+    await test_db.execute(
+        update(Preview).where(Preview.id == newer_preview.id).values(created_at=newer_time)
+    )
+    await test_db.commit()
+
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+
+    # Check that newer paper appears before older paper in the HTML
+    content = response.text
+    newer_pos = content.find("Newer Paper")
+    older_pos = content.find("Older Paper")
+    assert newer_pos != -1 and older_pos != -1
+    assert newer_pos < older_pos  # Newer paper should appear first
+
+
+async def test_dashboard_preview_count_in_title(authenticated_client, test_db, test_user):
+    """Test that dashboard title shows correct preview count."""
+    # Create test subject
+    subject = Subject(name="Computer Science", description="CS research")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Create 3 published previews
+    for i in range(3):
+        preview = Preview(
+            title=f"Test Paper {i + 1}",
+            authors="Test Author",
+            abstract="Test abstract",
+            html_content="<h1>Test</h1>",
+            user_id=test_user.id,
+            subject_id=subject.id,
+            status="published",
+            preview_id=f"test{i + 1}",
+        )
+        test_db.add(preview)
+
+    await test_db.commit()
+
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    assert "Your Previews (3)" in response.text
+
+
+async def test_dashboard_empty_state_count(authenticated_client):
+    """Test that dashboard shows (0) when user has no previews."""
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    assert "Your Previews (0)" in response.text
+    assert "No published papers yet" in response.text
+
+
+async def test_navbar_shows_user_menu_when_authenticated(authenticated_client, test_user):
+    """Test that navbar shows user menu with display name when user is logged in."""
+    response = await authenticated_client.get("/")
+    assert response.status_code == 200
+
+    # Check user menu is present
+    assert 'class="user-menu-trigger"' in response.text
+    assert test_user.display_name in response.text
+    assert 'src="/static/images/user-icon.svg"' in response.text
+
+    # Check dropdown menu items
+    assert 'href="/dashboard"' in response.text
+    assert 'action="/logout"' in response.text
+
+
+async def test_navbar_shows_login_button_when_unauthenticated(client):
+    """Test that navbar shows login/register buttons when user is not logged in."""
+    response = await client.get("/")
+    assert response.status_code == 200
+
+    # Check login/register buttons are present
+    assert 'href="/login"' in response.text
+    assert 'href="/register"' in response.text
+
+    # Check user menu is NOT present
+    assert 'class="user-menu-trigger"' not in response.text
+    assert "user-icon.svg" not in response.text

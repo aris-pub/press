@@ -253,7 +253,7 @@ async def login_form(
                 "title": "Welcome Back!",
                 "message": f"Successfully signed in as {user.display_name}",
                 "action_text": "Go to Dashboard",
-                "action_url": "/",
+                "action_url": "/dashboard",
             },
         )
 

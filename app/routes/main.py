@@ -1,13 +1,13 @@
 """Main application routes (landing page, etc.)."""
 
-import time
 import re
+import time
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import func, select, text, or_
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.session import get_current_user_from_session
@@ -142,59 +142,87 @@ async def contact_page(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(request, "contact.html", {"current_user": current_user})
 
 
+@router.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display user dashboard with their published papers."""
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    log_request(request, user_id=str(current_user.id))
+
+    # Get user's published papers with subject names
+    published_papers = await db.execute(
+        select(Preview, Subject.name.label("subject_name"))
+        .join(Subject)
+        .where(Preview.user_id == current_user.id, Preview.status == "published")
+        .order_by(Preview.created_at.desc())
+    )
+    papers = published_papers.all()
+
+    return templates.TemplateResponse(
+        request, "dashboard.html", {"current_user": current_user, "papers": papers}
+    )
+
+
 def highlight_search_terms(text: str, query: str) -> str:
     """Highlight search terms in text with <mark> tags."""
     if not text or not query:
         return text
-    
+
     # Split query into individual terms and clean them
     terms = [term.strip() for term in query.split() if term.strip()]
-    
+
     # Escape HTML in original text first
     import html
+
     escaped_text = html.escape(text)
-    
+
     # Highlight each term (case insensitive)
     for term in terms:
         # Escape the term for regex
         escaped_term = re.escape(term)
-        pattern = re.compile(f'({escaped_term})', re.IGNORECASE)
-        escaped_text = pattern.sub(r'<mark>\1</mark>', escaped_text)
-    
+        pattern = re.compile(f"({escaped_term})", re.IGNORECASE)
+        escaped_text = pattern.sub(r"<mark>\1</mark>", escaped_text)
+
     return escaped_text
 
 
 @router.get("/search", response_class=HTMLResponse)
-async def search_results(request: Request, q: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+async def search_results(
+    request: Request, q: Optional[str] = None, db: AsyncSession = Depends(get_db)
+):
     """Search for previews across titles, authors, abstracts, and content.
-    
+
     Args:
         request: FastAPI request object
         q: Search query parameter
         db: Database session
-        
+
     Returns:
         Search results page or redirect to homepage if no query
     """
     log_request(request)
     current_user = await get_current_user_from_session(request, db)
-    
+
     if current_user:
         log_request(request, user_id=str(current_user.id))
-    
+
     # Redirect to homepage if no query
     if not q or not q.strip():
         return RedirectResponse(url="/", status_code=302)
-    
+
     query = q.strip()
     get_logger().info(f"Search query: '{query}'")
-    
+
     try:
         # Check if we're using PostgreSQL or SQLite for testing
         db_url = str(db.get_bind().url)
         is_postgresql = "postgresql" in db_url
         get_logger().info(f"Using database: {db_url}, PostgreSQL: {is_postgresql}")
-        
+
         if is_postgresql:
             # Use hybrid approach: full-text search + partial matching for better UX
             # This gives us both semantic matching and partial word matching
@@ -228,7 +256,7 @@ async def search_results(request: Request, q: Optional[str] = None, db: AsyncSes
                 ORDER BY fts_rank DESC, p.created_at DESC
                 LIMIT 50
             """)
-            
+
             search_results = await db.execute(search_sql, {"query": query})
             # Convert to the expected format
             results = [(row, row.subject_name) for row in search_results.fetchall()]
@@ -244,13 +272,13 @@ async def search_results(request: Request, q: Optional[str] = None, db: AsyncSes
                         Preview.title.ilike(like_pattern),
                         Preview.authors.ilike(like_pattern),
                         Preview.abstract.ilike(like_pattern),
-                        Preview.html_content.ilike(like_pattern)
-                    )
+                        Preview.html_content.ilike(like_pattern),
+                    ),
                 )
                 .order_by(Preview.created_at.desc())
                 .limit(50)
             )
-        
+
         if is_postgresql:
             # Results are already processed above
             result_count = len(results)
@@ -258,9 +286,9 @@ async def search_results(request: Request, q: Optional[str] = None, db: AsyncSes
             # SQLite results need standard processing
             results = search_results.all()
             result_count = len(results)
-        
+
         get_logger().info(f"Search for '{query}' returned {result_count} results")
-        
+
         return templates.TemplateResponse(
             request,
             "search_results.html",
@@ -269,14 +297,14 @@ async def search_results(request: Request, q: Optional[str] = None, db: AsyncSes
                 "query": query,
                 "results": results,
                 "result_count": result_count,
-                "highlight_terms": lambda text: highlight_search_terms(text, query)
-            }
+                "highlight_terms": lambda text: highlight_search_terms(text, query),
+            },
         )
-        
+
     except Exception as e:
         log_error(e, request, context="search")
         get_logger().error(f"Search error details: {str(e)}")
-        
+
         return templates.TemplateResponse(
             request,
             "search_results.html",
@@ -286,6 +314,6 @@ async def search_results(request: Request, q: Optional[str] = None, db: AsyncSes
                 "results": [],
                 "result_count": 0,
                 "error": "There was an error performing your search. Please try again.",
-                "highlight_terms": lambda text: text
-            }
+                "highlight_terms": lambda text: text,
+            },
         )

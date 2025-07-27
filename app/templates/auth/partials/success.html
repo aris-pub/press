@@ -1,9 +1,5 @@
-<div class="success-message">
+<div class="success-message" hx-get="{{ action_url }}" hx-trigger="load delay:1s" hx-target="body" hx-push-url="true">
     <h2>{{ title }}</h2>
     <p>{{ message }}</p>
-    
-    {% if action_url and action_text %}
-        {% set text = action_text %}{% set href = action_url %}{% set variant = "primary" %}
-        {% include "components/button.html" %}
-    {% endif %}
+    <p>Redirecting to dashboard...</p>
 </div>

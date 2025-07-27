@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "components/preview_card.html" import preview_card %}
+{% from "components/button.html" import link_button %}
+
+{% block title %}Dashboard - Press{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="recent">
+    <h2>Your Previews ({{ papers|length }})</h2>
+    
+    {% if papers %}
+      <div class="previews-grid">
+        {% for paper_row in papers %}
+        {% set paper = paper_row[0] %}
+        {% set subject_name = paper_row[1] %}
+        {{ preview_card(
+            paper.title,
+            paper.authors,
+            paper.abstract,
+            paper.keywords,
+            subject_name,
+            "recently",
+            "v" + paper.version|string,
+            paper.preview_id
+        ) }}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-results">
+        <h2>No published papers yet</h2>
+        <p>Ready to share your research with the world?</p>
+        <div class="no-results-suggestions">
+          <p>Upload your first preview to get started.</p>
+          <div class="suggestion-links">
+            {{ link_button("Upload Your First Preview", href="/upload", variant="primary") }}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

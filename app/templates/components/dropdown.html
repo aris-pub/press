@@ -1,0 +1,35 @@
+{# 
+Dropdown Component
+Usage: 
+{% from "components/dropdown.html" import dropdown %}
+{{ dropdown(
+    trigger_content="Trigger Content",
+    items=[
+        {"text": "Dashboard", "href": "/dashboard"},
+        {"text": "Logout", "action": "logout"}
+    ]
+) }}
+#}
+
+{% macro dropdown(trigger_content, items, class="") %}
+<div class="dropdown{% if class %} {{ class }}{% endif %}">
+  <button class="dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+    {{ trigger_content }}
+    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  
+  <div class="dropdown-menu" role="menu">
+    {% for item in items %}
+    {% if item.href %}
+    <a href="{{ item.href }}" class="dropdown-item" role="menuitem">{{ item.text }}</a>
+    {% elif item.action == "logout" %}
+    <form class="dropdown-form" action="/logout" method="post">
+      <button type="submit" class="dropdown-item dropdown-action" role="menuitem">{{ item.text }}</button>
+    </form>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}

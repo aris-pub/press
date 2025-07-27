@@ -100,3 +100,30 @@ async def test_protected_route_allows_authenticated(authenticated_client: AsyncC
     response = await authenticated_client.get("/upload")
     assert response.status_code == 200
     assert "Upload" in response.text
+
+
+async def test_login_success_redirects_to_dashboard(client: AsyncClient, test_user):
+    """Test that successful login shows success message with dashboard redirect."""
+    login_data = {"email": test_user.email, "password": "testpassword"}
+
+    response = await client.post("/login-form", data=login_data)
+    assert response.status_code == 200
+    assert "session_id" in response.cookies
+
+    # Check that success template includes dashboard redirect
+    assert "Welcome Back!" in response.text
+    assert "Redirecting to dashboard..." in response.text
+    assert 'hx-get="/dashboard"' in response.text
+    assert 'hx-trigger="load delay:1s"' in response.text
+
+
+async def test_login_success_template_has_redirect_attributes(client: AsyncClient, test_user):
+    """Test that login success template has correct HTMX redirect attributes."""
+    login_data = {"email": test_user.email, "password": "testpassword"}
+
+    response = await client.post("/login-form", data=login_data)
+    assert response.status_code == 200
+
+    # Verify HTMX attributes for automatic redirect
+    assert 'hx-target="body"' in response.text
+    assert 'hx-push-url="true"' in response.text

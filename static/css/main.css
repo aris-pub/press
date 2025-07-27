@@ -868,3 +868,128 @@ mark {
         text-align: center;
     }
 }
+
+/* Dropdown Component */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+    background: transparent;
+    border: 1px solid var(--gray-lighter);
+    border-radius: var(--border-radius);
+    color: var(--gray-medium);
+    cursor: pointer;
+    font-size: var(--text-base);
+    transition: all 0.2s ease;
+}
+
+.dropdown-trigger:hover {
+    background: var(--gray-bg);
+    border-color: var(--gray);
+}
+
+.dropdown-trigger:focus {
+    outline: none;
+    border-color: var(--red);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.dropdown-arrow {
+    transition: transform 0.2s ease;
+}
+
+.dropdown[aria-expanded="true"] .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 160px;
+    background: var(--white);
+    border: 1px solid var(--gray-lighter);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: all 0.2s ease;
+}
+
+.dropdown.open .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    color: var(--gray-medium);
+    text-decoration: none;
+    font-size: var(--text-base);
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: var(--gray-bg);
+    color: var(--gray-dark);
+}
+
+.dropdown-form {
+    margin: 0;
+}
+
+.dropdown-action {
+    font-family: var(--font-sans);
+}
+
+/* User menu styles */
+.user-menu-trigger {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.4rem 0.8rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    color: var(--gray-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-menu-trigger:hover {
+    background: var(--gray-bg);
+    border-color: var(--gray-lighter);
+}
+
+.user-menu-trigger:focus {
+    outline: none;
+    border-color: var(--red);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.user-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.user-menu-label {
+    font-size: var(--text-base);
+    color: var(--gray-medium);
+    margin-left: var(--space-xs);
+}
+
