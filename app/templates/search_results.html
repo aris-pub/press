@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% from "components/button.html" import button %}
+{% from "components/preview_card.html" import preview_card %}
+
+{% block title %}
+{% if query %}Search: {{ query }} - Preview Press{% else %}Search - Preview Press{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="search-page">
+  <!-- Search Header -->
+  <div class="search-header">
+    <h1>Search Results</h1>
+    
+    <!-- Search Form -->
+    <form class="search-form-page" action="/search" method="get">
+      <div class="search-input-container">
+        <input type="text" name="q" class="search-input-page" 
+               placeholder="Search papers, authors, or subjects..." 
+               value="{{ query if query else '' }}" autofocus>
+        {{ button("Search", type="submit", class="search-btn-page") }}
+      </div>
+    </form>
+  </div>
+
+  <!-- Results Info -->
+  {% if error %}
+  <div class="search-error">
+    <div class="error-message">
+      <h2>Search Error</h2>
+      <p>{{ error }}</p>
+      <div class="error-actions">
+        <a href="/" class="btn btn-primary">Return to Homepage</a>
+        <a href="#" onclick="history.back()" class="btn btn-secondary">Go Back</a>
+      </div>
+    </div>
+  </div>
+  {% elif query %}
+  <div class="search-info">
+    {% if result_count > 0 %}
+    <p>Showing <strong>{{ result_count }}</strong> result{{ 's' if result_count != 1 else '' }} for <strong>"{{ query }}"</strong></p>
+    {% else %}
+    <div class="no-results">
+      <h2>No results found</h2>
+      <p>No papers match your search for <strong>"{{ query }}"</strong></p>
+      <div class="no-results-suggestions">
+        <p>Try different search terms, or browse our content:</p>
+        <div class="suggestion-links">
+          <a href="/#browse" class="btn btn-secondary">Browse All Subjects</a>
+          <a href="/#recent" class="btn btn-secondary">Recent Papers</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Search Results -->
+  {% if results and result_count > 0 %}
+  <div class="search-results">
+    <div class="previews-grid">
+      {% for result_row in results %}
+      {% set preview = result_row[0] %}
+      {% set subject_name = result_row[1] %}
+      
+      <!-- Create highlighted versions of title and abstract -->
+      {% set highlighted_title = highlight_terms(preview.title) %}
+      {% set highlighted_abstract = highlight_terms(preview.abstract) %}
+      
+      <!-- Use a custom preview card macro call with highlighted content -->
+      <div class="preview search-result" data-subject="{{ subject_name.lower().replace(' ', '-') if subject_name else '' }}">
+        {% if preview.preview_id %}
+        <a href="/preview/{{ preview.preview_id }}" class="preview-link">
+          <div class="preview-title">{{ highlighted_title|safe }}</div>
+        </a>
+        {% else %}
+        <div class="preview-title">{{ highlighted_title|safe }}</div>
+        {% endif %}
+        <div class="preview-authors">{{ preview.authors }}</div>
+        <div class="preview-abstract">{{ highlighted_abstract|safe }}</div>
+        <div class="preview-footer">
+          <div class="preview-tags">
+            {% for tag in preview.keywords or [] %}
+            <span class="tag">{{ tag }}</span>
+            {% endfor %}
+          </div>
+          <div class="preview-meta">
+            {% if subject_name %}
+            <span class="preview-subject-link" 
+                  data-subject-name="{{ subject_name.lower().replace(' ', '-') }}" 
+                  data-subject-display="{{ subject_name }}" 
+                  style="color: #ef4444; cursor: pointer;">{{ subject_name }}</span> | 
+            {% endif %}
+            Submitted recently | 
+            <span style="color: #ef4444;">v{{ preview.version }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

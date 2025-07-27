@@ -14,8 +14,8 @@
   <p>Open access to research preprints in web-native formats</p>
   
   <div class="search-box">
-    <form class="search-form">
-      <input type="text" class="search-input" placeholder="Search papers, authors, or subjects...">
+    <form class="search-form" action="/search" method="get">
+      <input type="text" name="q" class="search-input" placeholder="Search papers, authors, or subjects...">
       {{ button("Search", type="submit", class="search-btn-override") }}
     </form>
     <div class="search-help">
