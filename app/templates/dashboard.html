@@ -221,6 +221,80 @@
   padding: var(--space-lg);
   border-top: 1px solid var(--gray-lightest);
 }
+
+/* Mobile dashboard and modal styles */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    gap: var(--mobile-space-lg);
+    align-items: stretch;
+    margin-bottom: var(--mobile-space-xl);
+  }
+  
+  .dashboard-header h2 {
+    font-size: var(--mobile-text-xl);
+    text-align: center;
+  }
+  
+  .modal-content {
+    width: 95%;
+    max-width: none;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  
+  .modal-header {
+    padding: var(--mobile-space-lg);
+  }
+  
+  .modal-header h3 {
+    font-size: var(--mobile-text-xl);
+  }
+  
+  .modal-body {
+    padding: var(--mobile-space-lg);
+  }
+  
+  .form-group {
+    margin-bottom: var(--mobile-space-lg);
+  }
+  
+  .form-group label {
+    font-size: var(--mobile-text-base);
+    margin-bottom: var(--mobile-space-sm);
+  }
+  
+  .radio-group {
+    flex-direction: column;
+    gap: var(--mobile-space-md);
+  }
+  
+  .radio-label,
+  .checkbox-label {
+    gap: var(--mobile-space-sm);
+    padding: var(--mobile-space-sm) 0;
+    min-height: 44px;
+    align-items: center;
+  }
+  
+  .form-help {
+    font-size: var(--mobile-text-xs);
+    margin-top: var(--mobile-space-xs);
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: var(--mobile-space-sm);
+    padding: var(--mobile-space-lg);
+  }
+  
+  .modal-actions .btn {
+    width: 100%;
+    padding: var(--mobile-space-lg);
+    font-size: var(--mobile-text-base);
+    min-height: 44px;
+  }
+}
 </style>
 
 <script>

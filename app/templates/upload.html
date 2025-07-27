@@ -117,6 +117,77 @@
     margin-top: 0.5rem;
     margin-bottom: 1.5rem;
 }
+
+/* Mobile upload form styles */
+@media (max-width: 768px) {
+    .upload-container {
+        margin: 2rem var(--mobile-space-lg);
+        padding: var(--mobile-space-2xl);
+        border-radius: var(--border-radius);
+    }
+    
+    .upload-header {
+        margin-bottom: var(--mobile-space-xl);
+    }
+    
+    .upload-header h1 {
+        font-size: var(--mobile-text-2xl);
+        margin-bottom: var(--mobile-space-sm);
+    }
+    
+    .upload-header p {
+        font-size: var(--mobile-text-base);
+        padding: 0 var(--mobile-space-sm);
+    }
+    
+    .form-group {
+        margin-bottom: var(--mobile-space-xl);
+    }
+    
+    .form-label {
+        font-size: var(--mobile-text-base);
+        margin-bottom: var(--mobile-space-sm);
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        padding: var(--mobile-space-lg);
+        font-size: var(--mobile-text-base);
+        border-radius: var(--border-radius);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+    }
+    
+    .form-textarea#html_content {
+        min-height: 200px;
+        font-size: var(--mobile-text-sm);
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: var(--mobile-space-md);
+        margin-top: var(--mobile-space-xl);
+        padding-top: var(--mobile-space-xl);
+    }
+    
+    .btn-upload,
+    .btn-draft {
+        width: 100%;
+        padding: var(--mobile-space-lg);
+        font-size: var(--mobile-text-base);
+        min-height: 44px;
+        border-radius: var(--border-radius);
+    }
+    
+    .help-text {
+        font-size: var(--mobile-text-xs);
+        margin-top: var(--mobile-space-xs);
+        margin-bottom: var(--mobile-space-md);
+    }
+}
 {% endblock %}
 
 {% block content %}

@@ -42,4 +42,98 @@ Navbar Component
     {% endif %}
   </div>
 
+  <!-- Mobile hamburger menu toggle -->
+  <button class="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <!-- Mobile navigation menu -->
+  <div class="mobile-nav">
+    <div class="mobile-nav-links">
+      <a href="/#browse">Browse</a>
+      <a href="/#recent">Recent</a>
+      <a href="/about">About</a>
+    </div>
+    
+    <div class="mobile-auth-buttons">
+      {% if current_user %}
+      {{ link_button("New Preview", href="/upload", variant="primary") }}
+      <a href="/dashboard" class="btn btn-secondary">Dashboard</a>
+      <form action="/logout" method="post" style="margin: 0;">
+        <button type="submit" class="btn btn-secondary" style="width: 100%;">Logout</button>
+      </form>
+      {% else %}
+      {{ link_button("New Preview", href="/register", variant="primary") }}
+      {{ link_button("Login", href="/login", variant="secondary") }}
+      {% endif %}
+    </div>
+  </div>
+
 </header>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const mobileToggle = document.querySelector('.mobile-menu-toggle');
+  const mobileNav = document.querySelector('.mobile-nav');
+  const mobileBackdrop = document.querySelector('.mobile-nav-backdrop');
+  
+  if (mobileToggle && mobileNav) {
+    function closeMobileMenu() {
+      mobileNav.classList.remove('open');
+      if (mobileBackdrop) mobileBackdrop.classList.remove('open');
+      mobileToggle.classList.remove('open');
+      mobileToggle.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = 'auto';
+    }
+    
+    function openMobileMenu() {
+      mobileNav.classList.add('open');
+      if (mobileBackdrop) mobileBackdrop.classList.add('open');
+      mobileToggle.classList.add('open');
+      mobileToggle.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    mobileToggle.addEventListener('click', function() {
+      const isOpen = mobileNav.classList.contains('open');
+      
+      if (isOpen) {
+        closeMobileMenu();
+      } else {
+        openMobileMenu();
+      }
+    });
+    
+    // Close mobile menu when clicking backdrop
+    if (mobileBackdrop) {
+      mobileBackdrop.addEventListener('click', function() {
+        closeMobileMenu();
+      });
+    }
+    
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!mobileToggle.contains(e.target) && !mobileNav.contains(e.target)) {
+        closeMobileMenu();
+      }
+    });
+    
+    // Close mobile menu on escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && mobileNav.classList.contains('open')) {
+        closeMobileMenu();
+      }
+    });
+    
+    // Close mobile menu when clicking any navigation link
+    const mobileNavLinks = mobileNav.querySelectorAll('a, button[type="submit"]');
+    mobileNavLinks.forEach(link => {
+      link.addEventListener('click', function() {
+        closeMobileMenu();
+      });
+    });
+  }
+});
+</script>

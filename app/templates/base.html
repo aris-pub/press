@@ -35,6 +35,9 @@
   <body>
     {% include "components/navbar.html" %}
 
+    <!-- Mobile menu backdrop for content area only -->
+    <div class="mobile-nav-backdrop"></div>
+
     <main class="container">
       {% block content %}{% endblock %}
     </main>
