@@ -138,6 +138,64 @@ async def test_homepage_preview_links(client: AsyncClient, test_db, test_user):
     assert "/preview/link123" in response.text
 
 
+async def test_about_page(client: AsyncClient):
+    """Test about page loads correctly."""
+    response = await client.get("/about")
+    assert response.status_code == 200
+    assert "About Press" in response.text
+    assert "Research publications. Web-native. Human-first." in response.text
+    assert "Preview Press is where modern research lives" in response.text
+
+
+async def test_contact_page(client: AsyncClient):
+    """Test contact page loads correctly."""
+    response = await client.get("/contact")
+    assert response.status_code == 200
+    assert "Get in Touch" in response.text
+    assert "Community" in response.text
+    assert "Development" in response.text
+    assert "Zulip" in response.text
+    assert "GitHub" in response.text
+
+
+async def test_homepage_has_filtering_elements(client: AsyncClient):
+    """Test homepage contains filtering UI elements."""
+    response = await client.get("/")
+    assert response.status_code == 200
+    assert "Browse by Subject" in response.text
+    assert "Show All" in response.text
+    assert "show-all-btn" in response.text
+    assert "recent-submissions-heading" in response.text
+
+
+async def test_preview_card_subject_links(client: AsyncClient, test_db, test_user):
+    """Test preview cards contain clickable subject links."""
+    # Create test subject and published preview
+    subject = Subject(name="Machine Learning", description="ML research")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    preview = Preview(
+        title="Test ML Preview",
+        authors="Test Author",
+        abstract="Test abstract",
+        html_content="<h1>Test Content</h1>",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="published",
+        preview_id="ml123",
+    )
+    test_db.add(preview)
+    await test_db.commit()
+
+    response = await client.get("/")
+    assert response.status_code == 200
+    assert "preview-subject-link" in response.text
+    assert 'data-subject-name="machine-learning"' in response.text
+    assert 'data-subject-display="Machine Learning"' in response.text
+
+
 async def test_health_check(client: AsyncClient):
     """Test health check endpoint."""
     response = await client.get("/health")

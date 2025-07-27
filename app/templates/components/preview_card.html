@@ -22,7 +22,7 @@ Usage:
       <span class="tag">{{ tag }}</span>
       {% endfor %}
     </div>
-    <div class="preview-meta">{% if subject %}<span style="color: #ef4444;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: #ef4444;">{{ version }}</span></div>
+    <div class="preview-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: #ef4444; cursor: pointer;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: #ef4444;">{{ version }}</span></div>
   </div>
 </div>
 {% endmacro %}

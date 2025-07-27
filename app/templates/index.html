@@ -19,7 +19,7 @@
       {{ button("Search", type="submit", class="search-btn-override") }}
     </form>
     <div class="search-help">
-      <a href="#" style="color: #ef4444;">Advanced search tips</a> | Search includes titles, authors, abstracts, and full text
+      Search includes titles, authors, abstracts, and full text
     </div>
   </div>
 </div>
@@ -163,7 +163,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add click handler to show all button
-    showAllBtn.addEventListener('click', showAll);
+    showAllBtn.addEventListener('click', function() {
+        // Only allow click if button is not in active (disabled) state
+        if (!showAllBtn.classList.contains('active')) {
+            showAll();
+        }
+    });
+
+    // Add click handlers to preview subject links
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('preview-subject-link')) {
+            e.preventDefault();
+            const subjectName = e.target.dataset.subjectName;
+            const subjectDisplay = e.target.dataset.subjectDisplay;
+            
+            // Find the matching subject card
+            const matchingCard = Array.from(subjectCards).find(card => 
+                card.dataset.subjectName === subjectName
+            );
+            
+            selectSubject(subjectName, subjectDisplay, matchingCard);
+        }
+    });
 
     // Initialize from URL parameters
     const urlSubject = getSubjectFromURL();
