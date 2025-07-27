@@ -8,6 +8,9 @@
 /* CSS reset */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Smooth scrolling for anchor links */
+html { scroll-behavior: smooth; }
+
 
 /* Base styles */
 body {
@@ -39,7 +42,7 @@ header.navbar {
   .logo a { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.25rem; }
   nav { display: flex; gap: 2.5rem; }
   nav a { text-decoration: none; color: #555; font-size: 0.9rem; }
-  nav a:hover { color: #000; }
+  nav a:hover { color: #ef4444; }
   .auth-buttons { display: flex; gap: 1.5rem; align-items: center; }
   .user-welcome {
     color: #4b5563;
@@ -54,7 +57,7 @@ footer { background: #fafafa; margin-top: 4rem; padding: 3rem 0; border-top: 1px
 .footer-content { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3rem; }
 .footer-section h4 { font-weight: normal; margin-bottom: 1.5rem; font-size: 0.95rem; }
 .footer-section a { display: block; color: #555; margin-bottom: 0.75rem; text-decoration: none; font-size: 0.85rem; }
-.footer-section a:hover { color: #000; }
+.footer-section a:hover { color: #ef4444; }
 .footer-bottom { text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #ddd; color: #666; font-size: 0.85rem; }
 
 

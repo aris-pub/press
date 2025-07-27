@@ -18,7 +18,7 @@ Usage:
   <div class="preview-abstract">{{ abstract }}</div>
   <div class="preview-footer">
     <div class="preview-tags">
-      {% for tag in tags %}
+      {% for tag in tags or [] %}
       <span class="tag">{{ tag }}</span>
       {% endfor %}
     </div>

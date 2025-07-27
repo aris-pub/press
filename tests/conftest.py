@@ -90,17 +90,22 @@ async def test_user(test_db):
     return user
 
 @pytest_asyncio.fixture
-async def auth_headers(client, test_user):
-    """Get authentication headers for a test user."""
+async def authenticated_client(client, test_user):
+    """Get an authenticated client with session cookies."""
     login_data = {
         "email": test_user.email,
         "password": "testpassword"
     }
     
-    response = await client.post("/auth/login", json=login_data)
-    tokens = response.json()
+    # Login via form submission - should set session cookie
+    response = await client.post("/login-form", data=login_data)
     
-    return {"Authorization": f"Bearer {tokens['access_token']}"}
+    # Verify login worked
+    assert response.status_code == 200
+    assert "session_id" in response.cookies
+    
+    # Return the client which now has session cookies
+    return client
 
 # Configure pytest-asyncio  
 pytest_plugins = ("pytest_asyncio",)

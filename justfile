@@ -12,33 +12,33 @@ dev:
     if lsof -i :$PORT > /dev/null 2>&1; then
         echo "Server already running on port $PORT"
     else
-        uvicorn main:app --reload --port $PORT
+        uv run uvicorn main:app --reload --port $PORT
     fi
 
 # Run tests
 test:
-    pytest
+    uv run pytest -n auto
 
 # Run tests with coverage
 test-cov:
-    pytest --cov=app --cov-report=term-missing
+    uv run pytest --cov=app --cov-report=term-missing
 
 # Format and lint code
 lint:
-    ruff check .
-    ruff format .
+    uv run ruff check .
+    uv run ruff format .
 
 # Database migrations
 migrate:
-    alembic upgrade head
+    uv run alembic upgrade head
 
 # Create new migration
 migration message:
-    alembic revision --autogenerate -m "{{message}}"
+    uv run alembic revision --autogenerate -m "{{message}}"
 
 # Seed database with sample data
 seed:
-    python app/seed.py
+    uv run python app/seed.py
 
 # Reset database (migrate + seed)
 reset-db: migrate seed
