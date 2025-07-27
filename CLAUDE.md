@@ -11,16 +11,38 @@ share research manuscripts written in web-native formats (HTML/CSS/JS).
 
 ## Development Commands
 
-### Essential Commands
+### Using Just (Recommended)
+The project includes a `justfile` with common development tasks:
+
+```bash
+# Setup project from scratch
+just init
+
+# Run development server (checks if already running)
+just dev
+
+# Run tests
+just test
+just test-cov  # with coverage
+
+# Database management
+just migrate                    # Apply migrations
+just migration "description"    # Create new migration
+just seed                      # Add sample data
+just reset-db                  # Fresh database with seed data
+
+# Code quality
+just lint      # Format and check code
+just check     # Run both lint and tests
+```
+
+### Direct Commands
 ```bash
 # Install dependencies
 uv sync
 
 # Run development server
-uvicorn main:app --reload
-
-# Run tests
-pytest
+uvicorn main:app --reload --port ${PORT:-8000}
 
 # Database setup/management
 alembic upgrade head                           # Apply migrations
@@ -28,15 +50,13 @@ alembic revision --autogenerate -m "message"  # Create migration
 python app/seed.py                            # Seed database with sample data
 
 # Code quality
-ruff check .
-ruff format .
+ruff check . && ruff format .
 ```
 
 ### Environment Setup
-1. Copy `.env.example` to `.env` and configure `DATABASE_URL`
+1. Copy `.env.example` to `.env` and configure `DATABASE_URL` and `PORT`
 2. Set up PostgreSQL database
-3. Install dependencies with `uv sync`
-4. Run migrations and seed data
+3. Run `just init` for complete setup
 
 ## Architecture
 
@@ -49,7 +69,6 @@ ruff format .
 ### Authentication System
 - Session-based authentication (not JWT) with 24-hour expiration
 - In-memory session storage in `app/auth/session.py`
-- Function naming: `_get_user_id_from_session_id()` for internal helpers
 
 ### Template Architecture
 - Jinja2 with macro-based components (not includes)
@@ -90,11 +109,6 @@ app/
 - Always use async/await with database operations
 - Use `get_current_user_from_session()` for auth checks
 - Cross-platform compatibility with custom TypeDecorators
-
-### Security
-- POST-only for logout routes (CSRF protection)
-- Required field validation with red asterisks
-- Session-based auth over JWT for this use case
 
 ### Testing
 - pytest-asyncio with in-memory SQLite
