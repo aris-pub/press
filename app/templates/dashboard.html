@@ -1,13 +1,18 @@
 {% extends "base.html" %}
 {% from "components/preview_card.html" import preview_card %}
-{% from "components/button.html" import link_button %}
+{% from "components/button.html" import link_button, button %}
 
 {% block title %}Dashboard - Press{% endblock %}
 
 {% block content %}
 <div class="container">
   <div class="recent">
-    <h2>Your Previews ({{ papers|length }})</h2>
+    <div class="dashboard-header">
+      <h2>Your Previews ({{ papers|length }})</h2>
+      {% if papers %}
+        <button id="export-data-btn" class="btn btn-secondary" onclick="openExportModal()">Export Data</button>
+      {% endif %}
+    </div>
     
     {% if papers %}
       <div class="previews-grid">
@@ -40,4 +45,299 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Export Modal -->
+<div id="export-modal" class="modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeExportModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Export Your Data</h3>
+      <button class="modal-close" onclick="closeExportModal()" aria-label="Close">&times;</button>
+    </div>
+    <form id="export-form" method="post" action="/export-data">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Export Format:</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="format" value="csv" onchange="validateExportForm()">
+              <span>CSV</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="format" value="json" onchange="validateExportForm()">
+              <span>JSON</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="format" value="bibtex" onchange="validateExportForm()">
+              <span>BibTeX</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="include_content" value="true" onchange="validateExportForm()">
+            <span>Include HTML content</span>
+          </label>
+          <small class="form-help">Note: Only JSON format supports HTML content inclusion</small>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
+        <button type="submit" id="export-submit-btn" class="btn btn-primary" disabled>Export</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--gray-lightest);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: var(--text-xl);
+  cursor: pointer;
+  color: var(--gray-medium);
+  padding: var(--space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius);
+}
+
+.modal-close:hover {
+  background: var(--gray-bg);
+  color: var(--gray-dark);
+}
+
+.modal-body {
+  padding: var(--space-lg);
+}
+
+.form-group {
+  margin-bottom: var(--space-lg);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: 500;
+  color: var(--gray-dark);
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-lg);
+}
+
+.radio-label,
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  font-weight: normal;
+  margin-bottom: 0 !important;
+}
+
+.radio-label input[type="radio"],
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+}
+
+.radio-label:has(input:disabled),
+.radio-label:has(input:disabled) span {
+  color: var(--gray-light);
+  cursor: not-allowed;
+}
+
+.form-help {
+  display: block;
+  margin-top: var(--space-xs);
+  color: var(--gray);
+  font-size: var(--text-sm);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-top: 1px solid var(--gray-lightest);
+}
+</style>
+
+<script>
+function openExportModal() {
+  document.getElementById('export-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeExportModal() {
+  document.getElementById('export-modal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+  // Reset form
+  document.getElementById('export-form').reset();
+  validateExportForm();
+}
+
+function validateExportForm() {
+  const formatRadios = document.querySelectorAll('input[name="format"]');
+  const includeContentCheckbox = document.querySelector('input[name="include_content"]');
+  const submitBtn = document.getElementById('export-submit-btn');
+  const jsonRadio = document.querySelector('input[name="format"][value="json"]');
+  
+  // Check if any format is selected
+  const selectedFormat = Array.from(formatRadios).find(radio => radio.checked);
+  const includeContent = includeContentCheckbox.checked;
+  
+  // If content is included, automatically select JSON and disable others
+  if (includeContent) {
+    formatRadios.forEach(radio => {
+      if (radio.value === 'csv' || radio.value === 'bibtex') {
+        radio.disabled = true;
+        if (radio.checked) {
+          radio.checked = false;
+        }
+      } else {
+        radio.disabled = false;
+      }
+    });
+    
+    // Automatically select JSON if content is included and no format is selected
+    if (!selectedFormat || (selectedFormat && selectedFormat.value !== 'json')) {
+      jsonRadio.checked = true;
+    }
+  } else {
+    // Re-enable all format options when content is not included
+    formatRadios.forEach(radio => {
+      radio.disabled = false;
+    });
+  }
+  
+  // Check for selected format after potential auto-selection
+  const finalSelectedFormat = Array.from(formatRadios).find(radio => radio.checked);
+  
+  // Enable submit button only if format is selected and valid combination
+  const validSelection = finalSelectedFormat && (!includeContent || finalSelectedFormat.value === 'json');
+  submitBtn.disabled = !validSelection;
+}
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('export-modal').style.display === 'block') {
+    closeExportModal();
+  }
+});
+
+// Handle form submission
+document.getElementById('export-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const submitBtn = document.getElementById('export-submit-btn');
+  
+  // Show loading state
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Exporting...';
+  
+  // Submit form data
+  fetch('/export-data', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    if (!response.ok) {
+      return response.text().then(text => {
+        throw new Error(text || 'Export failed');
+      });
+    }
+    
+    // Handle file download
+    const contentDisposition = response.headers.get('content-disposition');
+    const filename = contentDisposition 
+      ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+      : 'export.txt';
+    
+    return response.blob().then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    });
+  })
+  .then(() => {
+    closeExportModal();
+  })
+  .catch(error => {
+    alert('Export failed: ' + error.message);
+  })
+  .finally(() => {
+    // Reset button state
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Export';
+  });
+});
+</script>
 {% endblock %}

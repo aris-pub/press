@@ -1,11 +1,15 @@
 """Main application routes (landing page, etc.)."""
 
+import csv
+from datetime import datetime
+import io
+import json
 import re
 import time
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -317,3 +321,178 @@ async def search_results(
                 "highlight_terms": lambda text: text,
             },
         )
+
+
+@router.post("/export-data")
+async def export_data(
+    request: Request,
+    format: str = Form(...),
+    include_content: bool = Form(False),
+    db: AsyncSession = Depends(get_db),
+):
+    """Export user's published papers in various formats."""
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    log_request(request, user_id=str(current_user.id))
+
+    # Validate format
+    valid_formats = ["csv", "json", "bibtex"]
+    if format not in valid_formats:
+        raise HTTPException(status_code=400, detail="Invalid format specified")
+
+    # Validate content inclusion
+    if include_content and format != "json":
+        error_msg = f"{format.upper()} format does not support HTML content inclusion"
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    # Get user's published papers with subject names
+    published_papers = await db.execute(
+        select(Preview, Subject.name.label("subject_name"))
+        .join(Subject)
+        .where(Preview.user_id == current_user.id, Preview.status == "published")
+        .order_by(Preview.created_at.desc())
+    )
+    papers = published_papers.all()
+
+    # Generate timestamp for filename
+    timestamp = datetime.now().strftime("%Y-%m-%d")
+    content_suffix = "full" if include_content else "metadata"
+    filename = f"press_export_{format}_{content_suffix}_{timestamp}.{format}"
+
+    if format == "csv":
+        return _export_csv(papers, filename)
+    elif format == "json":
+        return _export_json(papers, include_content, filename)
+    elif format == "bibtex":
+        return _export_bibtex(papers, filename)
+
+
+def _export_csv(papers, filename):
+    """Export papers as CSV format."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    headers = [
+        "title",
+        "authors",
+        "abstract",
+        "keywords",
+        "subject",
+        "version",
+        "published_date",
+        "preview_id",
+    ]
+    writer.writerow(headers)
+
+    # Write data rows
+    for paper_row in papers:
+        paper = paper_row[0]
+        subject_name = paper_row[1]
+
+        # Convert keywords list to comma-separated string
+        keywords_str = ", ".join(paper.keywords) if paper.keywords else ""
+
+        # Format published date
+        published_date = (
+            paper.published_at.strftime("%Y-%m-%d %H:%M:%S") if paper.published_at else ""
+        )
+
+        row = [
+            paper.title,
+            paper.authors,
+            paper.abstract,
+            keywords_str,
+            subject_name,
+            paper.version,
+            published_date,
+            paper.preview_id,
+        ]
+        writer.writerow(row)
+
+    csv_content = output.getvalue()
+    output.close()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _export_json(papers, include_content, filename):
+    """Export papers as JSON format."""
+    data = []
+
+    for paper_row in papers:
+        paper = paper_row[0]
+        subject_name = paper_row[1]
+
+        # Base metadata
+        paper_data = {
+            "title": paper.title,
+            "authors": paper.authors,
+            "abstract": paper.abstract,
+            "keywords": paper.keywords,
+            "subject": subject_name,
+            "version": paper.version,
+            "published_date": paper.published_at.isoformat() if paper.published_at else None,
+            "preview_id": paper.preview_id,
+            "created_at": paper.created_at.isoformat(),
+            "updated_at": paper.updated_at.isoformat(),
+        }
+
+        # Include HTML content if requested
+        if include_content:
+            paper_data["html_content"] = paper.html_content
+
+        data.append(paper_data)
+
+    json_content = json.dumps(data, indent=2, ensure_ascii=False)
+
+    return Response(
+        content=json_content,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _export_bibtex(papers, filename):
+    """Export papers as BibTeX format."""
+    bibtex_entries = []
+
+    for paper_row in papers:
+        paper = paper_row[0]
+        subject_name = paper_row[1]
+
+        # Generate BibTeX key from title and year
+        title_words = re.sub(r"[^\w\s]", "", paper.title).split()[:3]
+        key_base = "".join(word.capitalize() for word in title_words)
+        year = paper.published_at.year if paper.published_at else datetime.now().year
+        bibtex_key = f"{key_base}{year}"
+
+        # Format authors for BibTeX (replace commas with 'and')
+        authors_bibtex = paper.authors.replace(",", " and")
+
+        # Create BibTeX entry
+        entry = f"""@misc{{{bibtex_key},
+  title={{{{ {paper.title} }}}},
+  author={{{{ {authors_bibtex} }}}},
+  year={{{year}}},
+  note={{{{ Preview Press preprint, {subject_name} }}}},
+  url={{{{ https://press.example.com/preview/{paper.preview_id} }}}}
+}}"""
+
+        bibtex_entries.append(entry)
+
+    bibtex_content = "\n\n".join(bibtex_entries)
+
+    return Response(
+        content=bibtex_content,
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
