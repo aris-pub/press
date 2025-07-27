@@ -438,3 +438,110 @@ button.btn, a.btn {
         margin: 2rem 0;
     }
 }
+
+/* Contact page styles */
+.contact-page {
+    max-width: 600px;
+    margin: 4rem auto;
+    padding: 0 2rem;
+    text-align: center;
+}
+
+.contact-header {
+    margin-bottom: 3rem;
+}
+
+.contact-header h1 {
+    font-family: Georgia, serif;
+    font-size: 2rem;
+    font-weight: normal;
+    color: #000;
+    margin-bottom: 1rem;
+}
+
+.contact-subtitle {
+    font-family: Georgia, serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    color: #666;
+    margin: 0;
+}
+
+.contact-divider {
+    height: 1px;
+    background: #ddd;
+    margin: 3rem 0;
+}
+
+.contact-content {
+    text-align: left;
+    margin-bottom: 3rem;
+}
+
+.contact-section {
+    margin-bottom: 2.5rem;
+}
+
+.contact-section:last-child {
+    margin-bottom: 0;
+}
+
+.contact-section h2 {
+    font-family: Georgia, serif;
+    font-size: 1.3rem;
+    font-weight: normal;
+    color: #000;
+    margin-bottom: 1rem;
+}
+
+.contact-section p {
+    line-height: 1.7;
+    font-size: 1rem;
+    color: #333;
+    margin: 0;
+}
+
+.contact-link {
+    color: #ef4444;
+    text-decoration: none;
+}
+
+.contact-link:hover {
+    text-decoration: underline;
+}
+
+.contact-cta {
+    text-align: center;
+    margin-top: 3rem;
+}
+
+.contact-cta-text {
+    font-family: Georgia, serif;
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+/* Mobile responsive contact page */
+@media (max-width: 768px) {
+    .contact-page {
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+    
+    .contact-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .contact-subtitle {
+        font-size: 1rem;
+    }
+    
+    .contact-divider {
+        margin: 2rem 0;
+    }
+    
+    .contact-section h2 {
+        font-size: 1.1rem;
+    }
+}

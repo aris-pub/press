@@ -123,3 +123,18 @@ async def about_page(request: Request, db: AsyncSession = Depends(get_db)):
         log_request(request, user_id=str(current_user.id))
 
     return templates.TemplateResponse(request, "about.html", {"current_user": current_user})
+
+
+@router.get("/contact", response_class=HTMLResponse)
+async def contact_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the Contact page.
+
+    Shows contact information and ways to get in touch with the Preview Press team.
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "contact.html", {"current_user": current_user})

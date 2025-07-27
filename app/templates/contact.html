@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Contact - Preview Press{% endblock %}
+
+{% block content %}
+<div class="contact-page">
+  <div class="contact-header">
+    <h1>Get in Touch</h1>
+    <p class="contact-subtitle">Questions? Ideas? We'd love to hear from you.</p>
+  </div>
+
+  <div class="contact-divider"></div>
+
+  <div class="contact-content">
+    <div class="contact-section">
+      <h2>Community</h2>
+      <p>Join our community discussion on <a href="https://aris-pub.zulipchat.com/" class="contact-link">Zulip</a>. This is the best place to ask questions, share ideas, and connect with other researchers using Preview Press.</p>
+    </div>
+
+    <div class="contact-section">
+      <h2>Development</h2>
+      <p>Preview Press is open source. Report bugs, request features, or contribute code on <a href="https://github.com/aris-pub/press" class="contact-link">GitHub</a>.</p>
+    </div>
+
+    <div class="contact-section">
+      <h2>Aris Ecosystem</h2>
+      <p>Preview Press is part of the <a href="https://aris.pub" class="contact-link">Aris</a> ecosystem for modern scientific publishing. Learn more about our broader mission and other tools we're building.</p>
+    </div>
+  </div>
+
+  <div class="contact-divider"></div>
+
+  <div class="contact-cta">
+    <p class="contact-cta-text">Ready to share your research?</p>
+    <a href="/upload" class="btn btn-primary">Upload Your First Preview</a>
+  </div>
+</div>
+{% endblock %}
