@@ -5,11 +5,11 @@ Usage:
 {{ subject_card("Computer Science", 1247) }}
 #}
 
-{% macro subject_card(name, count, href="#") %}
-<div class="subject-card">
-  <a href="{{ href }}" class="subject-link">
+{% macro subject_card(name, count) %}
+<div class="subject-card" data-subject-name="{{ name.lower().replace(' ', '-') }}" data-subject-display="{{ name }}">
+  <div class="subject-link">
     <span class="subject-name">{{ name }}</span>
     <span class="subject-count">{{ "{:,}".format(count) }}</span>
-  </a>
+  </div>
 </div>
 {% endmacro %}

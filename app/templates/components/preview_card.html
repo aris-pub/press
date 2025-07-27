@@ -6,7 +6,7 @@ Usage:
 #}
 
 {% macro preview_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", preview_id="") %}
-<div class="preview">
+<div class="preview" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
   {% if preview_id %}
   <a href="/preview/{{ preview_id }}" class="preview-link">
     <div class="preview-title">{{ title }}</div>

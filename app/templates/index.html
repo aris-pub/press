@@ -25,7 +25,10 @@
 </div>
 
 <div class="subjects" id="browse">
-  <h2>Browse by Subject</h2>
+  <div class="subjects-header">
+    <h2>Browse by Subject</h2>
+    <button id="show-all-btn" class="show-all-btn">Show All</button>
+  </div>
   <div class="subject-grid">
     {% for subject in subjects %}
     {{ subject_card(subject.name, subject.preview_count) }}
@@ -34,7 +37,7 @@
 </div>
 
 <div class="recent" id="recent">
-  <h2>Recent Submissions</h2>
+  <h2 id="recent-submissions-heading">Recent Submissions</h2>
   
   <div class="previews-grid">
     {% for preview_row in previews %}
@@ -53,4 +56,129 @@
     {% endfor %}
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const subjectCards = document.querySelectorAll('.subject-card');
+    const previewCards = document.querySelectorAll('.preview');
+    const headingElement = document.getElementById('recent-submissions-heading');
+    const showAllBtn = document.getElementById('show-all-btn');
+    let currentSubject = null;
+
+    // Get subject from URL parameters
+    function getSubjectFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('subject');
+    }
+
+    // Update URL without page reload
+    function updateURL(subject) {
+        const url = new URL(window.location);
+        if (subject) {
+            url.searchParams.set('subject', subject);
+        } else {
+            url.searchParams.delete('subject');
+        }
+        window.history.pushState({}, '', url);
+    }
+
+    // Filter previews by subject
+    function filterPreviews(subjectName) {
+        previewCards.forEach(card => {
+            const cardSubject = card.dataset.subject;
+            if (!subjectName || cardSubject === subjectName) {
+                card.style.display = 'block';
+                card.classList.remove('filtered-out');
+            } else {
+                card.style.display = 'none';
+                card.classList.add('filtered-out');
+            }
+        });
+    }
+
+    // Update heading text
+    function updateHeading(subjectDisplay) {
+        if (subjectDisplay) {
+            headingElement.textContent = `Recent ${subjectDisplay} Submissions`;
+        } else {
+            headingElement.textContent = 'Recent Submissions';
+        }
+    }
+
+    // Update selected subject card
+    function updateSelectedCard(selectedCard) {
+        subjectCards.forEach(card => card.classList.remove('selected'));
+        if (selectedCard) {
+            selectedCard.classList.add('selected');
+        }
+    }
+
+    // Update show all button state
+    function updateShowAllButton(isActive) {
+        if (isActive) {
+            showAllBtn.classList.add('active');
+        } else {
+            showAllBtn.classList.remove('active');
+        }
+    }
+
+    // Select subject
+    function selectSubject(subjectName, subjectDisplay, card) {
+        if (currentSubject === subjectName) {
+            // Deselect if clicking the same subject
+            currentSubject = null;
+            updateSelectedCard(null);
+            filterPreviews(null);
+            updateHeading(null);
+            updateURL(null);
+            updateShowAllButton(true);
+        } else {
+            // Select new subject
+            currentSubject = subjectName;
+            updateSelectedCard(card);
+            filterPreviews(subjectName);
+            updateHeading(subjectDisplay);
+            updateURL(subjectName);
+            updateShowAllButton(false);
+        }
+    }
+
+    // Show all subjects
+    function showAll() {
+        currentSubject = null;
+        updateSelectedCard(null);
+        filterPreviews(null);
+        updateHeading(null);
+        updateURL(null);
+        updateShowAllButton(true);
+    }
+
+    // Add click handlers to subject cards
+    subjectCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const subjectName = this.dataset.subjectName;
+            const subjectDisplay = this.dataset.subjectDisplay;
+            selectSubject(subjectName, subjectDisplay, this);
+        });
+    });
+
+    // Add click handler to show all button
+    showAllBtn.addEventListener('click', showAll);
+
+    // Initialize from URL parameters
+    const urlSubject = getSubjectFromURL();
+    if (urlSubject) {
+        const matchingCard = Array.from(subjectCards).find(card => 
+            card.dataset.subjectName === urlSubject
+        );
+        if (matchingCard) {
+            const subjectDisplay = matchingCard.dataset.subjectDisplay;
+            selectSubject(urlSubject, subjectDisplay, matchingCard);
+        }
+    } else {
+        // Initialize with "Show All" active
+        updateShowAllButton(true);
+    }
+});
+</script>
 {% endblock %}

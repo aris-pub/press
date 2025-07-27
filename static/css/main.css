@@ -290,11 +290,68 @@ button.btn, a.btn {
 
 /* Subjects */
 .subjects { padding: 4rem 0; }
-.subjects h2 { font-size: 1.3rem; font-weight: 500; margin-bottom: 1.5rem; color: #000; font-family: Georgia, serif; }
+.subjects-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.subjects h2 { font-size: 1.3rem; font-weight: 500; margin: 0; color: #000; font-family: Georgia, serif; }
+.show-all-btn {
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.show-all-btn:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+}
+.show-all-btn.active {
+  background: #f5f5f5;
+  border-color: #999;
+  color: #333;
+}
+.show-all-btn.active:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+}
 .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-.subject-card { border: 1px solid #ddd; border-radius: 2px; background: #fafafa; transition: background-color 0.2s; }
-.subject-card:hover { background: #f0f0f0; }
-.subject-link { padding: 0.75rem 1rem; display: flex; justify-content: space-between; text-decoration: none; color: inherit; }
+.subject-card { 
+  border: 1px solid #ddd; 
+  border-radius: 2px; 
+  background: #fafafa; 
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.subject-card:hover { 
+  background: #f0f0f0; 
+  border-color: #ccc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.subject-card.selected {
+  background: #fef2f2;
+  border-color: #ef4444;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+.subject-card.selected:hover {
+  background: #fecaca;
+}
+.subject-link { 
+  padding: 0.75rem 1rem; 
+  display: flex; 
+  justify-content: space-between; 
+  text-decoration: none; 
+  color: inherit; 
+  user-select: none;
+}
 .subject-name { font-weight: normal; font-size: 0.9rem; }
 .subject-count { color: #666; font-size: 0.9rem; }
 
@@ -304,7 +361,14 @@ button.btn, a.btn {
 .recent { padding: 4rem 0; }
 .recent h2 { font-size: 1.3rem; font-weight: 500; margin-bottom: 2rem; color: #000; font-family: Georgia, serif; }
 .previews-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
-.preview { padding-bottom: 2rem; }
+.preview { 
+  padding-bottom: 2rem; 
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.preview.filtered-out {
+  opacity: 0.3;
+  transform: scale(0.98);
+}
 .preview-meta { font-size: 0.8rem; color: #666; margin-bottom: 0.75rem; }
 .preview-title { font-size: 1.1rem; font-weight: normal; margin-bottom: 0.25rem; color: #000; font-family: Georgia, serif; }
 .preview-link { text-decoration: none; color: inherit; }
