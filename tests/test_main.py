@@ -1,7 +1,6 @@
 """Tests for main routes."""
 
 from httpx import AsyncClient
-from sqlalchemy import select
 
 from app.models.preview import Preview, Subject
 
@@ -137,3 +136,19 @@ async def test_homepage_preview_links(client: AsyncClient, test_db, test_user):
     response = await client.get("/")
     assert response.status_code == 200
     assert "/preview/link123" in response.text
+
+
+async def test_health_check(client: AsyncClient):
+    """Test health check endpoint."""
+    response = await client.get("/health")
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert "timestamp" in data
+    assert "response_time_ms" in data
+    assert data["components"]["database"] == "healthy"
+    assert data["components"]["models"] == "healthy"
+    assert "subject_count" in data["metrics"]
+    assert "preview_count" in data["metrics"]
+    assert data["version"] == "0.1.0"

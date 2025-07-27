@@ -1,9 +1,8 @@
 """Tests for core business logic and models."""
 
 import time
-from sqlalchemy import select
 
-from app.auth.session import create_session, _get_user_id_from_session_id, delete_session, sessions
+from app.auth.session import _get_user_id_from_session_id, create_session, delete_session, sessions
 from app.auth.utils import get_password_hash, verify_password
 from app.models.preview import Preview, Subject
 

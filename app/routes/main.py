@@ -1,15 +1,16 @@
 """Main application routes (landing page, etc.)."""
 
+import time
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy import select, func
 
 from app.auth.session import get_current_user_from_session
 from app.database import get_db
-from app.models.preview import Subject, Preview
+from app.models.preview import Preview, Subject
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -52,3 +53,60 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
             "previews": previews
         }
     )
+
+
+@router.get("/health")
+async def health_check(db: AsyncSession = Depends(get_db)):
+    """Health check endpoint for monitoring and load balancers.
+    
+    Performs basic application health checks including:
+    - Database connectivity
+    - Basic application functionality
+    
+    Returns:
+        dict: Health status with timestamp and component checks
+    """
+    start_time = time.time()
+    
+    try:
+        # Test database connectivity
+        await db.execute(text("SELECT 1"))
+        
+        # Test basic model queries
+        result = await db.execute(select(func.count(Subject.id)))
+        subject_count = result.scalar()
+        
+        result = await db.execute(select(func.count(Preview.id)))
+        preview_count = result.scalar()
+        
+        response_time = round((time.time() - start_time) * 1000, 2)
+        
+        return {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "response_time_ms": response_time,
+            "components": {
+                "database": "healthy",
+                "models": "healthy"
+            },
+            "metrics": {
+                "subject_count": subject_count,
+                "preview_count": preview_count
+            },
+            "version": "0.1.0"
+        }
+        
+    except Exception as e:
+        response_time = round((time.time() - start_time) * 1000, 2)
+        
+        return {
+            "status": "unhealthy",
+            "timestamp": time.time(),
+            "response_time_ms": response_time,
+            "components": {
+                "database": "unhealthy",
+                "models": "unknown"
+            },
+            "error": str(e),
+            "version": "0.1.0"
+        }

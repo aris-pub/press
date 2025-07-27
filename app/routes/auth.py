@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.session import create_session, get_current_user_from_session, delete_session
+from app.auth.session import create_session, delete_session, get_current_user_from_session
 from app.auth.utils import get_password_hash, verify_password
 from app.database import get_db
 from app.models.user import User

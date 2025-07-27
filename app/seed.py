@@ -4,8 +4,8 @@ from sqlalchemy import text
 
 from app.auth.utils import get_password_hash
 from app.database import AsyncSessionLocal, create_tables
+from app.models.preview import Preview, Subject
 from app.models.user import User
-from app.models.preview import Subject, Preview
 
 
 async def seed_users():

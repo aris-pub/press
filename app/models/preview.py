@@ -1,12 +1,11 @@
 """Preview and Subject models for academic preprints."""
 
-import uuid
 from datetime import datetime
 from typing import List
+import uuid
 
-from sqlalchemy import ARRAY, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from sqlalchemy.types import TypeDecorator
