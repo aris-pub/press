@@ -1,38 +1,25 @@
 {# 
-Complete Footer Component
+Minimal Footer Component
 #}
 
 <footer>
   <div class="container">
-    <div class="footer-content">
-      {% from "components/footer_section.html" import footer_section %}
-      
-      {{ footer_section("About", [
-        {"text": "About Preview Press", "href": "#"},
-        {"text": "Our Mission", "href": "#"},
-        {"text": "Contact", "href": "#"}
-      ]) }}
-      
-      {{ footer_section("Authors", [
-        {"text": "Submit a Preview", "href": "#"},
-        {"text": "Submission Guidelines", "href": "#"},
-        {"text": "Supported Formats", "href": "#"}
-      ]) }}
-      
-      {{ footer_section("Community", [
-        {"text": "Zulip", "href": "#"},
-        {"text": "GitHub", "href": "#"},
-        {"text": "Blog", "href": "#"}
-      ]) }}
-      
-      {{ footer_section("Help", [
-        {"text": "Search Tips", "href": "#"},
-        {"text": "API Documentation", "href": "#"},
-        {"text": "System Status", "href": "#"}
-      ]) }}
-    </div>
+    <nav class="footer-nav">
+      <a href="/about">About</a>
+      <span class="footer-separator">•</span>
+      <a href="/upload">Submit Preview</a>
+      <span class="footer-separator">•</span>
+      <a href="#">Contact</a>
+      <span class="footer-separator">•</span>
+      <a href="https://aris-pub.zulipchat.com/">Zulip</a>
+      <span class="footer-separator">•</span>
+      <a href="https://github.com/aris-pub/press">GitHub</a>
+    </nav>
+    <div class="footer-divider"></div>
     <div class="footer-bottom">
-      © 2025 Preview Press. Part of the Aris ecosystem. Open access research publishing.
+      <span class="footer-tagline">Academic publishing for the post-PDF era</span>
+      <span class="footer-separator">•</span>
+      <span>© 2025 Preview Press. Part of <a href="https://aris.pub" class="footer-link">Aris (aris.pub)</a> ecosystem</span>
     </div>
   </div>
 </footer>

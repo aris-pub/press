@@ -108,3 +108,18 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
             "error": str(e),
             "version": "0.1.0",
         }
+
+
+@router.get("/about", response_class=HTMLResponse)
+async def about_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the About page.
+
+    Shows information about Preview Press, its mission, and features.
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "about.html", {"current_user": current_user})
