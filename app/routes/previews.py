@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.session import get_current_user_from_session
 from app.database import get_db
+from app.logging_config import get_logger, log_error, log_preview_event, log_request
 from app.models.preview import Preview, Subject
 
 router = APIRouter()
@@ -25,6 +26,8 @@ async def view_preview(request: Request, preview_id: str, db: AsyncSession = Dep
     previews are accessible to the public.
 
     """
+    log_request(request, extra_data={"preview_id": preview_id})
+
     result = await db.execute(
         select(Preview)
         .options(selectinload(Preview.subject))
@@ -33,10 +36,14 @@ async def view_preview(request: Request, preview_id: str, db: AsyncSession = Dep
     preview = result.scalar_one_or_none()
 
     if not preview:
+        get_logger().warning(f"Preview not found: {preview_id}")
         return templates.TemplateResponse(
             request, "404.html", {"message": "Preview not found"}, status_code=404
         )
 
+    log_preview_event(
+        "view", preview_id, str(preview.user_id), request, extra_data={"title": preview.title}
+    )
     return templates.TemplateResponse(request, "preview.html", {"preview": preview})
 
 
@@ -49,11 +56,15 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
     academic subjects for categorization.
 
     """
+    log_request(request)
     current_user = await get_current_user_from_session(request, db)
 
     # Redirect unauthenticated users to login
     if not current_user:
+        get_logger().info("Unauthenticated user redirected from upload page to login")
         return RedirectResponse(url="/login", status_code=302)
+
+    log_request(request, user_id=str(current_user.id))
 
     # Load available subjects
     result = await db.execute(select(Subject).order_by(Subject.name))
@@ -107,6 +118,10 @@ async def upload_form(
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
+    log_request(
+        request, user_id=str(current_user.id), extra_data={"title": title, "action": action}
+    )
+
     try:
         # Validate required fields
         if not title or not title.strip():
@@ -149,6 +164,14 @@ async def upload_form(
         await db.commit()
         await db.refresh(preview)
 
+        log_preview_event(
+            "create",
+            str(preview.id),
+            str(current_user.id),
+            request,
+            extra_data={"title": preview.title, "status": "draft"},
+        )
+
         # If publishing directly, publish the preview after it's in the database
         if action == "publish":
             # Load the subject relationship before publishing
@@ -160,6 +183,13 @@ async def upload_form(
             preview = result.scalar_one()
             preview.publish()
             await db.commit()  # Commit the publish changes
+            log_preview_event(
+                "publish",
+                preview.preview_id,
+                str(current_user.id),
+                request,
+                extra_data={"title": preview.title},
+            )
 
         # Return success response - just the content for HTMX
         if action == "publish":
@@ -193,6 +223,7 @@ async def upload_form(
 
     except Exception as e:
         error_message = str(e) if str(e) else "Upload failed. Please try again."
+        log_error(e, request, user_id=str(current_user.id), context="preview_upload")
 
         # Load subjects for error response
         result = await db.execute(select(Subject).order_by(Subject.name))
@@ -245,6 +276,8 @@ async def publish_preview(request: Request, preview_id: str, db: AsyncSession = 
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
+    log_request(request, user_id=str(current_user.id), extra_data={"preview_id": preview_id})
+
     try:
         # Find the preview and verify ownership
         preview_uuid = uuid_module.UUID(preview_id)
@@ -264,6 +297,14 @@ async def publish_preview(request: Request, preview_id: str, db: AsyncSession = 
         await db.commit()
         await db.refresh(preview)
 
+        log_preview_event(
+            "publish",
+            preview.preview_id,
+            str(current_user.id),
+            request,
+            extra_data={"title": preview.title},
+        )
+
         return templates.TemplateResponse(
             request,
             "upload_success.html",
@@ -278,6 +319,7 @@ async def publish_preview(request: Request, preview_id: str, db: AsyncSession = 
 
     except Exception as e:
         error_message = str(e) if str(e) else "Failed to publish preview."
+        log_error(e, request, user_id=str(current_user.id), context="preview_publish")
 
         # Return error response (could be improved with a proper error template)
         return templates.TemplateResponse(

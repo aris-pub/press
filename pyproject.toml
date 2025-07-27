@@ -33,11 +33,15 @@ markers = [
 ]
 
 [tool.ruff]
-select = ["E", "F", "I"]  # Enable pycodestyle errors, pyflakes, and isort
 fix = true  # Automatically fix issues when possible
 line-length = 99
 
-[tool.ruff.isort]
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # Enable pycodestyle errors, pyflakes, and isort
+ignore = ["E501"]  # Ignore line too long errors
+extend-safe-fixes = ["I"]  # Always apply isort fixes
+
+[tool.ruff.lint.isort]
 force-single-line = false
 force-sort-within-sections = true
 known-first-party = ["app"]
@@ -46,9 +50,13 @@ split-on-trailing-comma = true
 # Configure other linters to use same line length
 [tool.flake8]
 max-line-length = 99
+ignore = "E501"
 
 [tool.pylint.format]
 max-line-length = 99
+
+[tool.pylint.messages_control]
+disable = "line-too-long"
 
 [tool.black]
 line-length = 99
@@ -56,6 +64,7 @@ line-length = 99
 # VS Code Python extension settings
 [tool.autopep8]
 max_line_length = 99
+ignore = "E501"
 
 # Python LSP Server (pylsp) configuration for Emacs
 [tool.pylsp-mypy]
@@ -64,6 +73,7 @@ live_mode = true
 
 [tool.pycodestyle]
 max_line_length = 99
+ignore = "E501"
 
 [tool.pydocstyle]
 max_line_length = 99

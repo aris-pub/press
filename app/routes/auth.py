@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.session import create_session, delete_session, get_current_user_from_session
 from app.auth.utils import get_password_hash, verify_password
 from app.database import get_db
+from app.logging_config import get_logger, log_auth_event, log_error, log_request
 from app.models.user import User
 
 router = APIRouter()
@@ -23,9 +24,11 @@ async def login_page(request: Request, db: AsyncSession = Depends(get_db)):
     redirected to the homepage.
 
     """
+    log_request(request)
     current_user = await get_current_user_from_session(request, db)
 
     if current_user:
+        get_logger().info(f"Authenticated user {current_user.id} redirected from login page")
         return RedirectResponse(url="/", status_code=302)
 
     return templates.TemplateResponse(request, "auth/login.html", {"current_user": current_user})
@@ -38,9 +41,11 @@ async def logout(request: Request):
     Destroys the user session and clears the session cookie.
 
     """
+    log_request(request)
     session_id = request.cookies.get("session_id")
     if session_id:
         delete_session(session_id)
+        get_logger().info(f"User session {session_id} destroyed during logout")
 
     # Clear the session cookie in the redirect response
     response = RedirectResponse(url="/", status_code=302)
@@ -57,9 +62,11 @@ async def register_page(request: Request, db: AsyncSession = Depends(get_db)):
     redirected to the homepage to prevent duplicate registrations.
 
     """
+    log_request(request)
     current_user = await get_current_user_from_session(request, db)
 
     if current_user:
+        get_logger().info(f"Authenticated user {current_user.id} redirected from register page")
         return RedirectResponse(url="/", status_code=302)
 
     return templates.TemplateResponse(
@@ -98,6 +105,8 @@ async def register_form(
         Exception: For database or unexpected errors during registration
     """
     try:
+        log_request(request, extra_data={"email": email, "display_name": display_name})
+
         # Validate input
         if not email or not email.strip():
             raise ValueError("Email is required")
@@ -110,6 +119,13 @@ async def register_form(
         normalized_email = email.strip().lower()
         result = await db.execute(select(User).where(User.email == normalized_email))
         if result.scalar_one_or_none():
+            log_auth_event(
+                "register",
+                normalized_email,
+                False,
+                request,
+                error_message="Email already registered",
+            )
             return templates.TemplateResponse(
                 request,
                 "auth/partials/register_form.html",
@@ -135,6 +151,8 @@ async def register_form(
         # Create session and auto-login user
         session_id = create_session(db_user.id)
 
+        log_auth_event("register", normalized_email, True, request, user_id=str(db_user.id))
+
         # Return success partial with automatic login
         response = templates.TemplateResponse(
             request,
@@ -154,6 +172,8 @@ async def register_form(
 
     except Exception as e:
         error_message = str(e) if str(e) else "Registration failed. Please try again."
+        log_auth_event("register", email, False, request, error_message=error_message)
+        log_error(e, request, context="user_registration")
         return templates.TemplateResponse(
             request,
             "auth/partials/register_form.html",
@@ -193,6 +213,8 @@ async def login_form(
         Exception: For database or unexpected errors during authentication
     """
     try:
+        log_request(request, extra_data={"email": email})
+
         # Validate input
         if not email or not email.strip():
             raise ValueError("Email is required")
@@ -205,6 +227,9 @@ async def login_form(
         user = result.scalar_one_or_none()
 
         if not user or not verify_password(password, user.password_hash):
+            log_auth_event(
+                "login", normalized_email, False, request, error_message="Invalid credentials"
+            )
             return templates.TemplateResponse(
                 request,
                 "auth/partials/login_form.html",
@@ -217,6 +242,8 @@ async def login_form(
 
         # Create session
         session_id = create_session(user.id)
+
+        log_auth_event("login", normalized_email, True, request, user_id=str(user.id))
 
         # Return success partial
         response = templates.TemplateResponse(
@@ -237,6 +264,8 @@ async def login_form(
 
     except Exception as e:
         error_message = str(e) if str(e) else "Login failed. Please try again."
+        log_auth_event("login", email, False, request, error_message=error_message)
+        log_error(e, request, context="user_login")
         return templates.TemplateResponse(
             request,
             "auth/partials/login_form.html",

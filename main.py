@@ -11,6 +11,8 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.database import create_tables
+from app.logging_config import get_logger
+from app.middleware import LoggingMiddleware, SecurityHeadersMiddleware
 from app.routes import auth, main, previews
 
 
@@ -22,9 +24,13 @@ async def lifespan(app: FastAPI):
     Creates database tables on startup if they don't exist.
     """
     # Startup
+    logger = get_logger()
+    logger.info("Starting Preview Press application")
     await create_tables()
+    logger.info("Database tables created/verified")
     yield
     # Shutdown (if needed)
+    logger.info("Shutting down Preview Press application")
 
 
 app = FastAPI(
@@ -33,6 +39,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Add middleware (order matters - last added runs first)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(LoggingMiddleware)
 
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

@@ -25,7 +25,7 @@ test-cov:
 
 # Format and lint code
 lint:
-    uv run ruff check .
+    uv run ruff check --fix .
     uv run ruff format .
 
 # Database migrations

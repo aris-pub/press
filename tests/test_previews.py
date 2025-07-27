@@ -29,7 +29,7 @@ async def test_upload_form_create_draft(authenticated_client: AsyncClient, test_
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
-    
+
     upload_data = {
         "title": "Test Preview",
         "authors": "Test Author",
@@ -37,13 +37,13 @@ async def test_upload_form_create_draft(authenticated_client: AsyncClient, test_
         "abstract": "Test abstract",
         "keywords": "test, preview",
         "html_content": "<h1>Test Content</h1>",
-        "action": "draft"
+        "action": "draft",
     }
-    
+
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 200
     assert "Draft 'Test Preview' has been saved successfully!" in response.text
-    
+
     # Verify preview was created in database
     result = await test_db.execute(select(Preview).where(Preview.title == "Test Preview"))
     preview = result.scalar_one()
@@ -58,7 +58,7 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
-    
+
     upload_data = {
         "title": "Published Preview",
         "authors": "Test Author",
@@ -66,13 +66,13 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
         "abstract": "Test abstract",
         "keywords": "test, preview",
         "html_content": "<h1>Published Content</h1>",
-        "action": "publish"
+        "action": "publish",
     }
-    
+
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 200
     assert "Your preview has been published successfully!" in response.text
-    
+
     # Verify preview was created and published
     result = await test_db.execute(select(Preview).where(Preview.title == "Published Preview"))
     preview = result.scalar_one()
@@ -88,9 +88,9 @@ async def test_upload_form_validation_errors(authenticated_client: AsyncClient, 
         "subject_id": "invalid-uuid",
         "abstract": "Test abstract",
         "html_content": "<h1>Test Content</h1>",
-        "action": "draft"
+        "action": "draft",
     }
-    
+
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 422
     assert "Title is required" in response.text
@@ -103,7 +103,7 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
-    
+
     preview = Preview(
         title="Test Published Preview",
         authors="Test Author",
@@ -112,11 +112,11 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
         user_id=test_user.id,
         subject_id=subject.id,
         status="published",
-        preview_id="test123"
+        preview_id="test123",
     )
     test_db.add(preview)
     await test_db.commit()
-    
+
     response = await client.get("/preview/test123")
     assert response.status_code == 200
     assert "Test Published Preview" in response.text
@@ -138,7 +138,7 @@ async def test_view_draft_preview_404(client: AsyncClient, test_db, test_user):
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
-    
+
     preview = Preview(
         title="Test Draft Preview",
         authors="Test Author",
@@ -146,11 +146,11 @@ async def test_view_draft_preview_404(client: AsyncClient, test_db, test_user):
         html_content="<h1>Test Draft Content</h1>",
         user_id=test_user.id,
         subject_id=subject.id,
-        status="draft"  # Draft status
+        status="draft",  # Draft status
     )
     test_db.add(preview)
     await test_db.commit()
-    
+
     # Try to access draft preview by UUID (should fail)
     response = await client.get(f"/preview/{preview.id}")
     assert response.status_code == 404
@@ -164,9 +164,9 @@ async def test_upload_form_requires_auth(client: AsyncClient):
         "subject_id": "test-uuid",  # Add required field
         "abstract": "Test abstract",
         "html_content": "<h1>Test Content</h1>",
-        "action": "draft"
+        "action": "draft",
     }
-    
+
     response = await client.post("/upload-form", data=upload_data, follow_redirects=False)
     assert response.status_code == 302
     assert response.headers["location"] == "/login"

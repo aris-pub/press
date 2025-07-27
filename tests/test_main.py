@@ -28,7 +28,7 @@ async def test_homepage_shows_subjects(client: AsyncClient, test_db):
     test_db.add(subject1)
     test_db.add(subject2)
     await test_db.commit()
-    
+
     response = await client.get("/")
     assert response.status_code == 200
     assert "Browse by Subject" in response.text
@@ -43,7 +43,7 @@ async def test_homepage_shows_recent_previews(client: AsyncClient, test_db, test
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
-    
+
     preview = Preview(
         title="Recent Test Preview",
         authors="Test Author",
@@ -52,11 +52,11 @@ async def test_homepage_shows_recent_previews(client: AsyncClient, test_db, test
         user_id=test_user.id,
         subject_id=subject.id,
         status="published",
-        preview_id="recent123"
+        preview_id="recent123",
     )
     test_db.add(preview)
     await test_db.commit()
-    
+
     response = await client.get("/")
     assert response.status_code == 200
     assert "Recent Submissions" in response.text
@@ -72,7 +72,7 @@ async def test_homepage_only_shows_published_previews(client: AsyncClient, test_
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
-    
+
     # Create draft preview (should not appear)
     draft_preview = Preview(
         title="Draft Preview",
@@ -81,9 +81,9 @@ async def test_homepage_only_shows_published_previews(client: AsyncClient, test_
         html_content="<h1>Draft Content</h1>",
         user_id=test_user.id,
         subject_id=subject.id,
-        status="draft"  # Draft status
+        status="draft",  # Draft status
     )
-    
+
     # Create published preview (should appear)
     published_preview = Preview(
         title="Published Preview",
@@ -93,20 +93,20 @@ async def test_homepage_only_shows_published_previews(client: AsyncClient, test_
         user_id=test_user.id,
         subject_id=subject.id,
         status="published",
-        preview_id="pub123"
+        preview_id="pub123",
     )
-    
+
     test_db.add(draft_preview)
     test_db.add(published_preview)
     await test_db.commit()
-    
+
     response = await client.get("/")
     assert response.status_code == 200
-    
+
     # Should show published preview
     assert "Published Preview" in response.text
     assert "Published Author" in response.text
-    
+
     # Should not show draft preview
     assert "Draft Preview" not in response.text
     assert "Draft Author" not in response.text
@@ -119,7 +119,7 @@ async def test_homepage_preview_links(client: AsyncClient, test_db, test_user):
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
-    
+
     preview = Preview(
         title="Linkable Preview",
         authors="Test Author",
@@ -128,11 +128,11 @@ async def test_homepage_preview_links(client: AsyncClient, test_db, test_user):
         user_id=test_user.id,
         subject_id=subject.id,
         status="published",
-        preview_id="link123"
+        preview_id="link123",
     )
     test_db.add(preview)
     await test_db.commit()
-    
+
     response = await client.get("/")
     assert response.status_code == 200
     assert "/preview/link123" in response.text
@@ -142,7 +142,7 @@ async def test_health_check(client: AsyncClient):
     """Test health check endpoint."""
     response = await client.get("/health")
     assert response.status_code == 200
-    
+
     data = response.json()
     assert data["status"] == "healthy"
     assert "timestamp" in data
