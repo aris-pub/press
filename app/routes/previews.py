@@ -17,24 +17,37 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
+@router.get("/preview/{preview_id}", response_class=HTMLResponse)
+async def view_preview(request: Request, preview_id: str, db: AsyncSession = Depends(get_db)):
+    """Display a published preview by its preview_id.
+
+    Shows the full HTML content of a published research preview. Only published
+    previews are accessible to the public.
+
+    """
+    result = await db.execute(
+        select(Preview)
+        .options(selectinload(Preview.subject))
+        .where(Preview.preview_id == preview_id, Preview.status == "published")
+    )
+    preview = result.scalar_one_or_none()
+
+    if not preview:
+        return templates.TemplateResponse(
+            request, "404.html", {"message": "Preview not found"}, status_code=404
+        )
+
+    return templates.TemplateResponse(request, "preview.html", {"preview": preview})
+
+
 @router.get("/upload", response_class=HTMLResponse)
 async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
-    """
-    Display the HTML preview upload page.
-    
+    """Display the HTML preview upload page.
+
     Shows the upload form for authenticated users to submit their HTML research
     previews. Unauthenticated users are redirected to login. Loads available
     academic subjects for categorization.
-    
-    Args:
-        request: The HTTP request object containing cookies and headers
-        db: Database session dependency for authentication and subject loading
-        
-    Returns:
-        HTMLResponse: The upload form page with subjects or redirect to login
-        
-    Raises:
-        None: Redirects handle unauthenticated access gracefully
+
     """
     current_user = await get_current_user_from_session(request, db)
 
@@ -63,30 +76,30 @@ async def upload_form(
     action: str = Form("draft"),  # "draft" or "publish"
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Process HTML preview upload form submission.
-    
+    """Process HTML preview upload form submission.
+
     Validates and processes the upload of HTML research previews. Supports both
     draft saving and direct publishing. Uses HTMX for seamless form submission
     with success/error feedback.
-    
+
     Args:
         request: The HTTP request object for HTMX responses
         title: The preview title (required)
-        authors: Comma-separated author names (required) 
+        authors: Comma-separated author names (required)
         subject_id: UUID of the academic subject (required)
         abstract: Research abstract/summary (required)
         keywords: Comma-separated keywords (optional)
         html_content: Complete HTML document content (required)
         action: Either "draft" to save or "publish" to make public
         db: Database session dependency for preview operations
-        
+
     Returns:
         HTMLResponse: Success HTML content or error form with validation messages
-        
+
     Raises:
         ValueError: For validation errors (missing fields, invalid subject)
         Exception: For database or unexpected errors during upload
+
     """
     current_user = await get_current_user_from_session(request, db)
 
@@ -150,9 +163,7 @@ async def upload_form(
 
         # Return success response - just the content for HTMX
         if action == "publish":
-            success_message = (
-                "Your preview has been published successfully!"
-            )
+            success_message = "Your preview has been published successfully!"
             preview_url = f"/preview/{preview.preview_id}"
         else:
             success_message = f"Draft '{preview.title}' has been saved successfully!"
@@ -209,26 +220,24 @@ async def upload_form(
 
 
 @router.post("/preview/{preview_id}/publish", response_class=HTMLResponse)
-async def publish_preview(
-    request: Request, preview_id: str, db: AsyncSession = Depends(get_db)
-):
-    """
-    Publish a draft preview to make it publicly accessible.
-    
+async def publish_preview(request: Request, preview_id: str, db: AsyncSession = Depends(get_db)):
+    """Publish a draft preview to make it publicly accessible.
+
     Converts a draft preview to published status, generating a unique preview ID
     and making it discoverable. Only the preview owner can publish their drafts.
-    
+
     Args:
         request: The HTTP request object for template responses
         preview_id: UUID string of the draft preview to publish
         db: Database session dependency for preview operations
-        
+
     Returns:
         HTMLResponse: Success page with preview details or error page
-        
+
     Raises:
         ValueError: For invalid preview ID, access denied, or non-draft previews
         Exception: For database or unexpected errors during publishing
+
     """
     current_user = await get_current_user_from_session(request, db)
 
@@ -240,9 +249,7 @@ async def publish_preview(
         # Find the preview and verify ownership
         preview_uuid = uuid_module.UUID(preview_id)
         result = await db.execute(
-            select(Preview).where(
-                Preview.id == preview_uuid, Preview.user_id == current_user.id
-            )
+            select(Preview).where(Preview.id == preview_uuid, Preview.user_id == current_user.id)
         )
         preview = result.scalar_one_or_none()
 

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Not Found - Preview Press{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-content">
+        <h1>404</h1>
+        <p>{{ message if message else "The preview you're looking for doesn't exist or isn't published yet." }}</p>
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">Go Home</a>
+            <a href="/upload" class="btn btn-secondary">Upload Preview</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+.error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+}
+
+.error-content h1 {
+    font-size: 4rem;
+    font-weight: normal;
+    color: #ef4444;
+    margin-bottom: 1rem;
+    font-family: Georgia, serif;
+}
+
+.error-content h2 {
+    font-size: 1.5rem;
+    font-weight: normal;
+    color: #333;
+    margin-bottom: 1rem;
+    font-family: Georgia, serif;
+}
+
+.error-content p {
+    color: #666;
+    margin-bottom: 2rem;
+    font-size: 1rem;
+    font-family: Georgia, serif;
+    font-style: italic;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+{% endblock %}

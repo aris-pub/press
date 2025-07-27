@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}{{ preview.title }} - Preview Press{% endblock %}
+
+{% block content %}
+<div class="preview-page">
+  <div class="preview-header">
+    <h1>{{ preview.title }}</h1>
+    <div class="preview-authors">{{ preview.authors }}</div>
+    <div class="preview-meta">
+      <span class="preview-subject">{{ preview.subject.name }}</span> | 
+      <span class="preview-date">{{ preview.created_at.strftime('%B %d, %Y') }}</span> | 
+      <span class="preview-version">Version {{ preview.version }}</span>
+    </div>
+  </div>
+  
+  <div class="preview-content">
+    {{ preview.html_content | safe }}
+  </div>
+</div>
+{% endblock %}
