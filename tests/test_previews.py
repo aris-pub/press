@@ -121,7 +121,9 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
     assert response.status_code == 200
     assert "Test Published Preview" in response.text
     assert "Test Author" in response.text
-    assert "<h1>Test Published Content</h1>" in response.text
+    # HTML content should be in escaped form within iframe srcdoc
+    assert "&lt;h1&gt;Test Published Content&lt;/h1&gt;" in response.text
+    assert 'sandbox="allow-scripts allow-same-origin"' in response.text
 
 
 async def test_view_nonexistent_preview_404(client: AsyncClient):

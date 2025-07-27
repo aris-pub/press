@@ -1,21 +1,399 @@
-{% extends "base.html" %}
+{% from "components/preview_card.html" import preview_card %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ preview.title }} - Preview Press</title>
+  <link rel="icon" type="image/svg+xml" href="/static/images/press-logo-64.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Source Sans 3', sans-serif;">
 
-{% block title %}{{ preview.title }} - Preview Press{% endblock %}
-
-{% block content %}
-<div class="preview-page">
-  <div class="preview-header">
-    <h1>{{ preview.title }}</h1>
-    <div class="preview-authors">{{ preview.authors }}</div>
-    <div class="preview-meta">
-      <span class="preview-subject">{{ preview.subject.name }}</span> | 
-      <span class="preview-date">{{ preview.created_at.strftime('%B %d, %Y') }}</span> | 
-      <span class="preview-version">Version {{ preview.version }}</span>
+  <div class="preview-container">
+    <div class="preview-content">
+      <iframe 
+        id="preview-iframe"
+        srcdoc="{{ preview.html_content | escape }}"
+        sandbox="allow-scripts allow-same-origin"
+        title="{{ preview.title }}"
+        class="preview-iframe">
+      </iframe>
     </div>
   </div>
+
+  <footer class="preview-attribution">
+    <div class="attribution-title">
+      {% if preview.title | length > 60 %}
+        {{ preview.title[:60] }}...
+      {% else %}
+        {{ preview.title }}
+      {% endif %}
+    </div>
+    <div class="attribution-meta">
+      {{ preview.authors }} • {{ preview.subject.name }}
+    </div>
+    <div class="attribution-footer">
+      {{ preview.created_at.strftime('%B %d, %Y') }} • <a href="/" class="attribution-link">via Preview Press</a>
+    </div>
+  </footer>
+
+  <button class="fab" id="info-fab" aria-label="View preview information">
+    <img src="/static/images/press-logo-64.svg" alt="Press logo" class="fab-logo">
+  </button>
+
+  <div class="modal" id="info-modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Preview Details</h2>
+        <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        {{ preview_card(
+          title=preview.title,
+          authors=preview.authors,
+          abstract=preview.abstract,
+          tags=preview.keywords,
+          subject=preview.subject.name,
+          time_ago="Published " + preview.published_at.strftime('%B %d, %Y') if preview.published_at else "Not published",
+          version="v" + preview.version|string
+        ) }}
+      </div>
+      <div class="modal-actions">
+        <a href="/" class="btn btn-secondary">Back to Preview Press</a>
+        <button class="btn btn-primary" id="download-btn">Download HTML</button>
+      </div>
+    </div>
+
+<style>
+.preview-container {
+  padding: 2rem 2rem 0 2rem;
+}
+
+.preview-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.preview-iframe {
+  width: 100%;
+  min-height: 100vh;
+  border: none;
+  background: white;
+}
+
+.preview-attribution {
+  padding: 1.5rem;
+  background: #f5f5f5;
+  border-top: 1px solid #eee;
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attribution-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.attribution-meta {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.attribution-footer {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.attribution-link {
+  color: #ef4444;
+  text-decoration: none;
+}
+
+.attribution-link:hover {
+  color: #dc2626;
+  text-decoration: underline;
+}
+
+.fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 2px;
+  background: #666;
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(34, 34, 34, 0.3);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab:hover {
+  background: #ff6b6b;
+  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+  transform: translateY(-2px);
+}
+
+.fab-logo {
+  width: 28px;
+  height: 28px;
+  filter: brightness(0) invert(1);
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1050;
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  position: relative;
+  background: #fafafa;
+  border-radius: 2px;
+  border: 1px solid #eee;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-family: Georgia, serif;
+  font-weight: normal;
+  color: #222;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  line-height: 0;
+  vertical-align: top;
+}
+
+.modal-close:hover {
+  background: #f5f5f5;
+  color: #222;
+}
+
+.modal-body {
+  padding: 1rem 2rem 2rem 2rem;
+}
+
+
+.modal-actions {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 2px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #ef4444;
+}
+
+.btn-secondary {
+  color: #555;
+  border: 1px solid #ccc;
+  background: white;
+}
+
+.btn-secondary:hover {
+  background: #f5f5f5;
+  text-decoration: none;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .preview-container {
+    padding: 1rem 1rem 0 1rem;
+  }
   
-  <div class="preview-content">
-    {{ preview.html_content | safe }}
-  </div>
-</div>
-{% endblock %}
+  .fab {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+  
+  .modal-content {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+}
+</style>
+
+<script>
+(function() {
+  const fab = document.getElementById('info-fab');
+  const modal = document.getElementById('info-modal');
+  const backdrop = document.getElementById('modal-backdrop');
+  const closeBtn = document.getElementById('modal-close');
+  const downloadBtn = document.getElementById('download-btn');
+  
+  function openModal() {
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    
+    // Focus management
+    const firstFocusable = modal.querySelector('button, [href]');
+    if (firstFocusable) {
+      firstFocusable.focus();
+    }
+  }
+  
+  function closeModal() {
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+    fab.focus();
+  }
+  
+  function downloadHTML() {
+    const htmlContent = {{ preview.html_content | tojson }};
+    const filename = {{ (preview.title | replace(' ', '_') | replace('/', '_') | replace('\\', '_') | replace(':', '_') | replace('*', '_') | replace('?', '_') | replace('"', '_') | replace('<', '_') | replace('>', '_') | replace('|', '_')) | tojson }} + '.html';
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    URL.revokeObjectURL(url);
+  }
+  
+  // Event listeners
+  fab.addEventListener('click', openModal);
+  backdrop.addEventListener('click', closeModal);
+  closeBtn.addEventListener('click', closeModal);
+  downloadBtn.addEventListener('click', downloadHTML);
+  
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.classList.contains('show')) {
+      closeModal();
+    }
+  });
+  
+  // Iframe auto-resize
+  const iframe = document.getElementById('preview-iframe');
+  iframe.addEventListener('load', function() {
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      if (iframeDoc) {
+        const resizeIframe = () => {
+          const height = Math.max(
+            iframeDoc.documentElement.scrollHeight,
+            iframeDoc.body.scrollHeight,
+            600
+          );
+          iframe.style.height = height + 'px';
+        };
+        
+        resizeIframe();
+        
+        // Re-check after images load
+        setTimeout(resizeIframe, 1000);
+        
+        const images = iframeDoc.getElementsByTagName('img');
+        for (let img of images) {
+          img.addEventListener('load', resizeIframe);
+        }
+      }
+    } catch (e) {
+      // Cross-origin restrictions, fallback to fixed height
+      iframe.style.height = '70vh';
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

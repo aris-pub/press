@@ -1,0 +1,58 @@
+"""Essential tests for preview page functionality."""
+
+from httpx import AsyncClient
+
+from app.models.preview import Preview, Subject
+
+
+async def test_preview_page_functionality(client: AsyncClient, test_db, test_user):
+    """Test critical preview page functionality."""
+    # Create subject
+    subject = Subject(name="Test Subject")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Create and publish preview
+    preview = Preview(
+        title="Basic Test Preview",
+        authors="Test Author",
+        abstract="Test abstract",
+        html_content="<h1>Test Content</h1>",
+        status="draft",  # Start as draft
+        user_id=test_user.id,
+        subject_id=subject.id,
+    )
+    test_db.add(preview)
+    await test_db.commit()
+    await test_db.refresh(preview)
+
+    # Publish to get preview_id
+    preview.publish()
+    await test_db.commit()
+    await test_db.refresh(preview)
+
+    # Test the page
+    response = await client.get(f"/preview/{preview.preview_id}")
+    assert response.status_code == 200
+
+    # Functionality: Check key components are present
+    assert "basic test preview" in response.text.lower()
+    assert 'class="fab"' in response.text
+    assert "press-logo-64.svg" in response.text
+    assert 'id="info-modal"' in response.text
+    assert "via preview press" in response.text.lower()
+
+    # Standalone: Check navbar is not present
+    assert "<nav" not in response.text.lower()
+    assert "login" not in response.text.lower()
+
+    # JavaScript: Check essential functions are present
+    assert "function openModal()" in response.text
+    assert "function downloadHTML()" in response.text
+
+
+async def test_preview_not_found(client: AsyncClient):
+    """Test 404 for non-existent preview."""
+    response = await client.get("/preview/nonexistent")
+    assert response.status_code == 404
