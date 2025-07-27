@@ -151,7 +151,7 @@ async def upload_form(
         # Return success response - just the content for HTMX
         if action == "publish":
             success_message = (
-                f"Preview '{preview.title}' has been published successfully!"
+                "Your preview has been published successfully!"
             )
             preview_url = f"/preview/{preview.preview_id}"
         else:

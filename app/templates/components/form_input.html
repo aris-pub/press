@@ -5,7 +5,7 @@ Usage:
 {{ form_input("Email", "email", type="email", required=true) }}
 #}
 
-{% macro form_input(label, name, type="text", value="", required=false, error="", placeholder="") %}
+{% macro form_input(label, name, type="text", value="", required=false, error="", placeholder="", help_text="") %}
 <div class="form-group">
   
   {% if label %}
@@ -26,6 +26,10 @@ Usage:
   
   {% if error %}
   <div class="field-error">{{ error }}</div>
+  {% endif %}
+  
+  {% if help_text %}
+  <div class="help-text">{{ help_text }}</div>
   {% endif %}
   
 </div>

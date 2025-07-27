@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% from "components/form_input.html" import form_input %}
+{% from "components/button.html" import button %}
 
 {% block title %}Upload Preview - Preview Press{% endblock %}
 
@@ -6,10 +8,10 @@
 /* Upload form styles */
 .upload-container {
     max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
+    margin: 4rem auto;
+    padding: 3rem;
     background: #fafafa;
-    border-radius: 4px;
+    border-radius: 2px;
     border: 1px solid #eee;
 }
 
@@ -23,15 +25,17 @@
     font-weight: normal;
     color: #333;
     margin-bottom: 0.5rem;
+    font-family: Georgia, serif;
 }
 
 .upload-header p {
     color: #666;
     font-style: italic;
+    font-family: Georgia, serif;
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .form-label {
@@ -110,7 +114,8 @@
 .help-text {
     font-size: 0.8rem;
     color: #666;
-    margin-top: 0.25rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1.5rem;
 }
 {% endblock %}
 
@@ -130,15 +135,9 @@
     {% endif %}
 
     <form id="upload-form" hx-post="/upload-form" hx-target="#upload-container" hx-swap="innerHTML">
-        {% set label = "Title" %}{% set name = "title" %}{% set type = "text" %}{% set required = true %}
-        {% set value = form_data.title if form_data else "" %}
-        {% include "components/form_input.html" %}
-        <div class="help-text">A clear, descriptive title for your research preview</div>
+        {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research preview") }}
 
-        {% set label = "Authors" %}{% set name = "authors" %}{% set type = "text" %}{% set required = true %}
-        {% set value = form_data.authors if form_data else "" %}
-        {% include "components/form_input.html" %}
-        <div class="help-text">Comma-separated list of author names</div>
+        {{ form_input("Authors", "authors", "text", form_data.authors if form_data else "", required=true, help_text="Comma-separated list of author names") }}
 
         <div class="form-group">
             <label for="subject_id" class="form-label">Subject: <span class="required">*</span></label>
@@ -159,10 +158,7 @@
             <div class="help-text">A concise summary of your research and findings</div>
         </div>
 
-        {% set label = "Keywords" %}{% set name = "keywords" %}{% set type = "text" %}{% set required = false %}
-        {% set value = form_data.keywords if form_data else "" %}
-        {% include "components/form_input.html" %}
-        <div class="help-text">Comma-separated keywords to help others discover your work</div>
+        {{ form_input("Keywords", "keywords", "text", form_data.keywords if form_data else "", required=false, help_text="Comma-separated keywords to help others discover your work") }}
 
         <div class="form-group">
             <label for="html_content" class="form-label">HTML Content: <span class="required">*</span></label>
@@ -186,13 +182,8 @@
         </div>
 
         <div class="form-actions">
-            {% set text = "Save as Draft" %}{% set type = "submit" %}{% set variant = "secondary" %}
-            {% set name = "action" %}{% set value = "draft" %}
-            {% include "components/button.html" %}
-            
-            {% set text = "Publish Preview" %}{% set type = "submit" %}{% set variant = "primary" %}
-            {% set name = "action" %}{% set value = "publish" %}
-            {% include "components/button.html" %}
+            {{ button("Save as Draft", type="submit", variant="secondary", name="action", value="draft") }}
+            {{ button("Publish Preview", type="submit", variant="primary", name="action", value="publish") }}
         </div>
     </form>
 </div>
