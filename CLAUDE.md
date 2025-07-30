@@ -5,7 +5,7 @@ this repository.
 
 ## Project Overview
 
-**Preview Press**, sometimes just **Press** is a modern HTML-native preprint server for
+**Scroll Press**, sometimes just **Press** is a modern HTML-native preprint server for
 academic research documents. Built with FastAPI, it allows researchers to upload and
 share research manuscripts written in web-native formats (HTML/CSS/JS).
 

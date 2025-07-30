@@ -1,4 +1,4 @@
-"""Preview and Subject models for academic preprints."""
+"""Scroll and Subject models for academic preprints."""
 
 from datetime import datetime
 from typing import List
@@ -59,7 +59,7 @@ class StringArray(TypeDecorator):
 
 
 class Subject(Base):
-    """Academic subject categories for previews."""
+    """Academic subject categories for scrolls."""
 
     __tablename__ = "subjects"
 
@@ -71,21 +71,21 @@ class Subject(Base):
     )
 
     # Relationship
-    previews: Mapped[List["Preview"]] = relationship("Preview", back_populates="subject")
+    scrolls: Mapped[List["Preview"]] = relationship("Preview", back_populates="subject")
 
     def __repr__(self):
         return f"<Subject(name='{self.name}')>"
 
 
 class Preview(Base):
-    """Academic preview/preprint model."""
+    """Academic scroll/preprint model."""
 
     __tablename__ = "previews"
 
     id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
     preview_id: Mapped[str] = mapped_column(
         String(20), unique=True, nullable=True
-    )  # Short public ID for published previews
+    )  # Short public ID for published scrolls
 
     # Content fields
     title: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -93,6 +93,23 @@ class Preview(Base):
     abstract: Mapped[str] = mapped_column(Text, nullable=False)
     keywords: Mapped[List[str]] = mapped_column(StringArray, nullable=True)
     html_content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # New fields for HTML papers
+    content_type: Mapped[str] = mapped_column(String(50), default="html")  # 'html' only for now
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=True)
+    file_size: Mapped[int] = mapped_column(nullable=True)
+    upload_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    external_resources: Mapped[dict] = mapped_column(
+        JSON, nullable=True
+    )  # Catalog of external assets
+    validation_status: Mapped[str] = mapped_column(
+        String(20), default="pending"
+    )  # 'pending', 'approved', 'rejected'
+    sanitization_log: Mapped[dict] = mapped_column(
+        JSON, nullable=True
+    )  # Record of changes made during processing
 
     # Metadata
     status: Mapped[str] = mapped_column(String(20), default="draft")  # draft, published
@@ -110,18 +127,18 @@ class Preview(Base):
     subject_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("subjects.id"), nullable=False)
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="previews")
-    subject: Mapped["Subject"] = relationship("Subject", back_populates="previews")
+    user: Mapped["User"] = relationship("User", back_populates="scrolls")
+    subject: Mapped["Subject"] = relationship("Subject", back_populates="scrolls")
 
     def __repr__(self):
         return f"<Preview(title='{self.title[:50]}...', status='{self.status}')>"
 
     def publish(self):
-        """Publish the preview by generating a public ID."""
+        """Publish the scroll by generating a public ID."""
         if self.status == "published":
             return
 
-        # Generate a short, unique preview ID
+        # Generate a short, unique scroll ID
         import secrets
         import string
 

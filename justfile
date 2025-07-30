@@ -1,4 +1,4 @@
-# Preview Press development commands
+# Scroll Press development commands
 
 # Install dependencies
 install:

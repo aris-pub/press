@@ -8,8 +8,8 @@
 {% block content %}
 <div class="hero">
   <div class="hero-title">
-    <img src="/static/images/press-logo-64.svg" alt="Preview Press" width="40" height="40">
-    <h1>Preview Press</h1>
+    <img src="/static/images/press-logo-64.svg" alt="Scroll Press" width="40" height="40">
+    <h1>Scroll Press</h1>
   </div>
   <p>Open access to research preprints in web-native formats</p>
   
@@ -39,7 +39,7 @@
 <div class="recent" id="recent">
   <h2 id="recent-submissions-heading">Recent Submissions</h2>
   
-  <div class="previews-grid">
+  <div class="scrolls-grid">
     {% for preview_row in previews %}
     {% set preview = preview_row[0] %}
     {% set subject_name = preview_row[1] %}
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.history.pushState({}, '', url);
     }
 
-    // Filter previews by subject
+    // Filter scrolls by subject
     function filterPreviews(subjectName) {
         previewCards.forEach(card => {
             const cardSubject = card.dataset.subject;

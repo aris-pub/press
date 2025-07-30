@@ -120,7 +120,7 @@ async def seed_subjects():
 
 
 async def seed_previews():
-    """Create mock previews/papers."""
+    """Create mock scrolls/papers."""
     async with AsyncSessionLocal() as session:
         # Check if previews already exist
         existing_previews = await session.execute(text("SELECT COUNT(*) FROM previews"))
@@ -217,7 +217,7 @@ async def seed_previews():
             session.add(db_preview)
 
         await session.commit()
-        print(f"Created {len(previews_data)} preview papers")
+        print(f"Created {len(previews_data)} scroll papers")
 
 
 async def main():
@@ -231,7 +231,7 @@ async def main():
     print("Seeding users...")
     await seed_users()
 
-    print("Seeding previews...")
+    print("Seeding scrolls...")
     await seed_previews()
 
     print("Seed completed!")

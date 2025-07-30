@@ -1,4 +1,4 @@
-"""Centralized logging configuration for Preview Press application."""
+"""Centralized logging configuration for Scroll Press application."""
 
 import logging
 import os

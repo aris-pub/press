@@ -3,7 +3,7 @@
 {% from "components/preview_card.html" import preview_card %}
 
 {% block title %}
-{% if query %}Search: {{ query }} - Preview Press{% else %}Search - Preview Press{% endif %}
+{% if query %}Search: {{ query }} - Scroll Press{% else %}Search - Scroll Press{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -58,7 +58,7 @@
   <!-- Search Results -->
   {% if results and result_count > 0 %}
   <div class="search-results">
-    <div class="previews-grid">
+    <div class="scrolls-grid">
       {% for result_row in results %}
       {% set preview = result_row[0] %}
       {% set subject_name = result_row[1] %}

@@ -1,9 +1,10 @@
 """Preview upload and management routes."""
 
+from pathlib import Path
 import uuid as uuid_module
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,7 @@ from app.auth.session import get_current_user_from_session
 from app.database import get_db
 from app.logging_config import get_logger, log_error, log_preview_event, log_request
 from app.models.preview import Preview, Subject
+from app.upload import HTMLProcessor
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -333,3 +335,173 @@ async def publish_preview(request: Request, preview_id: str, db: AsyncSession = 
             },
             status_code=400,
         )
+
+
+@router.post("/upload/html")
+async def upload_html_paper(
+    request: Request,
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    authors: str = Form(...),
+    subject_id: str = Form(...),
+    abstract: str = Form(...),
+    keywords: str = Form(""),
+    action: str = Form("draft"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload HTML source with enhanced security and sanitization.
+
+    Processes uploaded HTML files through comprehensive security validation,
+    sanitization, and content checks before storing in the database.
+
+    Args:
+        request: The HTTP request object
+        file: The uploaded HTML file
+        title: The preview title (required)
+        authors: Comma-separated author names (required)
+        subject_id: UUID of the academic subject (required)
+        abstract: Research abstract/summary (required)
+        keywords: Comma-separated keywords (optional)
+        action: Either "draft" to save or "publish" to make public
+        db: Database session dependency
+
+    Returns:
+        JSONResponse: Processing results with sanitized content and metadata
+
+    Raises:
+        HTTPException: For authentication, validation, or processing errors
+    """
+    current_user = await get_current_user_from_session(request, db)
+
+    # Redirect unauthenticated users
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    log_request(
+        request,
+        user_id=str(current_user.id),
+        extra_data={"filename": file.filename, "action": action},
+    )
+
+    # Temporary file handling
+    temp_dir = Path("/tmp/press_uploads")
+    temp_dir.mkdir(exist_ok=True)
+    temp_file_path = temp_dir / f"{uuid_module.uuid4()}_{file.filename}"
+
+    try:
+        # Save uploaded file temporarily
+        content = await file.read()
+        with open(temp_file_path, "wb") as f:
+            f.write(content)
+
+        # Process HTML upload
+        processor = HTMLProcessor()
+        success, processed_data, errors = await processor.process_html_upload(
+            str(temp_file_path), file.filename, str(current_user.id)
+        )
+
+        if not success:
+            log_error(
+                Exception("HTML processing failed"),
+                request,
+                user_id=str(current_user.id),
+                context="html_upload",
+                extra_data={"errors": errors},
+            )
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "success": False,
+                    "errors": errors,
+                    "message": "HTML processing failed due to validation errors",
+                },
+            )
+
+        # Validate subject
+        try:
+            subject_uuid = uuid_module.UUID(subject_id)
+            result = await db.execute(select(Subject).where(Subject.id == subject_uuid))
+            subject = result.scalar_one_or_none()
+            if not subject:
+                raise ValueError("Invalid subject selected")
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=422, detail="Invalid subject ID format")
+
+        # Process keywords
+        keyword_list = []
+        if keywords.strip():
+            keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+
+        # Create preview with enhanced metadata
+        preview = Preview(
+            user_id=current_user.id,
+            title=title.strip(),
+            authors=authors.strip(),
+            subject_id=subject.id,
+            abstract=abstract.strip(),
+            keywords=keyword_list,
+            html_content=processed_data["html_content"],
+            content_type=processed_data.get("content_type", "html"),
+            original_filename=processed_data.get("original_filename"),
+            file_size=processed_data.get("file_size"),
+            external_resources=processed_data.get("external_resources"),
+            validation_status=processed_data.get("validation_status", "approved"),
+            sanitization_log=processed_data.get("sanitization_log"),
+            status="draft",
+        )
+
+        db.add(preview)
+        await db.commit()
+        await db.refresh(preview)
+
+        log_preview_event(
+            "create_html",
+            str(preview.id),
+            str(current_user.id),
+            request,
+            extra_data={
+                "title": preview.title,
+                "status": "draft",
+                "file_size": processed_data.get("file_size"),
+                "sanitization_count": len(processed_data.get("sanitization_log", [])),
+            },
+        )
+
+        # If publishing directly, publish the preview
+        if action == "publish":
+            preview.publish()
+            await db.commit()
+            log_preview_event(
+                "publish_html",
+                preview.preview_id,
+                str(current_user.id),
+                request,
+                extra_data={"title": preview.title},
+            )
+
+        # Prepare response
+        response_data = {
+            "success": True,
+            "preview_id": str(preview.id),
+            "preview_public_id": preview.preview_id if action == "publish" else None,
+            "title": preview.title,
+            "status": preview.status,
+            "validation_status": preview.validation_status,
+            "content_metrics": processed_data.get("content_metrics", {}),
+            "sanitization_log": processed_data.get("sanitization_log", []),
+            "warnings": [e for e in errors if e.get("severity") == "warning"],
+            "message": f"Preview {'published' if action == 'publish' else 'saved as draft'} successfully",
+        }
+
+        if action == "publish":
+            response_data["preview_url"] = f"/preview/{preview.preview_id}"
+
+        return JSONResponse(content=response_data)
+
+    except Exception as e:
+        log_error(e, request, user_id=str(current_user.id), context="html_upload")
+        raise HTTPException(status_code=500, detail=f"Upload processing failed: {str(e)}")
+
+    finally:
+        if temp_file_path.exists():
+            temp_file_path.unlink()

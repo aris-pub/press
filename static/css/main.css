@@ -1,4 +1,4 @@
-/* base.css: global styles for Preview Press  */
+/* base.css: global styles for Scroll Press  */
 
 /* Variables */
 :root {
@@ -778,7 +778,7 @@ button.btn, a.btn {
 /* Recent submissions */
 .recent { padding: var(--space-4xl) 0; }
 .recent h2 { font-size: var(--text-xl); font-weight: 500; margin-bottom: var(--space-xl); color: var(--black); font-family: var(--font-serif); }
-.previews-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3xl); }
+.scrolls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3xl); }
 
 /* Mobile preview grid styles */
 @media (max-width: 768px) {
@@ -792,7 +792,7 @@ button.btn, a.btn {
     text-align: center;
   }
   
-  .previews-grid {
+  .scrolls-grid {
     grid-template-columns: 1fr;
     gap: var(--mobile-space-2xl);
   }

@@ -27,7 +27,7 @@ templates = Jinja2Templates(directory="app/templates")
 async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
     """Display the application landing page.
 
-    Shows the main homepage of Preview Press with different content and navigation
+    Shows the main homepage of Scroll Press with different content and navigation
     options based on user authentication status. Anonymous users see registration
     prompts while authenticated users see upload options.
 
@@ -41,7 +41,7 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
     # Get subjects with preview counts
     subjects_result = await db.execute(
         select(Subject.name, func.count(Subject.id).label("preview_count"))
-        .outerjoin(Subject.previews)
+        .outerjoin(Subject.scrolls)
         .group_by(Subject.id, Subject.name)
         .order_by(Subject.name)
     )
@@ -120,7 +120,7 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
 async def about_page(request: Request, db: AsyncSession = Depends(get_db)):
     """Display the About page.
 
-    Shows information about Preview Press, its mission, and features.
+    Shows information about Scroll Press, its mission, and features.
     """
     log_request(request)
     current_user = await get_current_user_from_session(request, db)
@@ -135,7 +135,7 @@ async def about_page(request: Request, db: AsyncSession = Depends(get_db)):
 async def contact_page(request: Request, db: AsyncSession = Depends(get_db)):
     """Display the Contact page.
 
-    Shows contact information and ways to get in touch with the Preview Press team.
+    Shows contact information and ways to get in touch with the Scroll Press team.
     """
     log_request(request)
     current_user = await get_current_user_from_session(request, db)
@@ -483,7 +483,7 @@ def _export_bibtex(papers, filename):
   title={{{{ {paper.title} }}}},
   author={{{{ {authors_bibtex} }}}},
   year={{{year}}},
-  note={{{{ Preview Press preprint, {subject_name} }}}},
+  note={{{{ Scroll Press preprint, {subject_name} }}}},
   url={{{{ https://press.example.com/preview/{paper.preview_id} }}}}
 }}"""
 

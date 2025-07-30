@@ -19,6 +19,8 @@ dependencies = [
     "pytest-xdist>=3.3.1",
     "httpx>=0.25.2",
     "aiosqlite>=0.19.0",
+    "bleach>=6.1.0",
+    "python-magic>=0.4.27",
 ]
 
 [tool.pytest.ini_options]

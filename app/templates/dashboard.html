@@ -8,14 +8,14 @@
 <div class="container">
   <div class="recent">
     <div class="dashboard-header">
-      <h2>Your Previews ({{ papers|length }})</h2>
+      <h2>Your Scrolls ({{ papers|length }})</h2>
       {% if papers %}
         <button id="export-data-btn" class="btn btn-secondary" onclick="openExportModal()">Export Data</button>
       {% endif %}
     </div>
     
     {% if papers %}
-      <div class="previews-grid">
+      <div class="scrolls-grid">
         {% for paper_row in papers %}
         {% set paper = paper_row[0] %}
         {% set subject_name = paper_row[1] %}

@@ -9,7 +9,7 @@ async def test_homepage_anonymous_user(client: AsyncClient):
     """Test GET / for anonymous users."""
     response = await client.get("/")
     assert response.status_code == 200
-    assert "Preview Press" in response.text
+    assert "Scroll Press" in response.text
     assert "Open access to research preprints" in response.text
 
 
@@ -17,7 +17,7 @@ async def test_homepage_authenticated_user(authenticated_client: AsyncClient):
     """Test GET / for authenticated users."""
     response = await authenticated_client.get("/")
     assert response.status_code == 200
-    assert "Preview Press" in response.text
+    assert "Scroll Press" in response.text
 
 
 async def test_homepage_shows_subjects(client: AsyncClient, test_db):
@@ -144,7 +144,7 @@ async def test_about_page(client: AsyncClient):
     assert response.status_code == 200
     assert "About Press" in response.text
     assert "Research publications. Web-native. Human-first." in response.text
-    assert "Preview Press is where modern research lives" in response.text
+    assert "Scroll Press is where modern research lives" in response.text
 
 
 async def test_contact_page(client: AsyncClient):
@@ -403,10 +403,10 @@ async def test_dashboard_redirects_unauthenticated_users(client: AsyncClient):
 
 
 async def test_dashboard_shows_title_for_authenticated_users(authenticated_client: AsyncClient):
-    """Test 2: GET /dashboard shows 'Your Previews' title for authenticated users."""
+    """Test 2: GET /dashboard shows 'Your Scrolls' title for authenticated users."""
     response = await authenticated_client.get("/dashboard")
     assert response.status_code == 200
-    assert "Your Previews" in response.text
+    assert "Your Scrolls" in response.text
 
 
 async def test_dashboard_shows_users_published_papers(
@@ -509,7 +509,7 @@ async def test_dashboard_shows_empty_state_when_no_published_papers(
     """Test 5: Dashboard shows empty state when user has no published papers."""
     response = await authenticated_client.get("/dashboard")
     assert response.status_code == 200
-    assert "Your Previews" in response.text
+    assert "Your Scrolls" in response.text
     assert "No published papers yet" in response.text
     assert "Upload Your First Preview" in response.text
 
@@ -651,14 +651,14 @@ async def test_dashboard_preview_count_in_title(authenticated_client, test_db, t
 
     response = await authenticated_client.get("/dashboard")
     assert response.status_code == 200
-    assert "Your Previews (3)" in response.text
+    assert "Your Scrolls (3)" in response.text
 
 
 async def test_dashboard_empty_state_count(authenticated_client):
     """Test that dashboard shows (0) when user has no previews."""
     response = await authenticated_client.get("/dashboard")
     assert response.status_code == 200
-    assert "Your Previews (0)" in response.text
+    assert "Your Scrolls (0)" in response.text
     assert "No published papers yet" in response.text
 
 

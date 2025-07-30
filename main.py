@@ -1,6 +1,6 @@
 """Main FastAPI application entry point.
 
-This module initializes the Preview Press application, a modern HTML-native preprint
+This module initializes the Scroll Press application, a modern HTML-native preprint
 server for academic research documents written in web-native formats.
 
 """
@@ -25,12 +25,12 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger = get_logger()
-    logger.info("Starting Preview Press application")
+    logger.info("Starting Scroll Press application")
     await create_tables()
     logger.info("Database tables created/verified")
     yield
     # Shutdown (if needed)
-    logger.info("Shutting down Preview Press application")
+    logger.info("Shutting down Scroll Press application")
 
 
 app = FastAPI(

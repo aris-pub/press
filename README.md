@@ -1,7 +1,7 @@
-# Preview Press
+# Scroll Press
 
 A modern HTML-native preprint server for academic research documents. Built with
-FastAPI, Preview Press allows researchers to upload and share research manuscripts
+FastAPI, Scroll Press allows researchers to upload and share research manuscripts
 written in web-native formats (HTML/CSS/JS).
 
 ## Features
@@ -46,7 +46,7 @@ written in web-native formats (HTML/CSS/JS).
    just dev
    ```
 
-Visit `http://localhost:8000` to access Preview Press.
+Visit `http://localhost:8000` to access Scroll Press.
 
 ## Development
 
