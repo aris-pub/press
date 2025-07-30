@@ -22,7 +22,7 @@ Navbar Component
   
   <div class="auth-buttons">
     {% if current_user %}
-    {{ link_button("New Preview", href="/upload", variant="primary") }}
+    {{ link_button("New Scroll", href="/upload", variant="primary") }}
     <div class="dropdown user-menu">
       <button class="user-menu-trigger" aria-haspopup="true" aria-expanded="false">
         <img src="/static/images/user-icon.svg" alt="User menu" class="user-icon">
@@ -37,7 +37,7 @@ Navbar Component
       </div>
     </div>
     {% else %}
-    {{ link_button("New Preview", href="/register", variant="primary") }}
+    {{ link_button("New Scroll", href="/register", variant="primary") }}
     {{ link_button("Login", href="/login", variant="secondary") }}
     {% endif %}
   </div>
@@ -59,13 +59,13 @@ Navbar Component
     
     <div class="mobile-auth-buttons">
       {% if current_user %}
-      {{ link_button("New Preview", href="/upload", variant="primary") }}
+      {{ link_button("New Scroll", href="/upload", variant="primary") }}
       <a href="/dashboard" class="btn btn-secondary">Dashboard</a>
       <form action="/logout" method="post" style="margin: 0;">
         <button type="submit" class="btn btn-secondary" style="width: 100%;">Logout</button>
       </form>
       {% else %}
-      {{ link_button("New Preview", href="/register", variant="primary") }}
+      {{ link_button("New Scroll", href="/register", variant="primary") }}
       {{ link_button("Login", href="/login", variant="secondary") }}
       {% endif %}
     </div>

@@ -17,7 +17,7 @@ async def test_upload_page_shows_form(authenticated_client: AsyncClient):
     """Test GET /upload shows upload form for authenticated users."""
     response = await authenticated_client.get("/upload")
     assert response.status_code == 200
-    assert "Upload Your Research Preview" in response.text
+    assert "Upload New Scroll" in response.text
     assert "Title" in response.text
     assert "HTML Content" in response.text
 

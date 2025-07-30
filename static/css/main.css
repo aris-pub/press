@@ -91,6 +91,8 @@ body {
   color: var(--gray-dark);
   background: var(--white);
   min-height: 100vh;
+  position: relative;
+  padding-bottom: 200px; /* Adjust based on footer height */
 }
 
 .container {
@@ -265,7 +267,16 @@ header.navbar {
 }
 
 /* Footer */
-footer { background: var(--gray-bg-light); margin-top: var(--space-4xl); padding: var(--space-3xl) 0; border-top: 1px solid var(--gray-lightest); }
+footer { 
+  background: var(--gray-bg-light); 
+  margin-top: auto; 
+  padding: var(--space-3xl) 0; 
+  border-top: 1px solid var(--gray-lightest);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
 .footer-nav { 
   display: flex; 
   justify-content: center; 

@@ -511,7 +511,7 @@ async def test_dashboard_shows_empty_state_when_no_published_papers(
     assert response.status_code == 200
     assert "Your Scrolls" in response.text
     assert "No published papers yet" in response.text
-    assert "Upload Your First Preview" in response.text
+    assert "Upload Your First Scroll" in response.text
 
 
 async def test_dashboard_does_not_show_draft_papers(

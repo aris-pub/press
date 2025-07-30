@@ -24,7 +24,7 @@ templates = Jinja2Templates(directory="app/templates")
 async def view_preview(request: Request, preview_id: str, db: AsyncSession = Depends(get_db)):
     """Display a published preview by its preview_id.
 
-    Shows the full HTML content of a published research preview. Only published
+    Shows the full HTML content of a published research scroll. Only published
     previews are accessible to the public.
 
     """
@@ -91,7 +91,7 @@ async def upload_form(
 ):
     """Process HTML preview upload form submission.
 
-    Validates and processes the upload of HTML research previews. Supports both
+    Validates and processes the upload of HTML research scrolls. Supports both
     draft saving and direct publishing. Uses HTMX for seamless form submission
     with success/error feedback.
 

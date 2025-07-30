@@ -193,7 +193,7 @@
 {% block content %}
 <div class="upload-container" id="upload-container">
     <div class="upload-header">
-        <h1>Upload Your Research Preview</h1>
+        <h1>Upload New Scroll</h1>
         <p>Share your interactive, web-native research with the world</p>
     </div>
 
@@ -206,7 +206,7 @@
     {% endif %}
 
     <form id="upload-form" hx-post="/upload-form" hx-target="#upload-container" hx-swap="innerHTML">
-        {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research preview") }}
+        {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research scroll") }}
 
         {{ form_input("Authors", "authors", "text", form_data.authors if form_data else "", required=true, help_text="Comma-separated list of author names") }}
 
@@ -249,12 +249,12 @@
     </script>
 </body>
 </html>">{{ form_data.html_content if form_data else '' }}</textarea>
-            <div class="help-text">Complete HTML document with embedded CSS and JavaScript for your interactive preview</div>
+            <div class="help-text">Complete HTML document with embedded CSS and JavaScript for your interactive scroll</div>
         </div>
 
         <div class="form-actions">
             {{ button("Save as Draft", type="submit", variant="secondary", name="action", value="draft") }}
-            {{ button("Publish Preview", type="submit", variant="primary", name="action", value="publish") }}
+            {{ button("Publish Scroll", type="submit", variant="primary", name="action", value="publish") }}
         </div>
     </form>
 </div>
