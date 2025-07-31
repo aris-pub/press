@@ -47,93 +47,79 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
     log_preview_event(
         "view", preview_id, str(preview.user_id), request, extra_data={"title": preview.title}
     )
-
+    
     # Check if HTML content has CSS
-    has_css = bool(
-        re.search(r"<style|<link[^>]*stylesheet|style\s*=", preview.html_content, re.IGNORECASE)
-    )
-
+    has_css = bool(re.search(r'<style|<link[^>]*stylesheet|style\s*=', preview.html_content, re.IGNORECASE))
+    
     # If no CSS detected, inject basic styles
     if not has_css:
         basic_css = """
         <style>
             body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif !important;
-                line-height: 1.6 !important;
-                max-width: 800px !important;
-                margin: 0 auto !important;
-                padding: 2rem !important;
-                color: #333 !important;
-                background: #fff !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 2rem;
+                color: #333;
+                background: #fff;
             }
             h1, h2, h3, h4, h5, h6 {
-                font-family: Georgia, serif !important;
-                color: #222 !important;
-                margin: 1.5rem 0 1rem 0 !important;
-                font-weight: normal !important;
+                font-family: Georgia, serif;
+                color: #222;
+                margin: 1.5rem 0 1rem 0;
             }
-            h1 { font-size: 2rem !important; }
-            h2 { font-size: 1.5rem !important; }
-            h3 { font-size: 1.25rem !important; }
-            h4 { font-size: 1.1rem !important; }
-            h5 { font-size: 1rem !important; }
-            h6 { font-size: 0.9rem !important; }
-            p { 
-                margin: 1rem 0 !important; 
-                color: #333 !important;
-            }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            h3 { font-size: 1.25rem; }
+            p { margin: 1rem 0; }
             code {
-                background: #f5f5f5 !important;
-                padding: 0.2rem 0.4rem !important;
-                border-radius: 3px !important;
-                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-                font-size: 0.9em !important;
-                color: #333 !important;
+                background: #f5f5f5;
+                padding: 0.2rem 0.4rem;
+                border-radius: 3px;
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 0.9em;
             }
             pre {
-                background: #f5f5f5 !important;
-                padding: 1rem !important;
-                border-radius: 5px !important;
-                overflow-x: auto !important;
-                color: #333 !important;
+                background: #f5f5f5;
+                padding: 1rem;
+                border-radius: 5px;
+                overflow-x: auto;
             }
             blockquote {
-                border-left: 4px solid #ef4444 !important;
-                padding-left: 1rem !important;
-                margin: 1rem 0 !important;
-                font-style: italic !important;
-                color: #666 !important;
+                border-left: 4px solid #ef4444;
+                padding-left: 1rem;
+                margin: 1rem 0;
+                font-style: italic;
+                color: #666;
             }
             
             /* Dark mode */
             @media (prefers-color-scheme: dark) {
                 body {
-                    background: #1a1a1a !important;
-                    color: #e5e5e5 !important;
+                    background: #1a1a1a;
+                    color: #e5e5e5;
                 }
                 h1, h2, h3, h4, h5, h6 {
-                    color: #fff !important;
-                }
-                p {
-                    color: #e5e5e5 !important;
+                    color: #fff;
                 }
                 code, pre {
-                    background: #2a2a2a !important;
-                    color: #e5e5e5 !important;
+                    background: #2a2a2a;
+                    color: #e5e5e5;
                 }
                 blockquote {
-                    color: #ccc !important;
+                    color: #ccc;
                 }
             }
         </style>
         """
-
+        
         # Inject CSS after <head> tag or at the beginning if no head tag
-        if "<head>" in preview.html_content:
-            preview.html_content = preview.html_content.replace("<head>", f"<head>{basic_css}", 1)
+        if '<head>' in preview.html_content:
+            preview.html_content = preview.html_content.replace('<head>', f'<head>{basic_css}', 1)
         else:
             preview.html_content = basic_css + preview.html_content
-
+    
     return templates.TemplateResponse(request, "preview.html", {"preview": preview})
 
 
