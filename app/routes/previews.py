@@ -55,41 +55,38 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
     if not has_css:
         basic_css = """
         <style>
-            /* Reset and base styles for scroll content */
-            .scroll-content * {
+            /* Base styles for injected scroll content */
+            .injected-scroll-content {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
                 line-height: 1.6;
-                color: #333;
-                max-width: none;
-            }
-            .scroll-content {
                 max-width: 800px;
                 margin: 0 auto;
                 padding: 2rem;
                 background: #fff;
+                color: #333;
             }
-            .scroll-content h1, 
-            .scroll-content h2, 
-            .scroll-content h3, 
-            .scroll-content h4, 
-            .scroll-content h5, 
-            .scroll-content h6 {
+            .injected-scroll-content h1, 
+            .injected-scroll-content h2, 
+            .injected-scroll-content h3, 
+            .injected-scroll-content h4, 
+            .injected-scroll-content h5, 
+            .injected-scroll-content h6 {
                 font-family: Georgia, serif;
                 color: #222;
                 margin: 1.5rem 0 1rem 0;
                 font-weight: normal;
             }
-            .scroll-content h1 { font-size: 2rem; }
-            .scroll-content h2 { font-size: 1.5rem; }
-            .scroll-content h3 { font-size: 1.25rem; }
-            .scroll-content h4 { font-size: 1.1rem; }
-            .scroll-content h5 { font-size: 1rem; }
-            .scroll-content h6 { font-size: 0.9rem; }
-            .scroll-content p { 
+            .injected-scroll-content h1 { font-size: 2rem; }
+            .injected-scroll-content h2 { font-size: 1.5rem; }
+            .injected-scroll-content h3 { font-size: 1.25rem; }
+            .injected-scroll-content h4 { font-size: 1.1rem; }
+            .injected-scroll-content h5 { font-size: 1rem; }
+            .injected-scroll-content h6 { font-size: 0.9rem; }
+            .injected-scroll-content p { 
                 margin: 1rem 0; 
                 color: #333;
             }
-            .scroll-content code {
+            .injected-scroll-content code {
                 background: #f5f5f5;
                 padding: 0.2rem 0.4rem;
                 border-radius: 3px;
@@ -97,14 +94,14 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
                 font-size: 0.9em;
                 color: #333;
             }
-            .scroll-content pre {
+            .injected-scroll-content pre {
                 background: #f5f5f5;
                 padding: 1rem;
                 border-radius: 5px;
                 overflow-x: auto;
                 color: #333;
             }
-            .scroll-content blockquote {
+            .injected-scroll-content blockquote {
                 border-left: 4px solid #ef4444;
                 padding-left: 1rem;
                 margin: 1rem 0;
@@ -114,38 +111,41 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
             
             /* Dark mode */
             @media (prefers-color-scheme: dark) {
-                .scroll-content {
+                .injected-scroll-content {
                     background: #1a1a1a;
-                }
-                .scroll-content *, 
-                .scroll-content p {
                     color: #e5e5e5;
                 }
-                .scroll-content h1, 
-                .scroll-content h2, 
-                .scroll-content h3, 
-                .scroll-content h4, 
-                .scroll-content h5, 
-                .scroll-content h6 {
+                .injected-scroll-content h1, 
+                .injected-scroll-content h2, 
+                .injected-scroll-content h3, 
+                .injected-scroll-content h4, 
+                .injected-scroll-content h5, 
+                .injected-scroll-content h6 {
                     color: #fff;
                 }
-                .scroll-content code, 
-                .scroll-content pre {
+                .injected-scroll-content p {
+                    color: #e5e5e5;
+                }
+                .injected-scroll-content code, 
+                .injected-scroll-content pre {
                     background: #2a2a2a;
                     color: #e5e5e5;
                 }
-                .scroll-content blockquote {
+                .injected-scroll-content blockquote {
                     color: #ccc;
                 }
             }
         </style>
         """
         
-        # Inject CSS after <head> tag or at the beginning if no head tag
-        if '<head>' in preview.html_content:
-            preview.html_content = preview.html_content.replace('<head>', f'<head>{basic_css}', 1)
-        else:
-            preview.html_content = basic_css + preview.html_content
+        # Wrap content in a styled container and inject CSS
+        wrapped_content = f"""
+        {basic_css}
+        <div class="injected-scroll-content">
+            {preview.html_content}
+        </div>
+        """
+        preview.html_content = wrapped_content
     
     return templates.TemplateResponse(request, "preview.html", {"preview": preview})
 
