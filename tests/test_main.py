@@ -135,7 +135,7 @@ async def test_homepage_preview_links(client: AsyncClient, test_db, test_user):
 
     response = await client.get("/")
     assert response.status_code == 200
-    assert "/preview/link123" in response.text
+    assert "/scroll/link123" in response.text
 
 
 async def test_about_page(client: AsyncClient):
@@ -670,7 +670,8 @@ async def test_navbar_shows_user_menu_when_authenticated(authenticated_client, t
     # Check user menu is present
     assert 'class="user-menu-trigger"' in response.text
     assert test_user.display_name in response.text
-    assert 'src="/static/images/user-icon.svg"' in response.text
+    # Check for inline SVG user icon instead of image file
+    assert '<svg class="user-icon"' in response.text
 
     # Check dropdown menu items
     assert 'href="/dashboard"' in response.text

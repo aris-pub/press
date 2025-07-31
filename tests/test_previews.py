@@ -22,8 +22,8 @@ async def test_upload_page_shows_form(authenticated_client: AsyncClient):
     assert "HTML Content" in response.text
 
 
-async def test_upload_form_create_draft(authenticated_client: AsyncClient, test_db, test_user):
-    """Test POST /upload-form creates draft preview."""
+async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, test_db, test_user):
+    """Test POST /upload-form publishes scroll directly (no drafts)."""
     # Create a subject for the test
     subject = Subject(name="Test Subject", description="Test description")
     test_db.add(subject)
@@ -31,23 +31,23 @@ async def test_upload_form_create_draft(authenticated_client: AsyncClient, test_
     await test_db.refresh(subject)
 
     upload_data = {
-        "title": "Test Preview",
+        "title": "Test Scroll",
         "authors": "Test Author",
         "subject_id": str(subject.id),
         "abstract": "Test abstract",
-        "keywords": "test, preview",
+        "keywords": "test, scroll",
         "html_content": "<h1>Test Content</h1>",
-        "action": "draft",
+        "action": "publish",
     }
 
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 200
-    assert "Draft 'Test Preview' has been saved successfully!" in response.text
+    assert "Your scroll has been published successfully!" in response.text
 
-    # Verify preview was created in database
-    result = await test_db.execute(select(Preview).where(Preview.title == "Test Preview"))
+    # Verify scroll was created and published in database
+    result = await test_db.execute(select(Preview).where(Preview.title == "Test Scroll"))
     preview = result.scalar_one()
-    assert preview.status == "draft"
+    assert preview.status == "published"
     assert preview.user_id == test_user.id
 
 
@@ -71,7 +71,7 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
 
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 200
-    assert "Your preview has been published successfully!" in response.text
+    assert "Your scroll has been published successfully!" in response.text
 
     # Verify preview was created and published
     result = await test_db.execute(select(Preview).where(Preview.title == "Published Preview"))
@@ -117,44 +117,43 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
     test_db.add(preview)
     await test_db.commit()
 
-    response = await client.get("/preview/test123")
+    response = await client.get("/scroll/test123")
     assert response.status_code == 200
     assert "Test Published Preview" in response.text
     assert "Test Author" in response.text
-    # HTML content should be in escaped form within iframe srcdoc
-    assert "&lt;h1&gt;Test Published Content&lt;/h1&gt;" in response.text
-    assert 'sandbox="allow-scripts allow-same-origin"' in response.text
+    # HTML content should be rendered directly (no iframe)
+    assert "<h1>Test Published Content</h1>" in response.text
 
 
-async def test_view_nonexistent_preview_404(client: AsyncClient):
-    """Test GET /preview/{preview_id} returns 404 for non-existent preview."""
-    response = await client.get("/preview/nonexistent")
+async def test_view_nonexistent_scroll_404(client: AsyncClient):
+    """Test GET /scroll/{scroll_id} returns 404 for non-existent scroll."""
+    response = await client.get("/scroll/nonexistent")
     assert response.status_code == 404
     assert "404" in response.text
 
 
-async def test_view_draft_preview_404(client: AsyncClient, test_db, test_user):
-    """Test GET /preview/{preview_id} returns 404 for draft previews."""
-    # Create a subject and draft preview
+async def test_view_unpublished_scroll_404(client: AsyncClient, test_db, test_user):
+    """Test GET /scroll/{scroll_id} returns 404 for unpublished scrolls."""
+    # Create a subject and unpublished scroll (hypothetical - all scrolls are now published)
     subject = Subject(name="Test Subject", description="Test description")
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
 
     preview = Preview(
-        title="Test Draft Preview",
+        title="Test Unpublished Scroll",
         authors="Test Author",
         abstract="Test abstract",
-        html_content="<h1>Test Draft Content</h1>",
+        html_content="<h1>Test Unpublished Content</h1>",
         user_id=test_user.id,
         subject_id=subject.id,
-        status="draft",  # Draft status
+        status="draft",  # Hypothetical unpublished status
     )
     test_db.add(preview)
     await test_db.commit()
 
-    # Try to access draft preview by UUID (should fail)
-    response = await client.get(f"/preview/{preview.id}")
+    # Try to access unpublished scroll by UUID (should fail)
+    response = await client.get(f"/scroll/{preview.id}")
     assert response.status_code == 404
 
 
