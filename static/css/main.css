@@ -195,9 +195,22 @@ header.navbar {
   }
 }
 
+/* Mobile controls wrapper */
+.mobile-controls {
+  display: none;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* Mobile dark mode toggle */
+.mobile-dark-mode-toggle {
+  display: flex;
+  align-items: center;
+}
+
 /* Mobile hamburger menu */
 .mobile-menu-toggle {
-  display: none;
+  display: flex;
   background: none;
   border: none;
   cursor: pointer;
@@ -323,7 +336,7 @@ header.navbar {
     display: none !important;
   }
   
-  .mobile-menu-toggle {
+  .mobile-controls {
     display: flex !important;
   }
 }

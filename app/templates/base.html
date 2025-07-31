@@ -85,8 +85,8 @@
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         // Handle dark mode toggle
-        const themeToggle = document.querySelector('.dark-mode-toggle');
-        if (themeToggle) {
+        const themeToggles = document.querySelectorAll('.dark-mode-toggle');
+        themeToggles.forEach(function(themeToggle) {
           themeToggle.addEventListener('click', function() {
             const currentTheme = localStorage.getItem('theme');
             let newTheme;
@@ -103,7 +103,7 @@
             localStorage.setItem('theme', newTheme);
             document.documentElement.setAttribute('data-theme', newTheme);
           });
-        }
+        });
 
         // Handle dropdown menus
         const dropdowns = document.querySelectorAll('.dropdown');

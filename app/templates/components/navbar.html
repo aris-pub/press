@@ -47,12 +47,17 @@ Navbar Component
     {% endif %}
   </div>
 
-  <!-- Mobile hamburger menu toggle -->
-  <button class="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
-    <span class="hamburger-line"></span>
-    <span class="hamburger-line"></span>
-    <span class="hamburger-line"></span>
-  </button>
+  <!-- Mobile controls -->
+  <div class="mobile-controls">
+    <div class="mobile-dark-mode-toggle">
+      {{ dark_mode_toggle() }}
+    </div>
+    <button class="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
+  </div>
 
   <!-- Mobile navigation menu -->
   <div class="mobile-nav">
@@ -63,9 +68,6 @@ Navbar Component
     </div>
     
     <div class="mobile-auth-buttons">
-      <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
-        {{ dark_mode_toggle() }}
-      </div>
       {% if current_user %}
       {{ link_button("New Scroll", href="/upload", variant="primary") }}
       <a href="/dashboard" class="btn btn-secondary">Dashboard</a>
