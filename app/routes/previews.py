@@ -62,8 +62,6 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
                 max-width: 800px;
                 margin: 0 auto;
                 padding: 2rem;
-                background: #fff;
-                color: #333;
             }
             .injected-scroll-content h1, 
             .injected-scroll-content h2, 
@@ -72,7 +70,6 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
             .injected-scroll-content h5, 
             .injected-scroll-content h6 {
                 font-family: Georgia, serif;
-                color: #222;
                 margin: 1.5rem 0 1rem 0;
                 font-weight: normal;
             }
@@ -84,56 +81,26 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
             .injected-scroll-content h6 { font-size: 0.9rem; }
             .injected-scroll-content p { 
                 margin: 1rem 0; 
-                color: #333;
             }
             .injected-scroll-content code {
-                background: #f5f5f5;
+                background: var(--gray-bg);
                 padding: 0.2rem 0.4rem;
                 border-radius: 3px;
                 font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
                 font-size: 0.9em;
-                color: #333;
             }
             .injected-scroll-content pre {
-                background: #f5f5f5;
+                background: var(--gray-bg);
                 padding: 1rem;
                 border-radius: 5px;
                 overflow-x: auto;
-                color: #333;
             }
             .injected-scroll-content blockquote {
-                border-left: 4px solid #ef4444;
+                border-left: 4px solid var(--red);
                 padding-left: 1rem;
                 margin: 1rem 0;
                 font-style: italic;
-                color: #666;
-            }
-            
-            /* Dark mode */
-            @media (prefers-color-scheme: dark) {
-                .injected-scroll-content {
-                    background: #1a1a1a;
-                    color: #e5e5e5;
-                }
-                .injected-scroll-content h1, 
-                .injected-scroll-content h2, 
-                .injected-scroll-content h3, 
-                .injected-scroll-content h4, 
-                .injected-scroll-content h5, 
-                .injected-scroll-content h6 {
-                    color: #fff;
-                }
-                .injected-scroll-content p {
-                    color: #e5e5e5;
-                }
-                .injected-scroll-content code, 
-                .injected-scroll-content pre {
-                    background: #2a2a2a;
-                    color: #e5e5e5;
-                }
-                .injected-scroll-content blockquote {
-                    color: #ccc;
-                }
+                color: var(--gray);
             }
         </style>
         """
