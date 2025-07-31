@@ -93,20 +93,6 @@
     background: var(--red-dark);
 }
 
-.btn-draft {
-    background: var(--primary-gray);
-    color: var(--white);
-    padding: 0.75rem 2rem;
-    border: none;
-    border-radius: var(--border-radius);
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.btn-draft:hover {
-    background: var(--gray-light);
-}
 
 .required {
     color: var(--red);
@@ -174,8 +160,7 @@
         padding-top: var(--mobile-space-xl);
     }
     
-    .btn-upload,
-    .btn-draft {
+    .btn-upload {
         width: 100%;
         padding: var(--mobile-space-lg);
         font-size: var(--mobile-text-base);
@@ -254,7 +239,6 @@
         </div>
 
         <div class="form-actions">
-            {{ button("Save as Draft", type="submit", variant="secondary", name="action", value="draft") }}
             {{ button("Publish Scroll", type="submit", variant="primary", name="action", value="publish") }}
         </div>
     </form>

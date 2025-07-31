@@ -112,7 +112,7 @@ class Preview(Base):
     )  # Record of changes made during processing
 
     # Metadata
-    status: Mapped[str] = mapped_column(String(20), default="draft")  # draft, published
+    status: Mapped[str] = mapped_column(String(20), default="published")  # published only
     version: Mapped[int] = mapped_column(default=1)  # Version number
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

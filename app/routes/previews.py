@@ -86,13 +86,13 @@ async def upload_form(
     abstract: str = Form(...),
     keywords: str = Form(""),
     html_content: str = Form(...),
-    action: str = Form("draft"),  # "draft" or "publish"
+    action: str = Form("publish"),  # Always publish
     db: AsyncSession = Depends(get_db),
 ):
     """Process HTML preview upload form submission.
 
-    Validates and processes the upload of HTML research scrolls. Supports both
-    draft saving and direct publishing. Uses HTMX for seamless form submission
+    Validates and processes the upload of HTML research scrolls with
+    direct publishing. Uses HTMX for seamless form submission
     with success/error feedback.
 
     Args:
@@ -103,7 +103,7 @@ async def upload_form(
         abstract: Research abstract/summary (required)
         keywords: Comma-separated keywords (optional)
         html_content: Complete HTML document content (required)
-        action: Either "draft" to save or "publish" to make public
+        action: Always "publish" to make public
         db: Database session dependency for preview operations
 
     Returns:
@@ -159,8 +159,9 @@ async def upload_form(
             abstract=abstract.strip(),
             keywords=keyword_list,
             html_content=html_content.strip(),
-            status="draft",
+            status="published",
         )
+        preview.publish()
 
         db.add(preview)
         await db.commit()
@@ -171,7 +172,7 @@ async def upload_form(
             str(preview.id),
             str(current_user.id),
             request,
-            extra_data={"title": preview.title, "status": "draft"},
+            extra_data={"title": preview.title, "status": "published"},
         )
 
         # If publishing directly, publish the preview after it's in the database
@@ -194,12 +195,8 @@ async def upload_form(
             )
 
         # Return success response - just the content for HTMX
-        if action == "publish":
-            success_message = "Your preview has been published successfully!"
-            preview_url = f"/scroll/{preview.preview_id}"
-        else:
-            success_message = f"Draft '{preview.title}' has been saved successfully!"
-            preview_url = f"/preview/{preview.id}/edit"
+        success_message = "Your scroll has been published successfully!"
+        preview_url = f"/scroll/{preview.preview_id}"
 
         # Return just the success content (not full page) for HTMX
         success_html = f"""
@@ -209,12 +206,12 @@ async def upload_form(
 
             <div style="margin-bottom: 2rem;">
                 <p><strong>Title:</strong> {preview.title}</p>
-                <p><strong>Status:</strong> {"Published" if action == "publish" else "Draft"}</p>
-                {"<p><strong>Preview ID:</strong> " + preview.preview_id + "</p>" if action == "publish" else ""}
+                <p><strong>Status:</strong> Published</p>
+                <p><strong>Scroll ID:</strong> {preview.preview_id}</p>
             </div>
 
             <div style="display: flex; gap: 1rem; justify-content: center;">
-                <a href="{preview_url}" class="btn btn-primary">View Preview</a>
+                <a href="{preview_url}" class="btn btn-primary">View Scroll</a>
                 <a href="/upload" class="btn btn-secondary">Upload Another</a>
                 <a href="/" class="btn btn-secondary">Go Home</a>
             </div>
@@ -252,91 +249,6 @@ async def upload_form(
         )
 
 
-@router.post("/preview/{preview_id}/publish", response_class=HTMLResponse)
-async def publish_preview(request: Request, preview_id: str, db: AsyncSession = Depends(get_db)):
-    """Publish a draft preview to make it publicly accessible.
-
-    Converts a draft preview to published status, generating a unique preview ID
-    and making it discoverable. Only the preview owner can publish their drafts.
-
-    Args:
-        request: The HTTP request object for template responses
-        preview_id: UUID string of the draft preview to publish
-        db: Database session dependency for preview operations
-
-    Returns:
-        HTMLResponse: Success page with preview details or error page
-
-    Raises:
-        ValueError: For invalid preview ID, access denied, or non-draft previews
-        Exception: For database or unexpected errors during publishing
-
-    """
-    current_user = await get_current_user_from_session(request, db)
-
-    # Redirect unauthenticated users
-    if not current_user:
-        return RedirectResponse(url="/login", status_code=302)
-
-    log_request(request, user_id=str(current_user.id), extra_data={"preview_id": preview_id})
-
-    try:
-        # Find the preview and verify ownership
-        preview_uuid = uuid_module.UUID(preview_id)
-        result = await db.execute(
-            select(Preview).where(Preview.id == preview_uuid, Preview.user_id == current_user.id)
-        )
-        preview = result.scalar_one_or_none()
-
-        if not preview:
-            raise ValueError("Preview not found or access denied")
-
-        if preview.status != "draft":
-            raise ValueError("Only draft previews can be published")
-
-        # Publish the preview
-        preview.publish()
-        await db.commit()
-        await db.refresh(preview)
-
-        log_preview_event(
-            "publish",
-            preview.preview_id,
-            str(current_user.id),
-            request,
-            extra_data={"title": preview.title},
-        )
-
-        return templates.TemplateResponse(
-            request,
-            "upload_success.html",
-            {
-                "current_user": current_user,
-                "preview": preview,
-                "success_message": f"Preview '{preview.title}' has been published successfully!",
-                "preview_url": f"/scroll/{preview.preview_id}",
-                "is_published": True,
-            },
-        )
-
-    except Exception as e:
-        error_message = str(e) if str(e) else "Failed to publish preview."
-        log_error(e, request, user_id=str(current_user.id), context="preview_publish")
-
-        # Return error response (could be improved with a proper error template)
-        return templates.TemplateResponse(
-            request,
-            "upload_success.html",
-            {
-                "current_user": current_user,
-                "error": error_message,
-                "success_message": "Error occurred while publishing",
-                "is_published": False,
-            },
-            status_code=400,
-        )
-
-
 @router.post("/upload/html")
 async def upload_html_paper(
     request: Request,
@@ -346,7 +258,7 @@ async def upload_html_paper(
     subject_id: str = Form(...),
     abstract: str = Form(...),
     keywords: str = Form(""),
-    action: str = Form("draft"),
+    action: str = Form("publish"),
     db: AsyncSession = Depends(get_db),
 ):
     """Upload HTML source with enhanced security and sanitization.
@@ -362,7 +274,7 @@ async def upload_html_paper(
         subject_id: UUID of the academic subject (required)
         abstract: Research abstract/summary (required)
         keywords: Comma-separated keywords (optional)
-        action: Either "draft" to save or "publish" to make public
+        action: Always "publish" to make public
         db: Database session dependency
 
     Returns:
@@ -447,9 +359,10 @@ async def upload_html_paper(
             external_resources=processed_data.get("external_resources"),
             validation_status=processed_data.get("validation_status", "approved"),
             sanitization_log=processed_data.get("sanitization_log"),
-            status="draft",
+            status="published",
         )
 
+        preview.publish()
         db.add(preview)
         await db.commit()
         await db.refresh(preview)
@@ -461,7 +374,7 @@ async def upload_html_paper(
             request,
             extra_data={
                 "title": preview.title,
-                "status": "draft",
+                "status": "published",
                 "file_size": processed_data.get("file_size"),
                 "sanitization_count": len(processed_data.get("sanitization_log", [])),
             },
@@ -490,11 +403,10 @@ async def upload_html_paper(
             "content_metrics": processed_data.get("content_metrics", {}),
             "sanitization_log": processed_data.get("sanitization_log", []),
             "warnings": [e for e in errors if e.get("severity") == "warning"],
-            "message": f"Preview {'published' if action == 'publish' else 'saved as draft'} successfully",
+            "message": "Scroll published successfully",
         }
 
-        if action == "publish":
-            response_data["preview_url"] = f"/scroll/{preview.preview_id}"
+        response_data["preview_url"] = f"/scroll/{preview.preview_id}"
 
         return JSONResponse(content=response_data)
 
