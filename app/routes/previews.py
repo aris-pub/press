@@ -20,7 +20,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
-@router.get("/preview/{preview_id}", response_class=HTMLResponse)
+@router.get("/scroll/{preview_id}", response_class=HTMLResponse)
 async def view_preview(request: Request, preview_id: str, db: AsyncSession = Depends(get_db)):
     """Display a published preview by its preview_id.
 
@@ -196,7 +196,7 @@ async def upload_form(
         # Return success response - just the content for HTMX
         if action == "publish":
             success_message = "Your preview has been published successfully!"
-            preview_url = f"/preview/{preview.preview_id}"
+            preview_url = f"/scroll/{preview.preview_id}"
         else:
             success_message = f"Draft '{preview.title}' has been saved successfully!"
             preview_url = f"/preview/{preview.id}/edit"
@@ -314,7 +314,7 @@ async def publish_preview(request: Request, preview_id: str, db: AsyncSession = 
                 "current_user": current_user,
                 "preview": preview,
                 "success_message": f"Preview '{preview.title}' has been published successfully!",
-                "preview_url": f"/preview/{preview.preview_id}",
+                "preview_url": f"/scroll/{preview.preview_id}",
                 "is_published": True,
             },
         )
@@ -494,7 +494,7 @@ async def upload_html_paper(
         }
 
         if action == "publish":
-            response_data["preview_url"] = f"/preview/{preview.preview_id}"
+            response_data["preview_url"] = f"/scroll/{preview.preview_id}"
 
         return JSONResponse(content=response_data)
 

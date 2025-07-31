@@ -59,7 +59,7 @@ async def test_homepage_shows_recent_previews(client: AsyncClient, test_db, test
 
     response = await client.get("/")
     assert response.status_code == 200
-    assert "Recent Submissions" in response.text
+    assert "Recent Scrolls" in response.text
     assert "Recent Test Preview" in response.text
     assert "Test Author" in response.text
     assert "Test abstract for recent preview" in response.text

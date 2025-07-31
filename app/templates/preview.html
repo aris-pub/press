@@ -11,7 +11,25 @@
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/main.css">
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Source Sans 3', sans-serif;">
+<body style="margin: 0; padding: 0; font-family: 'Source Sans 3', sans-serif; background: var(--white); color: var(--black);">
+
+  <!-- Dark mode toggle -->
+  <button class="preview-dark-mode-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <svg class="theme-icon sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <svg class="theme-icon moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
 
   <div class="preview-container">
     <div class="preview-content">
@@ -37,7 +55,7 @@
       {{ preview.authors }} • {{ preview.subject.name }}
     </div>
     <div class="attribution-footer">
-      {{ preview.created_at.strftime('%B %d, %Y') }} • <a href="/" class="attribution-link">via Scroll Press</a>
+      {{ preview.created_at.strftime('%B %d, %Y') }} • <a href="/" class="attribution-link">Scroll Press</a>
     </div>
   </footer>
 
@@ -49,7 +67,7 @@
     <div class="modal-backdrop" id="modal-backdrop"></div>
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="modal-title">Preview Details</h2>
+        <h2 id="modal-title">Scroll Details</h2>
         <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
@@ -70,6 +88,74 @@
     </div>
 
 <style>
+/* Preview page dark mode toggle */
+.preview-dark-mode-toggle {
+  position: fixed;
+  bottom: 5.5rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--gray-bg);
+  border: 1px solid var(--gray-lighter);
+  border-radius: var(--border-radius);
+  color: var(--gray-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1100;
+}
+
+.preview-dark-mode-toggle:hover {
+  background: var(--gray-bg-light);
+  border-color: var(--gray);
+  color: var(--gray-dark);
+}
+
+.preview-dark-mode-toggle:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.preview-dark-mode-toggle .theme-icon {
+  position: absolute;
+  transition: all 0.3s ease;
+}
+
+.preview-dark-mode-toggle .sun-icon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.preview-dark-mode-toggle .moon-icon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.8);
+}
+
+[data-theme="dark"] .preview-dark-mode-toggle .sun-icon {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.8);
+}
+
+[data-theme="dark"] .preview-dark-mode-toggle .moon-icon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .preview-dark-mode-toggle .sun-icon {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.8);
+  }
+  
+  :root:not([data-theme="light"]) .preview-dark-mode-toggle .moon-icon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
 .preview-container {
   padding: 2rem 2rem 0 2rem;
 }
@@ -83,15 +169,15 @@
   width: 100%;
   min-height: 100vh;
   border: none;
-  background: white;
+  background: var(--white);
 }
 
 .preview-attribution {
   padding: 1.5rem;
-  background: #f5f5f5;
-  border-top: 1px solid #eee;
+  background: var(--gray-bg-light);
+  border-top: 1px solid var(--border-light);
   font-size: 0.85rem;
-  color: #666;
+  color: var(--gray);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -101,26 +187,26 @@
 .attribution-title {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #555;
+  color: var(--gray-medium);
 }
 
 .attribution-meta {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--gray);
 }
 
 .attribution-footer {
   font-size: 0.8rem;
-  color: #999;
+  color: var(--gray-light);
 }
 
 .attribution-link {
-  color: #ef4444;
+  color: var(--red);
   text-decoration: none;
 }
 
 .attribution-link:hover {
-  color: #dc2626;
+  color: var(--red-dark);
   text-decoration: underline;
 }
 
@@ -128,11 +214,11 @@
   position: fixed;
   bottom: 2rem;
   right: 2rem;
-  width: 56px;
-  height: 56px;
-  border-radius: 2px;
-  background: #666;
-  color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--border-radius);
+  background: var(--gray);
+  color: var(--white);
   border: none;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(34, 34, 34, 0.3);
@@ -144,14 +230,12 @@
 }
 
 .fab:hover {
-  background: #ff6b6b;
-  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
-  transform: translateY(-2px);
+  background: var(--red);
 }
 
 .fab-logo {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   filter: brightness(0) invert(1);
 }
 
@@ -182,9 +266,9 @@
 
 .modal-content {
   position: relative;
-  background: #fafafa;
-  border-radius: 2px;
-  border: 1px solid #eee;
+  background: var(--gray-bg-light);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-light);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-width: 600px;
   width: 90%;
@@ -197,15 +281,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.3rem;
-  font-family: Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: normal;
-  color: #222;
+  color: var(--black);
 }
 
 .modal-close {
@@ -213,31 +297,30 @@
   border: none;
   font-size: 1.25rem;
   cursor: pointer;
-  color: #666;
+  color: var(--gray);
   padding: 0;
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 2px;
+  border-radius: var(--border-radius);
   line-height: 0;
   vertical-align: top;
 }
 
 .modal-close:hover {
-  background: #f5f5f5;
-  color: #222;
+  background: var(--gray-bg);
+  color: var(--gray-dark);
 }
 
 .modal-body {
   padding: 1rem 2rem 2rem 2rem;
 }
 
-
 .modal-actions {
   padding: 1.5rem 2rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-light);
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
@@ -245,7 +328,7 @@
 
 .btn {
   padding: 0.4rem 0.8rem;
-  border-radius: 2px;
+  border-radius: var(--border-radius);
   text-decoration: none;
   font-size: 0.9rem;
   border: none;
@@ -256,22 +339,22 @@
 }
 
 .btn-primary {
-  background: #6b7280;
-  color: white;
+  background: var(--primary-gray);
+  color: var(--white);
 }
 
 .btn-primary:hover {
-  background: #ef4444;
+  background: var(--red);
 }
 
 .btn-secondary {
-  color: #555;
-  border: 1px solid #ccc;
-  background: white;
+  color: var(--gray-medium);
+  border: 1px solid var(--gray-lighter);
+  background: var(--white);
 }
 
 .btn-secondary:hover {
-  background: #f5f5f5;
+  background: var(--gray-bg);
   text-decoration: none;
 }
 
@@ -280,6 +363,13 @@ body.modal-open {
 }
 
 @media (max-width: 768px) {
+  .preview-dark-mode-toggle {
+    bottom: 4.5rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+  }
+  
   .preview-container {
     padding: 1rem 1rem 0 1rem;
   }
@@ -287,8 +377,8 @@ body.modal-open {
   .fab {
     bottom: 1rem;
     right: 1rem;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     font-size: 1.25rem;
   }
   
@@ -304,6 +394,62 @@ body.modal-open {
 </style>
 
 <script>
+// Theme management for preview page
+(function() {
+  // Get saved theme preference or default to system preference
+  function getThemePreference() {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved;
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  
+  // Apply theme to document
+  function applyTheme(theme) {
+    if (theme === 'auto') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+  }
+  
+  // Set initial theme
+  const initialTheme = getThemePreference();
+  applyTheme(initialTheme);
+  
+  // Handle dark mode toggle
+  const themeToggle = document.querySelector('.preview-dark-mode-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = localStorage.getItem('theme');
+      let newTheme;
+      
+      if (!currentTheme || currentTheme === 'auto') {
+        // Currently auto (following system), switch to opposite of current system preference
+        newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
+      } else if (currentTheme === 'light') {
+        newTheme = 'dark';
+      } else {
+        newTheme = 'light';
+      }
+      
+      localStorage.setItem('theme', newTheme);
+      document.documentElement.setAttribute('data-theme', newTheme);
+    });
+  }
+  
+  // Listen for system theme changes when in auto mode
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+    const currentTheme = localStorage.getItem('theme');
+    if (!currentTheme || currentTheme === 'auto') {
+      // User is in auto mode, update accordingly
+      document.documentElement.removeAttribute('data-theme');
+    }
+  });
+})();
+
+// Modal and page functionality
 (function() {
   const fab = document.getElementById('info-fab');
   const modal = document.getElementById('info-modal');

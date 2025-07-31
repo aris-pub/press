@@ -2,6 +2,7 @@
 {% from "components/button.html" import button %}
 {% from "components/preview_card.html" import preview_card %}
 {% from "components/subject_card.html" import subject_card %}
+{% from "components/search_form.html" import search_form %}
 
 {% block title %}Home - Press{% endblock %}
 
@@ -14,10 +15,7 @@
   <p>Open access to research preprints in web-native formats</p>
   
   <div class="search-box">
-    <form class="search-form" action="/search" method="get">
-      <input type="text" name="q" class="search-input" placeholder="Search papers, authors, or subjects...">
-      {{ button("Search", type="submit", class="search-btn-override") }}
-    </form>
+    {{ search_form(button_class="search-btn-override") }}
     <div class="search-help">
       Search includes titles, authors, abstracts, and full text
     </div>
@@ -37,7 +35,7 @@
 </div>
 
 <div class="recent" id="recent">
-  <h2 id="recent-submissions-heading">Recent Submissions</h2>
+  <h2 id="recent-submissions-heading">Recent Scrolls</h2>
   
   <div class="scrolls-grid">
     {% for preview_row in previews %}
@@ -99,9 +97,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update heading text
     function updateHeading(subjectDisplay) {
         if (subjectDisplay) {
-            headingElement.textContent = `Recent ${subjectDisplay} Submissions`;
+            headingElement.textContent = `Recent ${subjectDisplay} Scrolls`;
         } else {
-            headingElement.textContent = 'Recent Submissions';
+            headingElement.textContent = 'Recent Scrolls';
         }
     }
 

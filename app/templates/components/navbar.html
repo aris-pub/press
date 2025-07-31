@@ -4,6 +4,7 @@ Navbar Component
 {% from "components/nav_link.html" import nav_link %}
 {% from "components/button.html" import link_button %}
 {% from "components/dropdown.html" import dropdown %}
+{% from "components/dark_mode_toggle.html" import dark_mode_toggle %}
 
 <header class="navbar">
 
@@ -21,11 +22,15 @@ Navbar Component
   </nav>
   
   <div class="auth-buttons">
+    {{ dark_mode_toggle() }}
     {% if current_user %}
     {{ link_button("New Scroll", href="/upload", variant="primary") }}
     <div class="dropdown user-menu">
       <button class="user-menu-trigger" aria-haspopup="true" aria-expanded="false">
-        <img src="/static/images/user-icon.svg" alt="User menu" class="user-icon">
+        <svg class="user-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="8" r="3" fill="currentColor"/>
+          <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
         <span class="user-menu-label">{{ current_user.display_name }}</span>
       </button>
       
@@ -58,6 +63,9 @@ Navbar Component
     </div>
     
     <div class="mobile-auth-buttons">
+      <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
+        {{ dark_mode_toggle() }}
+      </div>
       {% if current_user %}
       {{ link_button("New Scroll", href="/upload", variant="primary") }}
       <a href="/dashboard" class="btn btn-secondary">Dashboard</a>

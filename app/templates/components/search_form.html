@@ -1,0 +1,24 @@
+{#
+Search Form Component
+Usage: 
+{% from "components/search_form.html" import search_form %}
+{{ search_form(query="optional existing query", placeholder="Search papers...", action="/search") }}
+#}
+
+{% from "components/button.html" import button %}
+
+{% macro search_form(query="", placeholder="Search papers, authors, or subjects...", action="/search", method="get", form_class="search-form", input_class="search-input", button_class="search-btn", input_container_class="") %}
+<form class="{{ form_class }}" action="{{ action }}" method="{{ method }}">
+  {% if input_container_class %}
+  <div class="{{ input_container_class }}">
+  {% endif %}
+    <input type="text" name="q" class="{{ input_class }}" 
+           placeholder="{{ placeholder }}" 
+           value="{{ query }}" 
+           {% if query %}{% else %}autofocus{% endif %}>
+    {{ button("Search", type="submit", class=button_class) }}
+  {% if input_container_class %}
+  </div>
+  {% endif %}
+</form>
+{% endmacro %}

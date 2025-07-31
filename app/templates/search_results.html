@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "components/button.html" import button %}
 {% from "components/preview_card.html" import preview_card %}
+{% from "components/search_form.html" import search_form %}
 
 {% block title %}
 {% if query %}Search: {{ query }} - Scroll Press{% else %}Search - Scroll Press{% endif %}
@@ -13,14 +14,11 @@
     <h1>Search Results</h1>
     
     <!-- Search Form -->
-    <form class="search-form-page" action="/search" method="get">
-      <div class="search-input-container">
-        <input type="text" name="q" class="search-input-page" 
-               placeholder="Search papers, authors, or subjects..." 
-               value="{{ query if query else '' }}" autofocus>
-        {{ button("Search", type="submit", class="search-btn-page") }}
-      </div>
-    </form>
+    {{ search_form(query=query if query else "", 
+                   form_class="search-form-page", 
+                   input_class="search-input-page", 
+                   button_class="search-btn-page",
+                   input_container_class="search-input-container") }}
   </div>
 
   <!-- Results Info -->
@@ -70,7 +68,7 @@
       <!-- Use a custom preview card macro call with highlighted content -->
       <div class="preview search-result" data-subject="{{ subject_name.lower().replace(' ', '-') if subject_name else '' }}">
         {% if preview.preview_id %}
-        <a href="/preview/{{ preview.preview_id }}" class="preview-link">
+        <a href="/scroll/{{ preview.preview_id }}" class="preview-link">
           <div class="preview-title">{{ highlighted_title|safe }}</div>
         </a>
         {% else %}
