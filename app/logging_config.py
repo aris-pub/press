@@ -17,7 +17,7 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
     Returns:
         Configured logger instance
     """
-    logger = logging.getLogger("preview_press")
+    logger = logging.getLogger("scroll_press")
 
     if logger.handlers:
         return logger
@@ -44,7 +44,7 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
 
 def get_logger() -> logging.Logger:
     """Get the application logger instance."""
-    return logging.getLogger("preview_press")
+    return logging.getLogger("scroll_press")
 
 
 def log_request(
@@ -153,11 +153,11 @@ def log_preview_event(
     request: Request,
     extra_data: Optional[dict] = None,
 ) -> None:
-    """Log preview-related events.
+    """Log scroll-related events.
 
     Args:
-        event_type: Type of preview event (create, publish, view)
-        preview_id: Preview ID or UUID
+        event_type: Type of scroll event (create, publish, view)
+        preview_id: Scroll ID or UUID
         user_id: User ID performing the action
         request: FastAPI request object
         extra_data: Optional additional data to log
@@ -174,7 +174,7 @@ def log_preview_event(
     if extra_data:
         log_data.update(extra_data)
 
-    logger.info(f"Preview event: {log_data}")
+    logger.info(f"Scroll event: {log_data}")
 
 
 def log_error(

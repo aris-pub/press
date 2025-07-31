@@ -78,14 +78,14 @@ class Subject(Base):
 
 
 class Preview(Base):
-    """Academic scroll/preprint model."""
+    """Academic scroll model."""
 
     __tablename__ = "previews"
 
     id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
     preview_id: Mapped[str] = mapped_column(
         String(20), unique=True, nullable=True
-    )  # Short public ID for published scrolls
+    )  # Short public ID for scrolls
 
     # Content fields
     title: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -94,7 +94,7 @@ class Preview(Base):
     keywords: Mapped[List[str]] = mapped_column(StringArray, nullable=True)
     html_content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # New fields for HTML papers
+    # New fields for HTML scrolls
     content_type: Mapped[str] = mapped_column(String(50), default="html")  # 'html' only for now
     original_filename: Mapped[str] = mapped_column(String(255), nullable=True)
     file_size: Mapped[int] = mapped_column(nullable=True)
@@ -105,8 +105,8 @@ class Preview(Base):
         JSON, nullable=True
     )  # Catalog of external assets
     validation_status: Mapped[str] = mapped_column(
-        String(20), default="pending"
-    )  # 'pending', 'approved', 'rejected'
+        String(20), default="approved"
+    )  # 'approved' (no pending/rejected since all are published directly)
     sanitization_log: Mapped[dict] = mapped_column(
         JSON, nullable=True
     )  # Record of changes made during processing
@@ -131,12 +131,12 @@ class Preview(Base):
     subject: Mapped["Subject"] = relationship("Subject", back_populates="scrolls")
 
     def __repr__(self):
-        return f"<Preview(title='{self.title[:50]}...', status='{self.status}')>"
+        return f"<Scroll(title='{self.title[:50]}...', status='{self.status}')>"
 
     def publish(self):
-        """Publish the scroll by generating a public ID."""
-        if self.status == "published":
-            return
+        """Ensure scroll has a public ID."""
+        if self.preview_id:
+            return  # Already has ID
 
         # Generate a short, unique scroll ID
         import secrets

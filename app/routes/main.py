@@ -38,16 +38,16 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
     if current_user:
         log_request(request, user_id=str(current_user.id))
 
-    # Get subjects with preview counts
+    # Get subjects with scroll counts
     subjects_result = await db.execute(
-        select(Subject.name, func.count(Subject.id).label("preview_count"))
+        select(Subject.name, func.count(Subject.id).label("scroll_count"))
         .outerjoin(Subject.scrolls)
         .group_by(Subject.id, Subject.name)
         .order_by(Subject.name)
     )
     subjects = subjects_result.all()
 
-    # Get recent published previews with subjects
+    # Get recent published scrolls with subjects
     previews_result = await db.execute(
         select(Preview, Subject.name.label("subject_name"))
         .join(Subject)
@@ -87,7 +87,7 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
         subject_count = result.scalar()
 
         result = await db.execute(select(func.count(Preview.id)))
-        preview_count = result.scalar()
+        scroll_count = result.scalar()
 
         response_time = round((time.time() - start_time) * 1000, 2)
 
@@ -98,7 +98,7 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
             "timestamp": time.time(),
             "response_time_ms": response_time,
             "components": {"database": "healthy", "models": "healthy"},
-            "metrics": {"subject_count": subject_count, "preview_count": preview_count},
+            "metrics": {"subject_count": subject_count, "scroll_count": scroll_count},
             "version": "0.1.0",
         }
 
@@ -198,7 +198,7 @@ def highlight_search_terms(text: str, query: str) -> str:
 async def search_results(
     request: Request, q: Optional[str] = None, db: AsyncSession = Depends(get_db)
 ):
-    """Search for previews across titles, authors, abstracts, and content.
+    """Search for scrolls across titles, authors, abstracts, and content.
 
     Args:
         request: FastAPI request object
@@ -385,7 +385,7 @@ def _export_csv(papers, filename):
         "subject",
         "version",
         "published_date",
-        "preview_id",
+        "scroll_id",
     ]
     writer.writerow(headers)
 
@@ -441,7 +441,7 @@ def _export_json(papers, include_content, filename):
             "subject": subject_name,
             "version": paper.version,
             "published_date": paper.published_at.isoformat() if paper.published_at else None,
-            "preview_id": paper.preview_id,
+            "scroll_id": paper.preview_id,
             "created_at": paper.created_at.isoformat(),
             "updated_at": paper.updated_at.isoformat(),
         }
@@ -484,7 +484,7 @@ def _export_bibtex(papers, filename):
   author={{{{ {authors_bibtex} }}}},
   year={{{year}}},
   note={{{{ Scroll Press preprint, {subject_name} }}}},
-  url={{{{ https://press.example.com/preview/{paper.preview_id} }}}}
+  url={{{{ https://press.example.com/scroll/{paper.preview_id} }}}}
 }}"""
 
         bibtex_entries.append(entry)

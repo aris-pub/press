@@ -388,7 +388,7 @@ async def test_health_check(client: AsyncClient):
     assert data["components"]["database"] == "healthy"
     assert data["components"]["models"] == "healthy"
     assert "subject_count" in data["metrics"]
-    assert "preview_count" in data["metrics"]
+    assert "scroll_count" in data["metrics"]
     assert data["version"] == "0.1.0"
 
 

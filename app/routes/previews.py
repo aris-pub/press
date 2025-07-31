@@ -1,6 +1,7 @@
-"""Preview upload and management routes."""
+"""Scroll upload and management routes."""
 
 from pathlib import Path
+import re
 import uuid as uuid_module
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
@@ -21,11 +22,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/scroll/{preview_id}", response_class=HTMLResponse)
-async def view_preview(request: Request, preview_id: str, db: AsyncSession = Depends(get_db)):
-    """Display a published preview by its preview_id.
+async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depends(get_db)):
+    """Display a published scroll by its scroll_id.
 
     Shows the full HTML content of a published research scroll. Only published
-    previews are accessible to the public.
+    scrolls are accessible to the public.
 
     """
     log_request(request, extra_data={"preview_id": preview_id})
@@ -38,23 +39,96 @@ async def view_preview(request: Request, preview_id: str, db: AsyncSession = Dep
     preview = result.scalar_one_or_none()
 
     if not preview:
-        get_logger().warning(f"Preview not found: {preview_id}")
+        get_logger().warning(f"Scroll not found: {preview_id}")
         return templates.TemplateResponse(
-            request, "404.html", {"message": "Preview not found"}, status_code=404
+            request, "404.html", {"message": "Scroll not found"}, status_code=404
         )
 
     log_preview_event(
         "view", preview_id, str(preview.user_id), request, extra_data={"title": preview.title}
     )
+    
+    # Check if HTML content has CSS
+    has_css = bool(re.search(r'<style|<link[^>]*stylesheet|style\s*=', preview.html_content, re.IGNORECASE))
+    
+    # If no CSS detected, inject basic styles
+    if not has_css:
+        basic_css = """
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 2rem;
+                color: #333;
+                background: #fff;
+            }
+            h1, h2, h3, h4, h5, h6 {
+                font-family: Georgia, serif;
+                color: #222;
+                margin: 1.5rem 0 1rem 0;
+            }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            h3 { font-size: 1.25rem; }
+            p { margin: 1rem 0; }
+            code {
+                background: #f5f5f5;
+                padding: 0.2rem 0.4rem;
+                border-radius: 3px;
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 0.9em;
+            }
+            pre {
+                background: #f5f5f5;
+                padding: 1rem;
+                border-radius: 5px;
+                overflow-x: auto;
+            }
+            blockquote {
+                border-left: 4px solid #ef4444;
+                padding-left: 1rem;
+                margin: 1rem 0;
+                font-style: italic;
+                color: #666;
+            }
+            
+            /* Dark mode */
+            @media (prefers-color-scheme: dark) {
+                body {
+                    background: #1a1a1a;
+                    color: #e5e5e5;
+                }
+                h1, h2, h3, h4, h5, h6 {
+                    color: #fff;
+                }
+                code, pre {
+                    background: #2a2a2a;
+                    color: #e5e5e5;
+                }
+                blockquote {
+                    color: #ccc;
+                }
+            }
+        </style>
+        """
+        
+        # Inject CSS after <head> tag or at the beginning if no head tag
+        if '<head>' in preview.html_content:
+            preview.html_content = preview.html_content.replace('<head>', f'<head>{basic_css}', 1)
+        else:
+            preview.html_content = basic_css + preview.html_content
+    
     return templates.TemplateResponse(request, "preview.html", {"preview": preview})
 
 
 @router.get("/upload", response_class=HTMLResponse)
 async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
-    """Display the HTML preview upload page.
+    """Display the HTML scroll upload page.
 
     Shows the upload form for authenticated users to submit their HTML research
-    previews. Unauthenticated users are redirected to login. Loads available
+    scrolls. Unauthenticated users are redirected to login. Loads available
     academic subjects for categorization.
 
     """
@@ -89,7 +163,7 @@ async def upload_form(
     action: str = Form("publish"),  # Always publish
     db: AsyncSession = Depends(get_db),
 ):
-    """Process HTML preview upload form submission.
+    """Process HTML scroll upload form submission.
 
     Validates and processes the upload of HTML research scrolls with
     direct publishing. Uses HTMX for seamless form submission
@@ -97,14 +171,14 @@ async def upload_form(
 
     Args:
         request: The HTTP request object for HTMX responses
-        title: The preview title (required)
+        title: The scroll title (required)
         authors: Comma-separated author names (required)
         subject_id: UUID of the academic subject (required)
         abstract: Research abstract/summary (required)
         keywords: Comma-separated keywords (optional)
         html_content: Complete HTML document content (required)
         action: Always "publish" to make public
-        db: Database session dependency for preview operations
+        db: Database session dependency for scroll operations
 
     Returns:
         HTMLResponse: Success HTML content or error form with validation messages
@@ -150,7 +224,7 @@ async def upload_form(
         if keywords.strip():
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
-        # Create preview
+        # Create scroll
         preview = Preview(
             user_id=current_user.id,
             title=title.strip(),
@@ -175,7 +249,7 @@ async def upload_form(
             extra_data={"title": preview.title, "status": "published"},
         )
 
-        # If publishing directly, publish the preview after it's in the database
+        # If publishing directly, publish the scroll after it's in the database
         if action == "publish":
             # Load the subject relationship before publishing
             result = await db.execute(
@@ -269,7 +343,7 @@ async def upload_html_paper(
     Args:
         request: The HTTP request object
         file: The uploaded HTML file
-        title: The preview title (required)
+        title: The scroll title (required)
         authors: Comma-separated author names (required)
         subject_id: UUID of the academic subject (required)
         abstract: Research abstract/summary (required)
@@ -344,7 +418,7 @@ async def upload_html_paper(
         if keywords.strip():
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
-        # Create preview with enhanced metadata
+        # Create scroll with enhanced metadata
         preview = Preview(
             user_id=current_user.id,
             title=title.strip(),
@@ -380,7 +454,7 @@ async def upload_html_paper(
             },
         )
 
-        # If publishing directly, publish the preview
+        # If publishing directly, publish the scroll
         if action == "publish":
             preview.publish()
             await db.commit()

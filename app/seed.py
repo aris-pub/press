@@ -119,13 +119,13 @@ async def seed_subjects():
         print(f"Created {len(subjects_data)} academic subjects")
 
 
-async def seed_previews():
+async def seed_scrolls():
     """Create mock scrolls/papers."""
     async with AsyncSessionLocal() as session:
         # Check if previews already exist
-        existing_previews = await session.execute(text("SELECT COUNT(*) FROM previews"))
-        if existing_previews.scalar() > 0:
-            print("Previews already exist, skipping seed.")
+        existing_scrolls = await session.execute(text("SELECT COUNT(*) FROM previews"))
+        if existing_scrolls.scalar() > 0:
+            print("Scrolls already exist, skipping seed.")
             return
 
         # Get users and subjects for foreign keys
@@ -135,7 +135,7 @@ async def seed_previews():
         subjects_result = await session.execute(text("SELECT id, name FROM subjects"))
         subjects = {row[1]: row[0] for row in subjects_result}
 
-        previews_data = [
+        scrolls_data = [
             {
                 "title": "Efficient Algorithms for Large-Scale Graph Neural Networks",
                 "authors": "John Smith, Li Chen, Maria Garcia",
@@ -201,23 +201,23 @@ async def seed_previews():
             },
         ]
 
-        for preview_data in previews_data:
-            db_preview = Preview(
-                title=preview_data["title"],
-                authors=preview_data["authors"],
-                abstract=preview_data["abstract"],
-                keywords=preview_data["keywords"],
-                html_content=preview_data["html_content"],
-                user_id=preview_data["user_id"],
-                subject_id=preview_data["subject_id"],
-                status=preview_data["status"],
-                preview_id=preview_data["preview_id"],
-                version=preview_data["version"],
+        for scroll_data in scrolls_data:
+            db_scroll = Preview(
+                title=scroll_data["title"],
+                authors=scroll_data["authors"],
+                abstract=scroll_data["abstract"],
+                keywords=scroll_data["keywords"],
+                html_content=scroll_data["html_content"],
+                user_id=scroll_data["user_id"],
+                subject_id=scroll_data["subject_id"],
+                status=scroll_data["status"],
+                preview_id=scroll_data["preview_id"],
+                version=scroll_data["version"],
             )
-            session.add(db_preview)
+            session.add(db_scroll)
 
         await session.commit()
-        print(f"Created {len(previews_data)} scroll papers")
+        print(f"Created {len(scrolls_data)} scroll papers")
 
 
 async def main():
@@ -232,7 +232,7 @@ async def main():
     await seed_users()
 
     print("Seeding scrolls...")
-    await seed_previews()
+    await seed_scrolls()
 
     print("Seed completed!")
 

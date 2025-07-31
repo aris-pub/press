@@ -9,10 +9,8 @@
     
     <div style="margin-bottom: 2rem;">
         <p><strong>Title:</strong> {{ preview.title }}</p>
-        <p><strong>Status:</strong> {{ "Published" if is_published else "Draft" }}</p>
-        {% if is_published %}
-            <p><strong>Preview ID:</strong> {{ preview.preview_id }}</p>
-        {% endif %}
+        <p><strong>Status:</strong> Published</p>
+        <p><strong>Scroll ID:</strong> {{ preview.preview_id }}</p>
     </div>
     
     <div style="display: flex; gap: 1rem; justify-content: center;">
