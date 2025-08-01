@@ -19,8 +19,12 @@ from app.database import Base, get_db
 from app.models.user import User
 from main import app
 
-# Test database URL (in-memory SQLite)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Test database URL - use PostgreSQL in CI, SQLite locally
+# Check if we're in CI by looking for CI environment variable
+if os.getenv("CI") and os.getenv("DATABASE_URL"):
+    TEST_DATABASE_URL = os.getenv("DATABASE_URL")
+else:
+    TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
 @pytest.fixture(scope="function")
@@ -34,10 +38,18 @@ def event_loop():
 @pytest_asyncio.fixture
 async def test_db():
     """Create a test database session."""
+    # Different connection args for SQLite vs PostgreSQL
+    if "sqlite" in TEST_DATABASE_URL:
+        connect_args = {"check_same_thread": False}
+        poolclass = StaticPool
+    else:
+        connect_args = {}
+        poolclass = None
+
     engine = create_async_engine(
         TEST_DATABASE_URL,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
+        poolclass=poolclass,
+        connect_args=connect_args,
         echo=False,
     )
 
