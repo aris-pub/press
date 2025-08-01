@@ -191,6 +191,21 @@ async def legal_page(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(request, "legal.html", {"current_user": current_user})
 
 
+@router.get("/roadmap", response_class=HTMLResponse)
+async def roadmap_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the Roadmap page.
+
+    Shows current features and planned development for Scroll Press.
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "roadmap.html", {"current_user": current_user})
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     """Display user dashboard with their published papers."""
