@@ -1,5 +1,7 @@
 """Middleware for request/response logging and monitoring."""
 
+import asyncio
+from collections import defaultdict
 import time
 from typing import Callable
 
@@ -7,6 +9,15 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.logging_config import get_logger
+
+# Rate limiting constants
+DEFAULT_REQUESTS_PER_MINUTE = 60
+DEFAULT_BURST_REQUESTS = 10
+RATE_LIMIT_WINDOW_SECONDS = 60
+BURST_WINDOW_SECONDS = 10
+CLEANUP_INTERVAL_SECONDS = 300
+RATE_LIMIT_STATUS_CODE = 429
+RATE_LIMIT_RETRY_AFTER_SECONDS = 60
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -102,3 +113,155 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Content-Security-Policy"] = csp
 
         return response
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Middleware to implement in-memory rate limiting."""
+
+    def __init__(
+        self,
+        app,
+        requests_per_minute: int = DEFAULT_REQUESTS_PER_MINUTE,
+        burst_requests: int = DEFAULT_BURST_REQUESTS,
+        enabled: bool = True,
+    ):
+        """Initialize rate limiter.
+
+        Args:
+            app: FastAPI application
+            requests_per_minute: Sustained requests per minute per IP
+            burst_requests: Burst requests allowed in 10 seconds
+            enabled: Whether rate limiting is enabled (disabled for testing)
+        """
+        super().__init__(app)
+        self.requests_per_minute = requests_per_minute
+        self.burst_requests = burst_requests
+        self.enabled = enabled
+
+        # In-memory storage: {ip: [timestamps]}
+        self.request_counts: defaultdict = defaultdict(list)
+        self.cleanup_task = None
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Check rate limits and process request.
+
+        Args:
+            request: The incoming HTTP request
+            call_next: The next middleware/route handler
+
+        Returns:
+            The HTTP response or 429 rate limit exceeded
+        """
+        # Skip rate limiting if disabled or for health checks and static files
+        if (
+            not self.enabled
+            or request.url.path == "/health"
+            or request.url.path.startswith("/static")
+        ):
+            return await call_next(request)
+
+        # Get client IP (handles proxy headers)
+        client_ip = self._get_client_ip(request)
+        current_time = time.time()
+
+        # Start cleanup task if not running
+        if self.cleanup_task is None or self.cleanup_task.done():
+            self.cleanup_task = asyncio.create_task(self._cleanup_old_requests())
+
+        # Check rate limits
+        if self._is_rate_limited(client_ip, current_time):
+            logger = get_logger()
+            logger.warning(f"Rate limit exceeded for IP: {client_ip}")
+
+            # Add rate limit headers
+            response = Response(
+                content="Rate limit exceeded. Please try again later.",
+                status_code=RATE_LIMIT_STATUS_CODE,
+                media_type="text/plain",
+            )
+            response.headers["X-RateLimit-Limit"] = str(self.requests_per_minute)
+            response.headers["X-RateLimit-Remaining"] = "0"
+            response.headers["Retry-After"] = str(RATE_LIMIT_RETRY_AFTER_SECONDS)
+
+            return response
+
+        # Record this request
+        self.request_counts[client_ip].append(current_time)
+
+        # Process request
+        response = await call_next(request)
+
+        # Add rate limit headers to successful responses
+        remaining = self._get_remaining_requests(client_ip, current_time)
+        response.headers["X-RateLimit-Limit"] = str(self.requests_per_minute)
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
+
+        return response
+
+    def _get_client_ip(self, request: Request) -> str:
+        """Get client IP address, handling proxy headers."""
+        # Check proxy headers first
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            # X-Forwarded-For can contain multiple IPs, take the first one
+            return forwarded_for.split(",")[0].strip()
+
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return real_ip.strip()
+
+        # Fall back to direct connection IP
+        return request.client.host
+
+    def _is_rate_limited(self, client_ip: str, current_time: float) -> bool:
+        """Check if client is rate limited."""
+        timestamps = self.request_counts[client_ip]
+
+        # Remove old timestamps (older than 1 minute)
+        minute_ago = current_time - RATE_LIMIT_WINDOW_SECONDS
+        timestamps[:] = [ts for ts in timestamps if ts > minute_ago]
+
+        # Check sustained rate (requests per minute)
+        if len(timestamps) >= self.requests_per_minute:
+            return True
+
+        # Check burst rate (requests in last 10 seconds)
+        ten_seconds_ago = current_time - BURST_WINDOW_SECONDS
+        recent_requests = [ts for ts in timestamps if ts > ten_seconds_ago]
+        if len(recent_requests) >= self.burst_requests:
+            return True
+
+        return False
+
+    def _get_remaining_requests(self, client_ip: str, current_time: float) -> int:
+        """Get remaining requests for client in current minute."""
+        timestamps = self.request_counts[client_ip]
+        minute_ago = current_time - RATE_LIMIT_WINDOW_SECONDS
+        recent_count = len([ts for ts in timestamps if ts > minute_ago])
+        return max(0, self.requests_per_minute - recent_count)
+
+    async def _cleanup_old_requests(self):
+        """Periodically clean up old request timestamps to prevent memory leaks."""
+        while True:
+            try:
+                await asyncio.sleep(CLEANUP_INTERVAL_SECONDS)
+                current_time = time.time()
+                minute_ago = current_time - RATE_LIMIT_WINDOW_SECONDS
+
+                # Clean up old timestamps and empty IP entries
+                for client_ip in list(self.request_counts.keys()):
+                    timestamps = self.request_counts[client_ip]
+                    timestamps[:] = [ts for ts in timestamps if ts > minute_ago]
+
+                    # Remove empty entries to prevent memory leaks
+                    if not timestamps:
+                        del self.request_counts[client_ip]
+
+                logger = get_logger()
+                logger.debug(f"Rate limit cleanup: tracking {len(self.request_counts)} IPs")
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger = get_logger()
+                logger.error(f"Rate limit cleanup error: {e}")
