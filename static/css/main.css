@@ -1023,18 +1023,18 @@ button.btn, a.btn {
 }
 
 /* About page styles */
-.about-page {
+.page {
     max-width: 600px;
     margin: var(--space-4xl) auto;
     padding: 0 var(--space-xl);
     text-align: center;
 }
 
-.about-header {
+.page-header {
     margin-bottom: var(--space-3xl);
 }
 
-.about-header h1 {
+.page-header h1 {
     font-family: var(--font-serif);
     font-size: var(--text-3xl);
     font-weight: normal;
@@ -1042,7 +1042,7 @@ button.btn, a.btn {
     margin-bottom: var(--space-md);
 }
 
-.about-subtitle {
+.page-subtitle {
     font-family: var(--font-serif);
     font-size: var(--text-lg);
     font-style: italic;
@@ -1050,167 +1050,107 @@ button.btn, a.btn {
     margin: 0;
 }
 
-.about-divider {
+.page-divider {
     height: 1px;
     background: var(--gray-lightest);
     margin: var(--space-3xl) 0;
 }
 
-.about-content {
+.page-content {
     text-align: left;
     line-height: 1.7;
     margin-bottom: var(--space-3xl);
 }
 
-.about-content p {
+.page-content p {
     margin-bottom: var(--space-lg);
     font-size: var(--text-md);
     color: var(--gray-dark);
 }
 
-.about-content p:last-child {
+.page-content p:last-child {
     margin-bottom: 0;
 }
-
-.about-link {
-    color: var(--red);
-    text-decoration: none;
-}
-
-.about-link:hover {
-    text-decoration: underline;
-}
-
-.about-cta {
-    margin-top: var(--space-3xl);
-}
-
-/* Mobile responsive about page */
-@media (max-width: 768px) {
-    .about-page {
-        margin: 2rem auto;
-        padding: 0 1.5rem;
-    }
-    
-    .about-header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .about-subtitle {
-        font-size: 1rem;
-    }
-    
-    .about-divider {
-        margin: 2rem 0;
-    }
-}
-
-/* Contact page styles */
-.contact-page {
-    max-width: 600px;
-    margin: 4rem auto;
-    padding: 0 2rem;
-    text-align: center;
-}
-
-.contact-header {
-    margin-bottom: 3rem;
-}
-
-.contact-header h1 {
-    font-family: Georgia, serif;
-    font-size: 2rem;
-    font-weight: normal;
-    color: var(--black);
-    margin-bottom: 1rem;
-}
-
-.contact-subtitle {
-    font-family: Georgia, serif;
-    font-size: 1.1rem;
-    font-style: italic;
-    color: var(--gray);
-    margin: 0;
-}
-
-.contact-divider {
-    height: 1px;
-    background: var(--gray-lightest);
-    margin: 3rem 0;
-}
-
-.contact-content {
-    text-align: left;
-    margin-bottom: 3rem;
-}
-
-.contact-section {
-    margin-bottom: 2.5rem;
-}
-
-.contact-section:last-child {
-    margin-bottom: 0;
-}
-
-.contact-section h2 {
+.page-content h2 {
     font-family: Georgia, serif;
     font-size: 1.3rem;
     font-weight: normal;
     color: var(--black);
     margin-bottom: 1rem;
+    margin-top: 2rem;
 }
-
-.contact-section p {
-    line-height: 1.7;
-    font-size: 1rem;
+.page-content h2:first-child {
+    margin-top: 0;
+}
+.page-content h3 {
+    font-family: Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: normal;
+    color: var(--black);
+    margin-bottom: 0.75rem;
+    margin-top: 1.5rem;
+}
+.page-content section {
+    margin-bottom: 2.5rem;
+}
+.page-content section:last-child {
+    margin-bottom: 0;
+}
+.page-content ul {
+    margin: 1rem 0;
+    padding-left: 2rem;
+}
+.page-content li {
+    font-size: var(--text-md);
     color: var(--gray-dark);
-    margin: 0;
+    margin-bottom: 0.5rem;
 }
 
-.contact-link {
+.page-link {
     color: var(--red);
     text-decoration: none;
 }
 
-.contact-link:hover {
+.page-link:hover {
     text-decoration: underline;
 }
 
-.contact-cta {
-    text-align: center;
-    margin-top: 3rem;
+.page-cta {
+    margin-top: var(--space-3xl);
 }
 
-.contact-cta-text {
-    font-family: Georgia, serif;
-    font-size: 1.1rem;
-    color: var(--gray);
-    margin-bottom: 1.5rem;
-}
-
-/* Mobile responsive contact page */
+/* Mobile responsive about page */
 @media (max-width: 768px) {
-    .contact-page {
+    .page {
         margin: 2rem auto;
         padding: 0 1.5rem;
     }
     
-    .contact-header h1 {
+    .page-header h1 {
         font-size: 1.5rem;
     }
     
-    .contact-subtitle {
+    .page-subtitle {
         font-size: 1rem;
     }
     
-    .contact-divider {
+    .page-divider {
         margin: 2rem 0;
     }
     
-    .contact-section h2 {
+    .page-content h2 {
         font-size: 1.1rem;
     }
+    
+    .page-content h3 {
+        font-size: 1rem;
+    }
+    
+    .page-content ul {
+        padding-left: 1.5rem;
+    }
 }
+
 
 /* Search results page styles */
 .search-page {
@@ -1608,4 +1548,5 @@ mark {
     transform: rotate(0deg) scale(1);
   }
 }
+
 

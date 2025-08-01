@@ -146,6 +146,51 @@ async def contact_page(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(request, "contact.html", {"current_user": current_user})
 
 
+@router.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the Terms of Service page.
+
+    Shows the legal terms and conditions for using Scroll Press.
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "terms.html", {"current_user": current_user})
+
+
+@router.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the Privacy Policy page.
+
+    Shows information about data collection, processing, and user rights under GDPR.
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "privacy.html", {"current_user": current_user})
+
+
+@router.get("/legal", response_class=HTMLResponse)
+async def legal_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the Impressum/Legal page.
+
+    Shows legal information required by German law (TMG).
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "legal.html", {"current_user": current_user})
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     """Display user dashboard with their published papers."""
