@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "components/scroll_card.html" import scroll_card %}
 {% from "components/button.html" import link_button, button %}
+{% from "components/form_input.html" import form_input %}
 
 {% block title %}Dashboard - Scroll Press{% endblock %}
 
@@ -9,9 +10,6 @@
   <div class="recent">
     <div class="dashboard-header">
       <h2>Your Scrolls ({{ papers|length }})</h2>
-      {% if papers %}
-        <button id="export-data-btn" class="btn btn-secondary" onclick="openExportModal()">Export Data</button>
-      {% endif %}
     </div>
     
     {% if papers %}
@@ -43,6 +41,17 @@
         </div>
       </div>
     {% endif %}
+  </div>
+
+  <!-- Account Management Section -->
+  <div class="account-management">
+    <h2>Account Management</h2>
+    <div class="account-actions">
+      {% if papers %}
+        <button id="export-data-btn" class="btn btn-secondary" onclick="openExportModal()">Export Data</button>
+      {% endif %}
+      <button id="delete-account-btn" class="btn btn-danger" onclick="openDeleteModal()">Delete Account</button>
+    </div>
   </div>
 </div>
 
@@ -91,12 +100,116 @@
   </div>
 </div>
 
+<!-- Delete Account Confirmation Modal -->
+<div id="delete-modal" class="modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeDeleteModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Delete Account</h3>
+      <button class="modal-close" onclick="closeDeleteModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="warning-message">
+        <p><strong>This action cannot be undone.</strong></p>
+        <p>Deleting your account will permanently remove all your personal information, including:</p>
+        <ul>
+          <li>Your profile and login credentials</li>
+          <li>Your account settings and preferences</li>
+          <li>Your personal data and session information</li>
+        </ul>
+        <p><strong>Your published scrolls will remain available</strong> to preserve the scholarly record and maintain citation links. However, they will no longer be associated with your account.</p>
+      </div>
+      <div class="form-group">
+        <label for="confirm-delete" class="form-label">Type "DELETE" to confirm:</label>
+        <input 
+          class="form-input"
+          type="text"
+          id="confirm-delete"
+          name="confirm_delete"
+          placeholder="Type DELETE here"
+          value=""
+          oninput="validateDeleteForm()"
+          autocomplete="off"
+        >
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      <button type="button" id="confirm-delete-btn" class="btn-delete-account" onclick="deleteAccount()" disabled>DELETE MY ACCOUNT</button>
+    </div>
+  </div>
+</div>
+
 <style>
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--space-lg);
+}
+
+.account-management {
+  margin-top: var(--space-xxl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--gray-lightest);
+}
+
+.account-management h2 {
+  margin-bottom: var(--space-lg);
+  font-family: var(--font-serif);
+}
+
+.account-actions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.warning-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.warning-message p {
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--gray-dark);
+}
+
+.warning-message ul {
+  margin: var(--space-sm) 0;
+  padding-left: var(--space-lg);
+}
+
+.warning-message li {
+  margin-bottom: var(--space-xs);
+  color: var(--gray-dark);
+}
+
+.btn-delete-account {
+  background: var(--gray-light);
+  color: var(--gray);
+  border: 1px solid var(--gray-light);
+  border-radius: var(--border-radius);
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--text-base);
+  font-weight: 500;
+  cursor: not-allowed;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-account:enabled {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+  cursor: pointer;
+}
+
+.btn-delete-account:enabled:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
 }
 
 .modal {
@@ -236,6 +349,28 @@
     text-align: center;
   }
   
+  .account-management {
+    margin-top: var(--mobile-space-xxl);
+    padding-top: var(--mobile-space-xl);
+  }
+  
+  .account-management h2 {
+    font-size: var(--mobile-text-xl);
+    text-align: center;
+  }
+  
+  .account-actions {
+    flex-direction: column;
+    gap: var(--mobile-space-md);
+  }
+  
+  .account-actions .btn {
+    width: 100%;
+    padding: var(--mobile-space-lg);
+    font-size: var(--mobile-text-base);
+    min-height: 44px;
+  }
+  
   .modal-content {
     width: 95%;
     max-width: none;
@@ -288,7 +423,8 @@
     padding: var(--mobile-space-lg);
   }
   
-  .modal-actions .btn {
+  .modal-actions .btn,
+  .modal-actions .btn-delete-account {
     width: 100%;
     padding: var(--mobile-space-lg);
     font-size: var(--mobile-text-base);
@@ -309,6 +445,60 @@ function closeExportModal() {
   // Reset form
   document.getElementById('export-form').reset();
   validateExportForm();
+}
+
+function openDeleteModal() {
+  document.getElementById('delete-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+  // Reset form
+  document.getElementById('confirm-delete').value = '';
+  const submitBtn = document.getElementById('confirm-delete-btn');
+  submitBtn.textContent = 'DELETE MY ACCOUNT';
+  validateDeleteForm();
+}
+
+function validateDeleteForm() {
+  const input = document.getElementById('confirm-delete');
+  const submitBtn = document.getElementById('confirm-delete-btn');
+  
+  // Enable submit button only if user typed "DELETE" exactly
+  submitBtn.disabled = input.value !== 'DELETE';
+}
+
+async function deleteAccount() {
+  const submitBtn = document.getElementById('confirm-delete-btn');
+  
+  // Show loading state
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'DELETING...';
+  
+  try {
+    const response = await fetch('/account', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Account deletion failed');
+    }
+    
+    // Redirect to home page with success message
+    window.location.href = '/?message=account_deleted';
+    
+  } catch (error) {
+    alert('Account deletion failed: ' + error.message);
+    // Reset button state
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'DELETE MY ACCOUNT';
+  }
 }
 
 function validateExportForm() {
@@ -355,8 +545,13 @@ function validateExportForm() {
 
 // Close modal on ESC key
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && document.getElementById('export-modal').style.display === 'block') {
-    closeExportModal();
+  if (e.key === 'Escape') {
+    if (document.getElementById('export-modal').style.display === 'block') {
+      closeExportModal();
+    }
+    if (document.getElementById('delete-modal').style.display === 'block') {
+      closeDeleteModal();
+    }
   }
 });
 
@@ -413,5 +608,6 @@ document.getElementById('export-form').addEventListener('submit', function(e) {
     submitBtn.textContent = 'Export';
   });
 });
+
 </script>
 {% endblock %}

@@ -1,7 +1,7 @@
 """Scroll and Subject models for academic preprints."""
 
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 import uuid
 
 from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, String, Text
@@ -131,11 +131,11 @@ class Scroll(Base):
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Foreign keys
-    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(GUID, ForeignKey("users.id"), nullable=True)
     subject_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("subjects.id"), nullable=False)
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="scrolls")
+    user: Mapped[Optional["User"]] = relationship("User", back_populates="scrolls")
     subject: Mapped["Subject"] = relationship("Subject", back_populates="scrolls")
 
     def __repr__(self):

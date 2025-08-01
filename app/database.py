@@ -16,6 +16,12 @@ class Base(DeclarativeBase):
     pass
 
 
+# Import all models to ensure they're registered with Base.metadata for Alembic
+from app.models.user import User  # noqa: F401, E402
+from app.models.scroll import Scroll, Subject  # noqa: F401, E402  
+from app.models.session import Session  # noqa: F401, E402
+
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:
@@ -26,6 +32,7 @@ async def get_db():
 
 async def create_tables():
     # Import models to ensure they're registered with Base.metadata
+    from app.models import User, Scroll, Subject, Session  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
