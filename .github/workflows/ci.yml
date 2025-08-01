@@ -56,4 +56,4 @@ jobs:
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
-      run: uv run pytest -v --tb=short -n auto
+      run: uv run pytest -v --tb=short
