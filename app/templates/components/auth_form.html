@@ -6,8 +6,9 @@ Usage:
              fields=[{"label": "Email", "name": "email", "type": "email"}]) }}
 #}
 
-{% macro auth_form(form_type, action, submit_text, loading_text, fields, errors=[], form_data={}, field_errors={}) %}
+{% macro auth_form(form_type, action, submit_text, loading_text, fields, errors=[], form_data={}, field_errors={}, checkboxes=[]) %}
 {% from "components/form_input.html" import form_input %}
+{% from "components/form_checkbox.html" import form_checkbox %}
 {% from "components/button.html" import button %}
 
 <div id="{{ form_type }}-form-container">
@@ -37,6 +38,16 @@ Usage:
          required=field.required|default(true),
          value=form_data[field.name] if form_data and field.name in form_data else "",
          error=field_errors[field.name][0] if field_errors and field.name in field_errors else ""
+       ) }}
+    {% endfor %}
+
+    {% for checkbox in checkboxes %}
+    {{ form_checkbox(
+         checkbox.name,
+         checkbox.label,
+         required=checkbox.required|default(true),
+         checked=form_data[checkbox.name] if form_data and checkbox.name in form_data else false,
+         error=field_errors[checkbox.name][0] if field_errors and checkbox.name in field_errors else ""
        ) }}
     {% endfor %}
 

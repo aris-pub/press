@@ -37,6 +37,7 @@ async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, tes
         "abstract": "Test abstract",
         "keywords": "test, scroll",
         "html_content": "<h1>Test Content</h1>",
+        "confirm_rights": "true",
         "action": "publish",
     }
 
@@ -66,6 +67,7 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
         "abstract": "Test abstract",
         "keywords": "test, preview",
         "html_content": "<h1>Published Content</h1>",
+        "confirm_rights": "true",
         "action": "publish",
     }
 
@@ -88,12 +90,36 @@ async def test_upload_form_validation_errors(authenticated_client: AsyncClient, 
         "subject_id": "invalid-uuid",
         "abstract": "Test abstract",
         "html_content": "<h1>Test Content</h1>",
+        "confirm_rights": "true",
         "action": "draft",
     }
 
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 422
     assert "Title is required" in response.text
+
+
+async def test_upload_form_missing_checkbox(authenticated_client: AsyncClient, test_db):
+    """Test POST /upload-form validates checkbox is required."""
+    # Create a subject for the test
+    subject = Subject(name="Test Subject", description="Test description")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    upload_data = {
+        "title": "Test Title",
+        "authors": "Test Author",
+        "subject_id": str(subject.id),
+        "abstract": "Test abstract",
+        "html_content": "<h1>Test Content</h1>",
+        # Missing confirm_rights checkbox
+        "action": "publish",
+    }
+
+    response = await authenticated_client.post("/upload-form", data=upload_data)
+    assert response.status_code == 422
+    assert "You must confirm that you have the right to publish this content" in response.text
 
 
 async def test_view_published_preview(client: AsyncClient, test_db, test_user):
@@ -165,6 +191,7 @@ async def test_upload_form_requires_auth(client: AsyncClient):
         "subject_id": "test-uuid",  # Add required field
         "abstract": "Test abstract",
         "html_content": "<h1>Test Content</h1>",
+        "confirm_rights": "true",
         "action": "draft",
     }
 

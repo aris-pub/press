@@ -81,6 +81,7 @@ async def register_form(
     email: str = Form(...),
     display_name: str = Form(...),
     password: str = Form(...),
+    agree_terms: str = Form(None),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -114,6 +115,8 @@ async def register_form(
             raise ValueError("Display name is required")
         if not password or len(password) < 1:
             raise ValueError("Password is required")
+        if not agree_terms or agree_terms.lower() != "true":
+            raise ValueError("You must agree to the Terms of Service and Privacy Policy")
 
         # Check if user already exists (case insensitive)
         normalized_email = email.strip().lower()
@@ -131,7 +134,7 @@ async def register_form(
                 "auth/partials/register_form.html",
                 {
                     "errors": ["Email already registered"],
-                    "form_data": {"email": email, "display_name": display_name},
+                    "form_data": {"email": email, "display_name": display_name, "agree_terms": agree_terms},
                 },
                 status_code=422,
             )
@@ -179,7 +182,7 @@ async def register_form(
             "auth/partials/register_form.html",
             {
                 "errors": [error_message],
-                "form_data": {"email": email, "display_name": display_name},
+                "form_data": {"email": email, "display_name": display_name, "agree_terms": agree_terms},
             },
             status_code=422,
         )

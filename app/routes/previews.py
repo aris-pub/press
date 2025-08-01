@@ -156,6 +156,7 @@ async def upload_form(
     abstract: str = Form(...),
     keywords: str = Form(""),
     html_content: str = Form(...),
+    confirm_rights: str = Form(None),
     action: str = Form("publish"),  # Always publish
     db: AsyncSession = Depends(get_db),
 ):
@@ -204,6 +205,8 @@ async def upload_form(
             raise ValueError("Abstract is required")
         if not html_content or not html_content.strip():
             raise ValueError("HTML content is required")
+        if not confirm_rights or confirm_rights.lower() != "true":
+            raise ValueError("You must confirm that you have the right to publish this content")
 
         # Find the subject - handle UUID conversion
         try:
@@ -310,9 +313,10 @@ async def upload_form(
                     "title": title,
                     "authors": authors,
                     "subject_id": subject_id,
-                    "abstract": abstract,
+                    "abstract": abstract,  
                     "keywords": keywords,
                     "html_content": html_content,
+                    "confirm_rights": confirm_rights,
                 },
             },
             status_code=422,

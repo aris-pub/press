@@ -142,7 +142,7 @@ async def test_about_page(client: AsyncClient):
     """Test about page loads correctly."""
     response = await client.get("/about")
     assert response.status_code == 200
-    assert "About Press" in response.text
+    assert "About Scroll Press" in response.text
     assert "Research publications. Web-native. Human-first." in response.text
     assert "Scroll Press is where modern research lives" in response.text
 

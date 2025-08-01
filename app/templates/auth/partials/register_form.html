@@ -6,6 +6,9 @@
                {"label": "Display Name", "name": "display_name", "type": "text"},
                {"label": "Password", "name": "password", "type": "password"}
              ],
+             checkboxes=[
+               {"name": "agree_terms", "label": "I have read and agree to the <a href='/terms' target='_blank'>Terms of Service</a> and <a href='/privacy' target='_blank'>Privacy Policy</a>", "required": true}
+             ],
              errors=errors if errors else [],
              form_data=form_data if form_data else {},
              field_errors=field_errors if field_errors else {}) }}

@@ -1,0 +1,26 @@
+{# 
+Form Checkbox Macro
+Usage: 
+{% from "components/form_checkbox.html" import form_checkbox %}
+{{ form_checkbox("agree_terms", "I have read and agree to the Terms of Service and Privacy Policy", required=true) }}
+#}
+
+{% macro form_checkbox(name, label, required=false, checked=false, error="") %}
+<div class="form-group">
+  <div class="form-checkbox-container">
+    <input type="checkbox" 
+           id="{{ name }}" 
+           name="{{ name }}" 
+           class="form-checkbox"
+           {% if required %}required{% endif %}
+           {% if checked %}checked{% endif %}
+           value="true">
+    <label for="{{ name }}" class="form-checkbox-label">
+      {{ label|safe }}{% if required %}&nbsp;<span class="required">*</span>{% endif %}
+    </label>
+  </div>
+  {% if error %}
+  <div class="form-error">{{ error }}</div>
+  {% endif %}
+</div>
+{% endmacro %}

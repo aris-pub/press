@@ -56,6 +56,7 @@ async def test_register_form_valid_data(client: AsyncClient):
         "email": "newuser@example.com",
         "password": "newpassword",
         "display_name": "New User",
+        "agree_terms": "true",
     }
 
     response = await client.post("/register-form", data=register_data)
@@ -70,11 +71,26 @@ async def test_register_form_duplicate_email(client: AsyncClient, test_user):
         "email": test_user.email,
         "password": "newpassword",
         "display_name": "New User",
+        "agree_terms": "true",
     }
 
     response = await client.post("/register-form", data=register_data)
     assert response.status_code == 422
     assert "Email already registered" in response.text
+
+
+async def test_register_form_missing_checkbox(client: AsyncClient):
+    """Test POST /register-form validates checkbox is required."""
+    register_data = {
+        "email": "newuser@example.com",
+        "password": "newpassword",  
+        "display_name": "New User",
+        # Missing agree_terms checkbox
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "You must agree to the Terms of Service and Privacy Policy" in response.text
 
 
 async def test_logout_post(authenticated_client: AsyncClient):

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "components/form_input.html" import form_input %}
+{% from "components/form_checkbox.html" import form_checkbox %}
 {% from "components/button.html" import button %}
 
 {% block title %}Upload Scroll - Scroll Press{% endblock %}
@@ -237,6 +238,8 @@
 </html>">{{ form_data.html_content if form_data else '' }}</textarea>
             <div class="help-text">Complete HTML document with embedded CSS and JavaScript for your interactive scroll</div>
         </div>
+
+        {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
 
         <div class="form-actions">
             {{ button("Publish Scroll", type="submit", variant="primary", name="action", value="publish") }}
