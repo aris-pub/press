@@ -48,19 +48,19 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
     subjects = subjects_result.all()
 
     # Get recent published scrolls with subjects
-    previews_result = await db.execute(
+    scrolls_result = await db.execute(
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
         .where(Scroll.status == "published")
         .order_by(Scroll.created_at.desc())
         .limit(4)
     )
-    previews = previews_result.all()
+    scrolls = scrolls_result.all()
 
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"current_user": current_user, "subjects": subjects, "previews": previews},
+        {"current_user": current_user, "subjects": subjects, "scrolls": scrolls},
     )
 
 
@@ -302,7 +302,7 @@ async def search_results(
                         ts_rank(to_tsvector('english', p.title || ' ' || p.authors || ' ' || p.abstract), plainto_tsquery('english', :query))
                     ELSE 0.1 
                     END as fts_rank
-                FROM previews p
+                FROM scrolls p
                 JOIN subjects s ON p.subject_id = s.id
                 WHERE p.status = 'published'
                 AND (

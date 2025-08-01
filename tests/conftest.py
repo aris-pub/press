@@ -20,7 +20,11 @@ from app.models.user import User
 from main import app
 
 # Test database URL - use PostgreSQL in CI, SQLite locally
-TEST_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+# Check if we're in CI by looking for CI environment variable
+if os.getenv("CI") and os.getenv("DATABASE_URL"):
+    TEST_DATABASE_URL = os.getenv("DATABASE_URL")
+else:
+    TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
 @pytest.fixture(scope="function")

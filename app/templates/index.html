@@ -38,7 +38,7 @@
   <h2 id="recent-submissions-heading">Recent Scrolls</h2>
   
   <div class="scrolls-grid">
-    {% for preview_row in previews %}
+    {% for preview_row in scrolls %}
     {% set preview = preview_row[0] %}
     {% set subject_name = preview_row[1] %}
     {{ scroll_card(
