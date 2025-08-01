@@ -134,7 +134,11 @@ async def register_form(
                 "auth/partials/register_form.html",
                 {
                     "errors": ["Email already registered"],
-                    "form_data": {"email": email, "display_name": display_name, "agree_terms": agree_terms},
+                    "form_data": {
+                        "email": email,
+                        "display_name": display_name,
+                        "agree_terms": agree_terms,
+                    },
                 },
                 status_code=422,
             )
@@ -182,7 +186,11 @@ async def register_form(
             "auth/partials/register_form.html",
             {
                 "errors": [error_message],
-                "form_data": {"email": email, "display_name": display_name, "agree_terms": agree_terms},
+                "form_data": {
+                    "email": email,
+                    "display_name": display_name,
+                    "agree_terms": agree_terms,
+                },
             },
             status_code=422,
         )

@@ -10,7 +10,7 @@ written in web-native formats (HTML/CSS/JS).
 - **Session-based authentication**: Secure user registration and login system
 - **Subject categorization**: Organize research by academic disciplines
 - **Draft and publish workflow**: Save drafts and publish when ready
-- **Preview cards**: Browse recent submissions with rich metadata
+- **Scroll cards**: Browse recent submissions with rich metadata
 - **Responsive design**: Clean, academic-focused UI with HTMX interactions
 
 ## Quick Start
@@ -82,10 +82,10 @@ tests/                 # Comprehensive test suite
 - Email verification and password hashing
 - Display names and timestamps
 
-### Preview
+### Scroll
 - Academic manuscript storage with HTML content
 - Draft/published status workflow
-- Version tracking and unique preview IDs
+- Version tracking and unique scroll IDs
 - Metadata (title, authors, abstract, keywords)
 
 ### Subject

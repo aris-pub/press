@@ -5,7 +5,7 @@ this repository.
 
 ## Project Overview
 
-**Scroll Press**, sometimes just **Press** is a modern HTML-native preprint server for
+**Scroll Press** is a modern HTML-native preprint server for
 academic research documents. Built with FastAPI, it allows researchers to upload and
 share research manuscripts written in web-native formats (HTML/CSS/JS).
 
@@ -62,9 +62,9 @@ ruff check . && ruff format .
 
 ### Database Models
 - **User**: UUID-based with email verification, bcrypt password hashing
-- **Preview**: Academic manuscripts with HTML content, versioning, draft/published status
+- **Scroll**: Academic manuscripts with HTML content, versioning, draft/published status
 - **Subject**: Academic categorization system
-- **Relationships**: Users own previews, previews belong to subjects
+- **Relationships**: Users own scrolls, scrolls belong to subjects
 
 ### Authentication System
 - Session-based authentication (not JWT) with 24-hour expiration
@@ -86,7 +86,7 @@ ruff check . && ruff format .
 - HTMX-first approach for dynamic interactions
 - CSS organization: Single `main.css` file (HTMX best practice)
 - Typography: Source Sans 3 + Georgia serif for headers
-- Component styling: Use `preview-` class prefix (not `paper-`)
+- Component styling: Use `scroll-` class prefix (not `paper-`)
 
 ### Code Organization
 ```

@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.session import get_current_user_from_session
 from app.database import get_db
 from app.logging_config import get_logger, log_error, log_request
-from app.models.preview import Preview, Subject
+from app.models.scroll import Scroll, Subject
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -49,10 +49,10 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
 
     # Get recent published scrolls with subjects
     previews_result = await db.execute(
-        select(Preview, Subject.name.label("subject_name"))
+        select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
-        .where(Preview.status == "published")
-        .order_by(Preview.created_at.desc())
+        .where(Scroll.status == "published")
+        .order_by(Scroll.created_at.desc())
         .limit(4)
     )
     previews = previews_result.all()
@@ -86,7 +86,7 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
         result = await db.execute(select(func.count(Subject.id)))
         subject_count = result.scalar()
 
-        result = await db.execute(select(func.count(Preview.id)))
+        result = await db.execute(select(func.count(Scroll.id)))
         scroll_count = result.scalar()
 
         response_time = round((time.time() - start_time) * 1000, 2)
@@ -219,10 +219,10 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
 
     # Get user's published papers with subject names
     published_papers = await db.execute(
-        select(Preview, Subject.name.label("subject_name"))
+        select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
-        .where(Preview.user_id == current_user.id, Preview.status == "published")
-        .order_by(Preview.created_at.desc())
+        .where(Scroll.user_id == current_user.id, Scroll.status == "published")
+        .order_by(Scroll.created_at.desc())
     )
     papers = published_papers.all()
 
@@ -328,18 +328,18 @@ async def search_results(
             # Fallback to LIKE queries for SQLite (testing)
             like_pattern = f"%{query}%"
             search_results = await db.execute(
-                select(Preview, Subject.name.label("subject_name"))
+                select(Scroll, Subject.name.label("subject_name"))
                 .join(Subject)
                 .where(
-                    Preview.status == "published",
+                    Scroll.status == "published",
                     or_(
-                        Preview.title.ilike(like_pattern),
-                        Preview.authors.ilike(like_pattern),
-                        Preview.abstract.ilike(like_pattern),
-                        Preview.html_content.ilike(like_pattern),
+                        Scroll.title.ilike(like_pattern),
+                        Scroll.authors.ilike(like_pattern),
+                        Scroll.abstract.ilike(like_pattern),
+                        Scroll.html_content.ilike(like_pattern),
                     ),
                 )
-                .order_by(Preview.created_at.desc())
+                .order_by(Scroll.created_at.desc())
                 .limit(50)
             )
 
@@ -411,10 +411,10 @@ async def export_data(
 
     # Get user's published papers with subject names
     published_papers = await db.execute(
-        select(Preview, Subject.name.label("subject_name"))
+        select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
-        .where(Preview.user_id == current_user.id, Preview.status == "published")
-        .order_by(Preview.created_at.desc())
+        .where(Scroll.user_id == current_user.id, Scroll.status == "published")
+        .order_by(Scroll.created_at.desc())
     )
     papers = published_papers.all()
 

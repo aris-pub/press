@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "components/preview_card.html" import preview_card %}
+{% from "components/scroll_card.html" import scroll_card %}
 {% from "components/button.html" import link_button, button %}
 
 {% block title %}Dashboard - Scroll Press{% endblock %}
@@ -19,7 +19,7 @@
         {% for paper_row in papers %}
         {% set paper = paper_row[0] %}
         {% set subject_name = paper_row[1] %}
-        {{ preview_card(
+        {{ scroll_card(
             paper.title,
             paper.authors,
             paper.abstract,

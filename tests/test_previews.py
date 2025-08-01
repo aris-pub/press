@@ -3,7 +3,7 @@
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from app.models.preview import Preview, Subject
+from app.models.scroll import Scroll, Subject
 
 
 async def test_upload_page_requires_auth(client: AsyncClient):
@@ -46,7 +46,7 @@ async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, tes
     assert "Your scroll has been published successfully!" in response.text
 
     # Verify scroll was created and published in database
-    result = await test_db.execute(select(Preview).where(Preview.title == "Test Scroll"))
+    result = await test_db.execute(select(Scroll).where(Scroll.title == "Test Scroll"))
     preview = result.scalar_one()
     assert preview.status == "published"
     assert preview.user_id == test_user.id
@@ -61,7 +61,7 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
     await test_db.refresh(subject)
 
     upload_data = {
-        "title": "Published Preview",
+        "title": "Published Scroll",
         "authors": "Test Author",
         "subject_id": str(subject.id),
         "abstract": "Test abstract",
@@ -76,7 +76,7 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
     assert "Your scroll has been published successfully!" in response.text
 
     # Verify preview was created and published
-    result = await test_db.execute(select(Preview).where(Preview.title == "Published Preview"))
+    result = await test_db.execute(select(Scroll).where(Scroll.title == "Published Scroll"))
     preview = result.scalar_one()
     assert preview.status == "published"
     assert preview.preview_id is not None
@@ -130,8 +130,8 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
-        title="Test Published Preview",
+    preview = Scroll(
+        title="Test Published Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Published Content</h1>",
@@ -145,7 +145,7 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
 
     response = await client.get("/scroll/test123")
     assert response.status_code == 200
-    assert "Test Published Preview" in response.text
+    assert "Test Published Scroll" in response.text
     assert "Test Author" in response.text
     # HTML content should be rendered directly (no iframe)
     assert "<h1>Test Published Content</h1>" in response.text
@@ -166,7 +166,7 @@ async def test_view_unpublished_scroll_404(client: AsyncClient, test_db, test_us
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
+    preview = Scroll(
         title="Test Unpublished Scroll",
         authors="Test Author",
         abstract="Test abstract",
@@ -186,7 +186,7 @@ async def test_view_unpublished_scroll_404(client: AsyncClient, test_db, test_us
 async def test_upload_form_requires_auth(client: AsyncClient):
     """Test POST /upload-form redirects unauthenticated users."""
     upload_data = {
-        "title": "Test Preview",
+        "title": "Test Scroll",
         "authors": "Test Author",
         "subject_id": "test-uuid",  # Add required field
         "abstract": "Test abstract",
@@ -208,7 +208,7 @@ async def test_css_injection_for_unstyled_content(client: AsyncClient, test_db, 
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
+    preview = Scroll(
         title="Unstyled Scroll",
         authors="Test Author",
         abstract="Test abstract",
@@ -254,7 +254,7 @@ async def test_no_css_injection_for_styled_content(client: AsyncClient, test_db,
     <p>This already has CSS.</p>
     """
 
-    preview = Preview(
+    preview = Scroll(
         title="Styled Scroll",
         authors="Test Author",
         abstract="Test abstract",
@@ -298,7 +298,7 @@ async def test_css_detection_with_link_tags(client: AsyncClient, test_db, test_u
     <p>This has CSS via link tag.</p>
     """
 
-    preview = Preview(
+    preview = Scroll(
         title="Link CSS Scroll",
         authors="Test Author",
         abstract="Test abstract",
@@ -337,7 +337,7 @@ async def test_css_detection_with_inline_styles(client: AsyncClient, test_db, te
     <p>This has CSS via inline styles.</p>
     """
 
-    preview = Preview(
+    preview = Scroll(
         title="Inline CSS Scroll",
         authors="Test Author",
         abstract="Test abstract",

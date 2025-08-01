@@ -2,8 +2,7 @@ from logging.config import fileConfig
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -25,7 +24,6 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.database import Base  # noqa: E402
-import app.models  # noqa: E402 - Import all models so they're registered
 
 target_metadata = Base.metadata
 
@@ -71,7 +69,7 @@ def run_migrations_online() -> None:
     if database_url and "asyncpg" in database_url:
         # Convert async URL to sync for Alembic
         database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
-    
+
     connectable = engine_from_config(
         {**config.get_section(config.config_ini_section, {}), "sqlalchemy.url": database_url},
         prefix="sqlalchemy.",
@@ -79,9 +77,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

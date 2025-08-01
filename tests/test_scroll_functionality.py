@@ -2,7 +2,7 @@
 
 from httpx import AsyncClient
 
-from app.models.preview import Preview, Subject
+from app.models.scroll import Scroll, Subject
 
 
 async def test_scroll_page_functionality(client: AsyncClient, test_db, test_user):
@@ -14,7 +14,7 @@ async def test_scroll_page_functionality(client: AsyncClient, test_db, test_user
     await test_db.refresh(subject)
 
     # Create and publish scroll (all scrolls are published directly)
-    preview = Preview(
+    preview = Scroll(
         title="Basic Test Scroll",
         authors="Test Author",
         abstract="Test abstract",

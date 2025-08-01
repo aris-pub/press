@@ -902,7 +902,7 @@ button.btn, a.btn {
 .recent h2 { font-size: var(--text-xl); font-weight: 500; margin-bottom: var(--space-xl); color: var(--black); font-family: var(--font-serif); }
 .scrolls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3xl); }
 
-/* Mobile preview grid styles */
+/* Mobile scroll grid styles */
 @media (max-width: 768px) {
   .recent {
     padding: var(--mobile-space-3xl) 0;
@@ -977,7 +977,7 @@ button.btn, a.btn {
 .scroll-tags { display: flex; gap: var(--space-sm); }
 .tag { background: var(--gray-bg); padding: 0.15rem 0.4rem; border-radius: var(--border-radius); font-size: var(--text-xs); color: var(--gray-medium); }
 
-/* Preview page styles */
+/* Scroll page styles */
 .scroll-page {
     max-width: 800px;
     margin: var(--space-xl) auto;
@@ -1305,7 +1305,7 @@ button.btn, a.btn {
 }
 
 .search-result {
-    /* Inherit all preview card styles */
+    /* Inherit all scroll card styles */
 }
 
 /* Search term highlighting */

@@ -60,7 +60,7 @@ class User(Base):
     )
 
     # Relationships
-    scrolls = relationship("Preview", back_populates="user")
+    scrolls = relationship("Scroll", back_populates="user")
     sessions = relationship("Session", back_populates="user")
 
     def __repr__(self):

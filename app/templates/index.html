@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "components/button.html" import button %}
-{% from "components/preview_card.html" import preview_card %}
+{% from "components/scroll_card.html" import scroll_card %}
 {% from "components/subject_card.html" import subject_card %}
 {% from "components/search_form.html" import search_form %}
 
@@ -41,7 +41,7 @@
     {% for preview_row in previews %}
     {% set preview = preview_row[0] %}
     {% set subject_name = preview_row[1] %}
-    {{ preview_card(
+    {{ scroll_card(
                     preview.title,
                     preview.authors,
                     preview.abstract,

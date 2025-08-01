@@ -7,7 +7,6 @@ import uuid
 from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
 from sqlalchemy.types import TypeDecorator
 
 from app.database import Base
@@ -73,16 +72,16 @@ class Subject(Base):
     )
 
     # Relationship
-    scrolls: Mapped[List["Preview"]] = relationship("Preview", back_populates="subject")
+    scrolls: Mapped[List["Scroll"]] = relationship("Scroll", back_populates="subject")
 
     def __repr__(self):
         return f"<Subject(name='{self.name}')>"
 
 
-class Preview(Base):
+class Scroll(Base):
     """Academic scroll model."""
 
-    __tablename__ = "previews"
+    __tablename__ = "scrolls"
 
     id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
     preview_id: Mapped[str] = mapped_column(

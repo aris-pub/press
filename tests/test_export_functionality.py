@@ -2,7 +2,7 @@
 
 from httpx import AsyncClient
 
-from app.models.preview import Preview, Subject
+from app.models.scroll import Scroll, Subject
 
 
 async def test_dashboard_has_export_button(authenticated_client: AsyncClient, test_db, test_user):
@@ -13,8 +13,8 @@ async def test_dashboard_has_export_button(authenticated_client: AsyncClient, te
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
-        title="Test Preview",
+    preview = Scroll(
+        title="Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Content</h1>",
@@ -73,8 +73,8 @@ async def test_export_csv_metadata_only(authenticated_client: AsyncClient, test_
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
-        title="Test Preview",
+    preview = Scroll(
+        title="Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         keywords=["test", "preview"],
@@ -98,7 +98,7 @@ async def test_export_csv_metadata_only(authenticated_client: AsyncClient, test_
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/csv; charset=utf-8"
     assert "attachment; filename=" in response.headers["content-disposition"]
-    assert "Test Preview" in response.text
+    assert "Test Scroll" in response.text
     assert "Test Author" in response.text
     assert "<h1>Test Content</h1>" not in response.text  # HTML content excluded
 
@@ -111,8 +111,8 @@ async def test_export_json_metadata_only(authenticated_client: AsyncClient, test
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
-        title="Test Preview",
+    preview = Scroll(
+        title="Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         keywords=["test", "preview"],
@@ -138,7 +138,7 @@ async def test_export_json_metadata_only(authenticated_client: AsyncClient, test
 
     data = response.json()
     assert len(data) == 1
-    assert data[0]["title"] == "Test Preview"
+    assert data[0]["title"] == "Test Scroll"
     assert data[0]["authors"] == "Test Author"
     assert "html_content" not in data[0]  # HTML content excluded
 
@@ -151,8 +151,8 @@ async def test_export_json_with_content(authenticated_client: AsyncClient, test_
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
-        title="Test Preview",
+    preview = Scroll(
+        title="Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         keywords=["test", "preview"],
@@ -178,7 +178,7 @@ async def test_export_json_with_content(authenticated_client: AsyncClient, test_
 
     data = response.json()
     assert len(data) == 1
-    assert data[0]["title"] == "Test Preview"
+    assert data[0]["title"] == "Test Scroll"
     assert data[0]["html_content"] == "<h1>Test Content</h1>"  # HTML content included
 
 
@@ -206,7 +206,7 @@ async def test_export_bibtex_metadata_only(authenticated_client: AsyncClient, te
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
+    preview = Scroll(
         title="Machine Learning Research",
         authors="John Doe, Jane Smith",
         abstract="This is a test abstract about machine learning.",

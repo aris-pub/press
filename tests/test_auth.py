@@ -83,7 +83,7 @@ async def test_register_form_missing_checkbox(client: AsyncClient):
     """Test POST /register-form validates checkbox is required."""
     register_data = {
         "email": "newuser@example.com",
-        "password": "newpassword",  
+        "password": "newpassword",
         "display_name": "New User",
         # Missing agree_terms checkbox
     }

@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import create_tables
 from app.logging_config import get_logger
 from app.middleware import LoggingMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
-from app.routes import auth, main, previews
+from app.routes import auth, main, scrolls
 
 
 @asynccontextmanager
@@ -56,4 +56,4 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Include routers
 app.include_router(main.router)
 app.include_router(auth.router)
-app.include_router(previews.router)
+app.include_router(scrolls.router)

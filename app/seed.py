@@ -4,7 +4,7 @@ from sqlalchemy import text
 
 from app.auth.utils import get_password_hash
 from app.database import AsyncSessionLocal, create_tables
-from app.models.preview import Preview, Subject
+from app.models.scroll import Scroll, Subject
 from app.models.user import User
 
 
@@ -122,8 +122,8 @@ async def seed_subjects():
 async def seed_scrolls():
     """Create mock scrolls/papers."""
     async with AsyncSessionLocal() as session:
-        # Check if previews already exist
-        existing_scrolls = await session.execute(text("SELECT COUNT(*) FROM previews"))
+        # Check if scrolls already exist
+        existing_scrolls = await session.execute(text("SELECT COUNT(*) FROM scrolls"))
         if existing_scrolls.scalar() > 0:
             print("Scrolls already exist, skipping seed.")
             return
@@ -202,7 +202,7 @@ async def seed_scrolls():
         ]
 
         for scroll_data in scrolls_data:
-            db_scroll = Preview(
+            db_scroll = Scroll(
                 title=scroll_data["title"],
                 authors=scroll_data["authors"],
                 abstract=scroll_data["abstract"],

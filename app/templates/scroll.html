@@ -1,10 +1,10 @@
-{% from "components/preview_card.html" import preview_card %}
+{% from "components/scroll_card.html" import scroll_card %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ preview.title }} - Scroll Press</title>
+  <title>{{ scroll.title }} - Scroll Press</title>
   <link rel="icon" type="image/svg+xml" href="/static/images/press-logo-64.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,23 +33,23 @@
 
   <div class="scroll-container">
     <div class="scroll-content">
-      {{ preview.html_content | safe }}
+      {{ scroll.html_content | safe }}
     </div>
   </div>
 
   <footer class="scroll-attribution">
     <div class="attribution-title">
-      {% if preview.title | length > 60 %}
-        {{ preview.title[:60] }}...
+      {% if scroll.title | length > 60 %}
+        {{ scroll.title[:60] }}...
       {% else %}
-        {{ preview.title }}
+        {{ scroll.title }}
       {% endif %}
     </div>
     <div class="attribution-meta">
-      {{ preview.authors }} • {{ preview.subject.name }}
+      {{ scroll.authors }} • {{ scroll.subject.name }}
     </div>
     <div class="attribution-footer">
-      {{ preview.created_at.strftime('%B %d, %Y') }} • <a href="/" class="attribution-link">Scroll Press</a>
+      {{ scroll.created_at.strftime('%B %d, %Y') }} • <a href="/" class="attribution-link">Scroll Press</a>
     </div>
   </footer>
 
@@ -65,14 +65,14 @@
         <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
-        {{ preview_card(
-          title=preview.title,
-          authors=preview.authors,
-          abstract=preview.abstract,
-          tags=preview.keywords,
-          subject=preview.subject.name,
-          time_ago="Published " + preview.published_at.strftime('%B %d, %Y') if preview.published_at else "Not published",
-          version="v" + preview.version|string
+        {{ scroll_card(
+          title=scroll.title,
+          authors=scroll.authors,
+          abstract=scroll.abstract,
+          tags=scroll.keywords,
+          subject=scroll.subject.name,
+          time_ago="Published " + scroll.published_at.strftime('%B %d, %Y') if scroll.published_at else "Not published",
+          version="v" + scroll.version|string
         ) }}
       </div>
       <div class="modal-actions">
@@ -464,8 +464,8 @@ body.modal-open {
   }
   
   function downloadHTML() {
-    const htmlContent = {{ preview.html_content | tojson }};
-    const filename = {{ (preview.title | replace(' ', '_') | replace('/', '_') | replace('\\', '_') | replace(':', '_') | replace('*', '_') | replace('?', '_') | replace('"', '_') | replace('<', '_') | replace('>', '_') | replace('|', '_')) | tojson }} + '.html';
+    const htmlContent = {{ scroll.html_content | tojson }};
+    const filename = {{ (scroll.title | replace(' ', '_') | replace('/', '_') | replace('\\', '_') | replace(':', '_') | replace('*', '_') | replace('?', '_') | replace('"', '_') | replace('<', '_') | replace('>', '_') | replace('|', '_')) | tojson }} + '.html';
     
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);

@@ -2,7 +2,7 @@
 
 from httpx import AsyncClient
 
-from app.models.preview import Preview, Subject
+from app.models.scroll import Scroll, Subject
 
 
 async def test_homepage_anonymous_user(client: AsyncClient):
@@ -44,8 +44,8 @@ async def test_homepage_shows_recent_previews(client: AsyncClient, test_db, test
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
-        title="Recent Test Preview",
+    preview = Scroll(
+        title="Recent Test Scroll",
         authors="Test Author",
         abstract="Test abstract for recent preview",
         html_content="<h1>Test Content</h1>",
@@ -60,7 +60,7 @@ async def test_homepage_shows_recent_previews(client: AsyncClient, test_db, test
     response = await client.get("/")
     assert response.status_code == 200
     assert "Recent Scrolls" in response.text
-    assert "Recent Test Preview" in response.text
+    assert "Recent Test Scroll" in response.text
     assert "Test Author" in response.text
     assert "Test abstract for recent preview" in response.text
 
@@ -74,8 +74,8 @@ async def test_homepage_only_shows_published_previews(client: AsyncClient, test_
     await test_db.refresh(subject)
 
     # Create draft preview (should not appear)
-    draft_preview = Preview(
-        title="Draft Preview",
+    draft_preview = Scroll(
+        title="Draft Scroll",
         authors="Draft Author",
         abstract="Draft abstract",
         html_content="<h1>Draft Content</h1>",
@@ -85,8 +85,8 @@ async def test_homepage_only_shows_published_previews(client: AsyncClient, test_
     )
 
     # Create published preview (should appear)
-    published_preview = Preview(
-        title="Published Preview",
+    published_preview = Scroll(
+        title="Published Scroll",
         authors="Published Author",
         abstract="Published abstract",
         html_content="<h1>Published Content</h1>",
@@ -104,11 +104,11 @@ async def test_homepage_only_shows_published_previews(client: AsyncClient, test_
     assert response.status_code == 200
 
     # Should show published preview
-    assert "Published Preview" in response.text
+    assert "Published Scroll" in response.text
     assert "Published Author" in response.text
 
     # Should not show draft preview
-    assert "Draft Preview" not in response.text
+    assert "Draft Scroll" not in response.text
     assert "Draft Author" not in response.text
 
 
@@ -120,8 +120,8 @@ async def test_homepage_preview_links(client: AsyncClient, test_db, test_user):
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
-        title="Linkable Preview",
+    preview = Scroll(
+        title="Linkable Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Content</h1>",
@@ -168,7 +168,7 @@ async def test_homepage_has_filtering_elements(client: AsyncClient):
     assert "recent-submissions-heading" in response.text
 
 
-async def test_preview_card_subject_links(client: AsyncClient, test_db, test_user):
+async def test_scroll_card_subject_links(client: AsyncClient, test_db, test_user):
     """Test preview cards contain clickable subject links."""
     # Create test subject and published preview
     subject = Subject(name="Machine Learning", description="ML research")
@@ -176,8 +176,8 @@ async def test_preview_card_subject_links(client: AsyncClient, test_db, test_use
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
-        title="Test ML Preview",
+    preview = Scroll(
+        title="Test ML Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Content</h1>",
@@ -218,7 +218,7 @@ async def test_search_with_results(client: AsyncClient, test_db, test_user):
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
+    preview = Scroll(
         title="Machine Learning Fundamentals",
         authors="Dr. AI Researcher",
         abstract="This paper covers the basics of machine learning algorithms.",
@@ -264,7 +264,7 @@ async def test_search_only_published_previews(client: AsyncClient, test_db, test
     await test_db.refresh(subject)
 
     # Create draft preview (should not appear in search)
-    draft_preview = Preview(
+    draft_preview = Scroll(
         title="Draft Physics Paper",
         authors="Draft Author",
         abstract="This is a draft paper about quantum mechanics.",
@@ -275,7 +275,7 @@ async def test_search_only_published_previews(client: AsyncClient, test_db, test
     )
 
     # Create published preview (should appear in search)
-    published_preview = Preview(
+    published_preview = Scroll(
         title="Published Physics Paper",
         authors="Published Author",
         abstract="This is a published paper about quantum mechanics.",
@@ -311,7 +311,7 @@ async def test_search_term_highlighting(client: AsyncClient, test_db, test_user)
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
+    preview = Scroll(
         title="Neural Networks in Biology",
         authors="Bio Researcher",
         abstract="Study of neural networks and their biological applications.",
@@ -339,7 +339,7 @@ async def test_search_partial_matching(client: AsyncClient, test_db, test_user):
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
+    preview = Scroll(
         title="Advanced Algorithms in Machine Learning",
         authors="Dr. Algorithm Expert",
         abstract="This paper discusses algorithmic approaches to ML.",
@@ -412,14 +412,14 @@ async def test_dashboard_shows_title_for_authenticated_users(authenticated_clien
 async def test_dashboard_shows_users_published_papers(
     authenticated_client: AsyncClient, test_db, test_user
 ):
-    """Test 3: Dashboard shows user's published papers using preview_card component."""
+    """Test 3: Dashboard shows user's published papers using scroll_card component."""
     # Create test subject and published preview for the authenticated user
     subject = Subject(name="Computer Science", description="CS research")
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Preview(
+    preview = Scroll(
         title="Efficient Algorithms for Large-Scale Graph Neural Networks",
         authors="John Smith, Li Chen, Maria Garcia",
         abstract="We present a novel approach to scaling graph neural networks",
@@ -464,7 +464,7 @@ async def test_dashboard_only_shows_current_users_papers(
     await test_db.refresh(other_user)
 
     # Create preview for current user
-    user_preview = Preview(
+    user_preview = Scroll(
         title="Current User's Paper",
         authors="Current User",
         abstract="This is the current user's paper",
@@ -476,7 +476,7 @@ async def test_dashboard_only_shows_current_users_papers(
     )
 
     # Create preview for other user
-    other_preview = Preview(
+    other_preview = Scroll(
         title="Other User's Paper",
         authors="Other User",
         abstract="This is another user's paper",
@@ -525,7 +525,7 @@ async def test_dashboard_does_not_show_draft_papers(
     await test_db.refresh(subject)
 
     # Create draft preview (should not appear)
-    draft_preview = Preview(
+    draft_preview = Scroll(
         title="Draft Mathematics Paper",
         authors="Test Author",
         abstract="This is a draft paper",
@@ -536,7 +536,7 @@ async def test_dashboard_does_not_show_draft_papers(
     )
 
     # Create published preview (should appear)
-    published_preview = Preview(
+    published_preview = Scroll(
         title="Published Mathematics Paper",
         authors="Test Author",
         abstract="This is a published paper",
@@ -576,7 +576,7 @@ async def test_dashboard_papers_ordered_by_created_at_descending(
     await test_db.refresh(subject)
 
     # Create multiple published previews
-    older_preview = Preview(
+    older_preview = Scroll(
         title="Older Paper",
         authors="Test Author",
         abstract="This is an older paper",
@@ -587,7 +587,7 @@ async def test_dashboard_papers_ordered_by_created_at_descending(
         preview_id="old123",
     )
 
-    newer_preview = Preview(
+    newer_preview = Scroll(
         title="Newer Paper",
         authors="Test Author",
         abstract="This is a newer paper",
@@ -607,10 +607,10 @@ async def test_dashboard_papers_ordered_by_created_at_descending(
     newer_time = datetime.datetime.now(datetime.timezone.utc)
 
     await test_db.execute(
-        update(Preview).where(Preview.id == older_preview.id).values(created_at=older_time)
+        update(Scroll).where(Scroll.id == older_preview.id).values(created_at=older_time)
     )
     await test_db.execute(
-        update(Preview).where(Preview.id == newer_preview.id).values(created_at=newer_time)
+        update(Scroll).where(Scroll.id == newer_preview.id).values(created_at=newer_time)
     )
     await test_db.commit()
 
@@ -635,7 +635,7 @@ async def test_dashboard_preview_count_in_title(authenticated_client, test_db, t
 
     # Create 3 published previews
     for i in range(3):
-        preview = Preview(
+        preview = Scroll(
             title=f"Test Paper {i + 1}",
             authors="Test Author",
             abstract="Test abstract",

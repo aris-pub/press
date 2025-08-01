@@ -1,6 +1,5 @@
 """Tests for core business logic and models."""
 
-import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -8,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.session import _get_user_id_from_session_id, create_session, delete_session
 from app.auth.utils import get_password_hash, verify_password
-from app.models.preview import Preview, Subject
+from app.models.scroll import Scroll, Subject
 from app.models.session import Session
 from app.models.user import User
 
@@ -51,12 +50,13 @@ class TestSessionManagement:
 
         assert session_id is not None
         assert len(session_id) > 20  # URL-safe token should be long
-        
+
         # Verify session was created in database
         from sqlalchemy import select
+
         result = await test_db.execute(select(Session).where(Session.session_id == session_id))
         db_session = result.scalar_one_or_none()
-        
+
         assert db_session is not None
         assert db_session.user_id == test_user.id
         # Handle both naive and timezone-aware datetimes
@@ -87,7 +87,7 @@ class TestSessionManagement:
         expired_session = Session(
             session_id="expired_session_id",
             user_id=test_user.id,
-            expires_at=datetime.now(timezone.utc) - timedelta(hours=1)  # Expired 1 hour ago
+            expires_at=datetime.now(timezone.utc) - timedelta(hours=1),  # Expired 1 hour ago
         )
         test_db.add(expired_session)
         await test_db.commit()
@@ -102,6 +102,7 @@ class TestSessionManagement:
 
         # Verify session exists
         from sqlalchemy import select
+
         result = await test_db.execute(select(Session).where(Session.session_id == session_id))
         assert result.scalar_one_or_none() is not None
 
@@ -118,20 +119,20 @@ class TestSessionManagement:
         await delete_session(test_db, "nonexistent_session_id")  # Should not raise exception
 
 
-class TestPreviewModel:
-    """Test Preview model business logic."""
+class TestScrollModel:
+    """Test Scroll model business logic."""
 
-    async def test_preview_publish_method(self, test_db, test_user):
-        """Test Preview.publish() method."""
+    async def test_scroll_publish_method(self, test_db, test_user):
+        """Test Scroll.publish() method."""
         # Create a subject
         subject = Subject(name="Test Subject", description="Test description")
         test_db.add(subject)
         await test_db.commit()
         await test_db.refresh(subject)
 
-        # Create a draft preview
-        preview = Preview(
-            title="Test Preview",
+        # Create a draft scroll
+        scroll = Scroll(
+            title="Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test Content</h1>",
@@ -139,37 +140,37 @@ class TestPreviewModel:
             subject_id=subject.id,
             status="draft",
         )
-        test_db.add(preview)
+        test_db.add(scroll)
         await test_db.commit()
-        await test_db.refresh(preview)
+        await test_db.refresh(scroll)
 
         # Test initial state
-        assert preview.status == "draft"
-        assert preview.preview_id is None
-        assert preview.published_at is None
+        assert scroll.status == "draft"
+        assert scroll.preview_id is None
+        assert scroll.published_at is None
 
-        # Publish the preview
-        preview.publish()
+        # Publish the scroll
+        scroll.publish()
         await test_db.commit()
-        await test_db.refresh(preview)
+        await test_db.refresh(scroll)
 
         # Test published state
-        assert preview.status == "published"
-        assert preview.preview_id is not None
-        assert len(preview.preview_id) == 8  # Should be 8-character ID
-        assert preview.published_at is not None
+        assert scroll.status == "published"
+        assert scroll.preview_id is not None
+        assert len(scroll.preview_id) == 8  # Should be 8-character ID
+        assert scroll.published_at is not None
 
-    async def test_preview_publish_idempotent(self, test_db, test_user):
-        """Test that publishing already published preview is idempotent."""
+    async def test_scroll_publish_idempotent(self, test_db, test_user):
+        """Test that publishing already published scroll is idempotent."""
         # Create a subject
         subject = Subject(name="Test Subject", description="Test description")
         test_db.add(subject)
         await test_db.commit()
         await test_db.refresh(subject)
 
-        # Create and publish preview
-        preview = Preview(
-            title="Test Preview",
+        # Create and publish scroll
+        scroll = Scroll(
+            title="Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test Content</h1>",
@@ -177,35 +178,35 @@ class TestPreviewModel:
             subject_id=subject.id,
             status="draft",
         )
-        test_db.add(preview)
+        test_db.add(scroll)
         await test_db.commit()
 
         # Publish once
-        preview.publish()
-        first_preview_id = preview.preview_id
-        first_published_at = preview.published_at
+        scroll.publish()
+        first_preview_id = scroll.preview_id
+        first_published_at = scroll.published_at
 
         # Publish again
-        preview.publish()
+        scroll.publish()
 
         # Should be unchanged
-        assert preview.preview_id == first_preview_id
-        assert preview.published_at == first_published_at
-        assert preview.status == "published"
+        assert scroll.preview_id == first_preview_id
+        assert scroll.published_at == first_published_at
+        assert scroll.status == "published"
 
-    async def test_preview_unique_ids(self, test_db, test_user):
-        """Test that published previews get unique IDs."""
+    async def test_scroll_unique_ids(self, test_db, test_user):
+        """Test that published scrolls get unique IDs."""
         # Create a subject
         subject = Subject(name="Test Subject", description="Test description")
         test_db.add(subject)
         await test_db.commit()
         await test_db.refresh(subject)
 
-        # Create and publish multiple previews
-        previews = []
+        # Create and publish multiple scrolls
+        scrolls = []
         for i in range(5):
-            preview = Preview(
-                title=f"Test Preview {i}",
+            scroll = Scroll(
+                title=f"Test Scroll {i}",
                 authors="Test Author",
                 abstract="Test abstract",
                 html_content="<h1>Test Content</h1>",
@@ -213,17 +214,17 @@ class TestPreviewModel:
                 subject_id=subject.id,
                 status="draft",
             )
-            test_db.add(preview)
+            test_db.add(scroll)
             await test_db.commit()
 
-            preview.publish()
+            scroll.publish()
             await test_db.commit()
-            await test_db.refresh(preview)
+            await test_db.refresh(scroll)
 
-            previews.append(preview)
+            scrolls.append(scroll)
 
         # Check all preview IDs are unique
-        preview_ids = [p.preview_id for p in previews]
+        preview_ids = [s.preview_id for s in scrolls]
         assert len(set(preview_ids)) == len(preview_ids)  # All unique
 
         # Check all are 8 characters

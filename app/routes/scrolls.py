@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 from app.auth.session import get_current_user_from_session
 from app.database import get_db
 from app.logging_config import get_logger, log_error, log_preview_event, log_request
-from app.models.preview import Preview, Subject
+from app.models.scroll import Scroll, Subject
 from app.upload import HTMLProcessor
 
 router = APIRouter()
@@ -32,25 +32,25 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
     log_request(request, extra_data={"preview_id": preview_id})
 
     result = await db.execute(
-        select(Preview)
-        .options(selectinload(Preview.subject))
-        .where(Preview.preview_id == preview_id, Preview.status == "published")
+        select(Scroll)
+        .options(selectinload(Scroll.subject))
+        .where(Scroll.preview_id == preview_id, Scroll.status == "published")
     )
-    preview = result.scalar_one_or_none()
+    scroll = result.scalar_one_or_none()
 
-    if not preview:
+    if not scroll:
         get_logger().warning(f"Scroll not found: {preview_id}")
         return templates.TemplateResponse(
             request, "404.html", {"message": "Scroll not found"}, status_code=404
         )
 
     log_preview_event(
-        "view", preview_id, str(preview.user_id), request, extra_data={"title": preview.title}
+        "view", preview_id, str(scroll.user_id), request, extra_data={"title": scroll.title}
     )
 
     # Check if HTML content has CSS
     has_css = bool(
-        re.search(r"<style|<link[^>]*stylesheet|style\s*=", preview.html_content, re.IGNORECASE)
+        re.search(r"<style|<link[^>]*stylesheet|style\s*=", scroll.html_content, re.IGNORECASE)
     )
 
     # If no CSS detected, inject basic styles
@@ -111,12 +111,12 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
         wrapped_content = f"""
         {basic_css}
         <div class="injected-scroll-content">
-            {preview.html_content}
+            {scroll.html_content}
         </div>
         """
-        preview.html_content = wrapped_content
+        scroll.html_content = wrapped_content
 
-    return templates.TemplateResponse(request, "preview.html", {"preview": preview})
+    return templates.TemplateResponse(request, "scroll.html", {"scroll": scroll})
 
 
 @router.get("/upload", response_class=HTMLResponse)
@@ -224,7 +224,7 @@ async def upload_form(
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
         # Create scroll
-        preview = Preview(
+        scroll = Scroll(
             user_id=current_user.id,
             title=title.strip(),
             authors=authors.strip(),
@@ -234,42 +234,40 @@ async def upload_form(
             html_content=html_content.strip(),
             status="published",
         )
-        preview.publish()
+        scroll.publish()
 
-        db.add(preview)
+        db.add(scroll)
         await db.commit()
-        await db.refresh(preview)
+        await db.refresh(scroll)
 
         log_preview_event(
             "create",
-            str(preview.id),
+            str(scroll.id),
             str(current_user.id),
             request,
-            extra_data={"title": preview.title, "status": "published"},
+            extra_data={"title": scroll.title, "status": "published"},
         )
 
         # If publishing directly, publish the scroll after it's in the database
         if action == "publish":
             # Load the subject relationship before publishing
             result = await db.execute(
-                select(Preview)
-                .options(selectinload(Preview.subject))
-                .where(Preview.id == preview.id)
+                select(Scroll).options(selectinload(Scroll.subject)).where(Scroll.id == scroll.id)
             )
-            preview = result.scalar_one()
-            preview.publish()
+            scroll = result.scalar_one()
+            scroll.publish()
             await db.commit()  # Commit the publish changes
             log_preview_event(
                 "publish",
-                preview.preview_id,
+                scroll.preview_id,
                 str(current_user.id),
                 request,
-                extra_data={"title": preview.title},
+                extra_data={"title": scroll.title},
             )
 
         # Return success response - just the content for HTMX
         success_message = "Your scroll has been published successfully!"
-        preview_url = f"/scroll/{preview.preview_id}"
+        preview_url = f"/scroll/{scroll.preview_id}"
 
         # Return just the success content (not full page) for HTMX
         success_html = f"""
@@ -278,9 +276,9 @@ async def upload_form(
             <p style="color: #166534; font-size: 1.1rem; margin-bottom: 2rem;">{success_message}</p>
 
             <div style="margin-bottom: 2rem;">
-                <p><strong>Title:</strong> {preview.title}</p>
+                <p><strong>Title:</strong> {scroll.title}</p>
                 <p><strong>Status:</strong> Published</p>
-                <p><strong>Scroll ID:</strong> {preview.preview_id}</p>
+                <p><strong>Scroll ID:</strong> {scroll.preview_id}</p>
             </div>
 
             <div style="display: flex; gap: 1rem; justify-content: center;">
@@ -313,7 +311,7 @@ async def upload_form(
                     "title": title,
                     "authors": authors,
                     "subject_id": subject_id,
-                    "abstract": abstract,  
+                    "abstract": abstract,
                     "keywords": keywords,
                     "html_content": html_content,
                     "confirm_rights": confirm_rights,
@@ -419,7 +417,7 @@ async def upload_html_paper(
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
         # Create scroll with enhanced metadata
-        preview = Preview(
+        scroll = Scroll(
             user_id=current_user.id,
             title=title.strip(),
             authors=authors.strip(),
@@ -436,18 +434,18 @@ async def upload_html_paper(
             status="published",
         )
 
-        preview.publish()
-        db.add(preview)
+        scroll.publish()
+        db.add(scroll)
         await db.commit()
-        await db.refresh(preview)
+        await db.refresh(scroll)
 
         log_preview_event(
             "create_html",
-            str(preview.id),
+            str(scroll.id),
             str(current_user.id),
             request,
             extra_data={
-                "title": preview.title,
+                "title": scroll.title,
                 "status": "published",
                 "file_size": processed_data.get("file_size"),
                 "sanitization_count": len(processed_data.get("sanitization_log", [])),
@@ -456,31 +454,31 @@ async def upload_html_paper(
 
         # If publishing directly, publish the scroll
         if action == "publish":
-            preview.publish()
+            scroll.publish()
             await db.commit()
             log_preview_event(
                 "publish_html",
-                preview.preview_id,
+                scroll.preview_id,
                 str(current_user.id),
                 request,
-                extra_data={"title": preview.title},
+                extra_data={"title": scroll.title},
             )
 
         # Prepare response
         response_data = {
             "success": True,
-            "preview_id": str(preview.id),
-            "preview_public_id": preview.preview_id if action == "publish" else None,
-            "title": preview.title,
-            "status": preview.status,
-            "validation_status": preview.validation_status,
+            "preview_id": str(scroll.id),
+            "preview_public_id": scroll.preview_id if action == "publish" else None,
+            "title": scroll.title,
+            "status": scroll.status,
+            "validation_status": scroll.validation_status,
             "content_metrics": processed_data.get("content_metrics", {}),
             "sanitization_log": processed_data.get("sanitization_log", []),
             "warnings": [e for e in errors if e.get("severity") == "warning"],
             "message": "Scroll published successfully",
         }
 
-        response_data["preview_url"] = f"/scroll/{preview.preview_id}"
+        response_data["preview_url"] = f"/scroll/{scroll.preview_id}"
 
         return JSONResponse(content=response_data)
 

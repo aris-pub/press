@@ -1,11 +1,11 @@
 {# 
 Scroll Card Component
 Usage: 
-{% from "components/preview_card.html" import preview_card %}
-{{ preview_card("Title", "Authors", "Abstract", ["tag1", "tag2"], "Computer Science", "2 hours ago", "v1") }}
+{% from "components/scroll_card.html" import scroll_card %}
+{{ scroll_card("Title", "Authors", "Abstract", ["tag1", "tag2"], "Computer Science", "2 hours ago", "v1") }}
 #}
 
-{% macro preview_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", preview_id="") %}
+{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", preview_id="") %}
 <div class="scroll" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
   {% if preview_id %}
   <a href="/scroll/{{ preview_id }}" class="scroll-link">
