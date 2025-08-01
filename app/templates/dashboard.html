@@ -48,7 +48,7 @@
     <h2>Account Management</h2>
     <div class="account-actions">
       {% if papers %}
-        <button id="export-data-btn" class="btn btn-secondary" onclick="openExportModal()">Export Data</button>
+        <button id="export-data-btn" class="btn btn-danger" onclick="openExportModal()">Export Data</button>
       {% endif %}
       <button id="delete-account-btn" class="btn btn-danger" onclick="openDeleteModal()">Delete Account</button>
     </div>
@@ -110,7 +110,7 @@
     </div>
     <div class="modal-body">
       <div class="warning-message">
-        <p><strong>This action cannot be undone.</strong></p>
+        <p><strong style="color: var(--red);">This action cannot be undone.</strong></p>
         <p>Deleting your account will permanently remove all your personal information, including:</p>
         <ul>
           <li>Your profile and login credentials</li>
@@ -150,7 +150,9 @@
 
 .account-management {
   margin-top: var(--space-xxl);
+  margin-bottom: calc(var(--space-xxl) * 2);
   padding-top: var(--space-xl);
+  padding-bottom: calc(var(--space-xl) * 2);
   border-top: 1px solid var(--gray-lightest);
 }
 
@@ -166,8 +168,8 @@
 }
 
 .warning-message {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--gray-bg);
+  border: 1px solid var(--gray-light);
   border-radius: var(--border-radius);
   padding: var(--space-lg);
   margin-bottom: var(--space-lg);
@@ -175,7 +177,7 @@
 
 .warning-message p {
   margin: 0 0 var(--space-sm) 0;
-  color: var(--gray-dark);
+  color: var(--text-color);
 }
 
 .warning-message ul {
@@ -185,7 +187,7 @@
 
 .warning-message li {
   margin-bottom: var(--space-xs);
-  color: var(--gray-dark);
+  color: var(--text-color);
 }
 
 .btn-delete-account {
@@ -227,7 +229,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
 }
 
 .modal-content {
@@ -236,8 +238,9 @@
   left: 50%;
   transform: translate(-50%, -50%);
   background: var(--white);
+  border: 1px solid var(--gray-light);
   border-radius: var(--border-radius);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
@@ -256,6 +259,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--text-xl);
+  color: var(--text-color);
 }
 
 .modal-close {
@@ -263,7 +267,7 @@
   border: none;
   font-size: var(--text-xl);
   cursor: pointer;
-  color: var(--gray-medium);
+  color: var(--gray);
   padding: var(--space-xs);
   display: flex;
   align-items: center;
@@ -275,7 +279,7 @@
 
 .modal-close:hover {
   background: var(--gray-bg);
-  color: var(--gray-dark);
+  color: var(--text-color);
 }
 
 .modal-body {
@@ -351,7 +355,9 @@
   
   .account-management {
     margin-top: var(--mobile-space-xxl);
+    margin-bottom: calc(var(--mobile-space-xxl) * 2);
     padding-top: var(--mobile-space-xl);
+    padding-bottom: calc(var(--mobile-space-xl) * 2);
   }
   
   .account-management h2 {
