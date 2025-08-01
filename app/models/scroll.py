@@ -131,7 +131,9 @@ class Scroll(Base):
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Foreign keys
-    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(GUID, ForeignKey("users.id"), nullable=True)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        GUID, ForeignKey("users.id"), nullable=True
+    )
     subject_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("subjects.id"), nullable=False)
 
     # Relationships

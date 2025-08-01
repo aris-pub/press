@@ -149,11 +149,11 @@ async def test_delete_account_unauthenticated(client: AsyncClient):
     """Test DELETE /account requires authentication."""
     response = await client.delete("/account")
     assert response.status_code == 401
-    
-    
+
+
 async def test_delete_account_authenticated(authenticated_client: AsyncClient, test_user, test_db):
     """Test DELETE /account deletes user account successfully."""
-    
+
     # Delete the account
     response = await authenticated_client.delete("/account")
     assert response.status_code == 200
