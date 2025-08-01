@@ -1,10 +1,16 @@
 """Tests for core business logic and models."""
 
-import time
+import uuid
+from datetime import datetime, timedelta, timezone
 
-from app.auth.session import _get_user_id_from_session_id, create_session, delete_session, sessions
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth.session import _get_user_id_from_session_id, create_session, delete_session
 from app.auth.utils import get_password_hash, verify_password
 from app.models.preview import Preview, Subject
+from app.models.session import Session
+from app.models.user import User
 
 
 class TestPasswordUtils:
@@ -38,58 +44,78 @@ class TestPasswordUtils:
 class TestSessionManagement:
     """Test session creation, validation, and cleanup."""
 
-    def setup_method(self):
-        """Clear sessions before each test."""
-        sessions.clear()
-
-    def test_create_session(self):
+    @pytest.mark.asyncio
+    async def test_create_session(self, test_db: AsyncSession, test_user: User):
         """Test session creation."""
-        user_id = 123
-        session_id = create_session(user_id)
+        session_id = await create_session(test_db, test_user.id)
 
         assert session_id is not None
         assert len(session_id) > 20  # URL-safe token should be long
-        assert session_id in sessions
-        assert sessions[session_id]["user_id"] == user_id
-        assert "created_at" in sessions[session_id]
+        
+        # Verify session was created in database
+        from sqlalchemy import select
+        result = await test_db.execute(select(Session).where(Session.session_id == session_id))
+        db_session = result.scalar_one_or_none()
+        
+        assert db_session is not None
+        assert db_session.user_id == test_user.id
+        # Handle both naive and timezone-aware datetimes
+        now = datetime.now(timezone.utc)
+        if db_session.expires_at.tzinfo is None:
+            # If database returns naive datetime, compare with naive now
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+        assert db_session.expires_at > now
 
-    def test_get_user_id_from_valid_session(self):
+    @pytest.mark.asyncio
+    async def test_get_user_id_from_valid_session(self, test_db: AsyncSession, test_user: User):
         """Test getting user ID from valid session."""
-        user_id = 123
-        session_id = create_session(user_id)
+        session_id = await create_session(test_db, test_user.id)
 
-        retrieved_user_id = _get_user_id_from_session_id(session_id)
-        assert retrieved_user_id == user_id
+        retrieved_user_id = await _get_user_id_from_session_id(test_db, session_id)
+        assert retrieved_user_id == test_user.id
 
-    def test_get_user_id_from_invalid_session(self):
+    @pytest.mark.asyncio
+    async def test_get_user_id_from_invalid_session(self, test_db: AsyncSession):
         """Test getting user ID from invalid session."""
-        retrieved_user_id = _get_user_id_from_session_id("invalid_session_id")
+        retrieved_user_id = await _get_user_id_from_session_id(test_db, "invalid_session_id")
         assert retrieved_user_id is None
 
-    def test_get_user_id_from_expired_session(self):
+    @pytest.mark.asyncio
+    async def test_get_user_id_from_expired_session(self, test_db: AsyncSession, test_user: User):
         """Test getting user ID from expired session."""
-        user_id = 123
-        session_id = create_session(user_id)
+        # Create an expired session manually
+        expired_session = Session(
+            session_id="expired_session_id",
+            user_id=test_user.id,
+            expires_at=datetime.now(timezone.utc) - timedelta(hours=1)  # Expired 1 hour ago
+        )
+        test_db.add(expired_session)
+        await test_db.commit()
 
-        # Manually set session to be expired (older than 24 hours)
-        sessions[session_id]["created_at"] = time.time() - (24 * 3600 + 1)
-
-        retrieved_user_id = _get_user_id_from_session_id(session_id)
+        retrieved_user_id = await _get_user_id_from_session_id(test_db, "expired_session_id")
         assert retrieved_user_id is None
-        assert session_id not in sessions  # Should be cleaned up
 
-    def test_delete_session(self):
+    @pytest.mark.asyncio
+    async def test_delete_session(self, test_db: AsyncSession, test_user: User):
         """Test session deletion."""
-        user_id = 123
-        session_id = create_session(user_id)
+        session_id = await create_session(test_db, test_user.id)
 
-        assert session_id in sessions
-        delete_session(session_id)
-        assert session_id not in sessions
+        # Verify session exists
+        from sqlalchemy import select
+        result = await test_db.execute(select(Session).where(Session.session_id == session_id))
+        assert result.scalar_one_or_none() is not None
 
-    def test_delete_nonexistent_session(self):
+        # Delete session
+        await delete_session(test_db, session_id)
+
+        # Verify session is gone
+        result = await test_db.execute(select(Session).where(Session.session_id == session_id))
+        assert result.scalar_one_or_none() is None
+
+    @pytest.mark.asyncio
+    async def test_delete_nonexistent_session(self, test_db: AsyncSession):
         """Test deleting non-existent session doesn't crash."""
-        delete_session("nonexistent_session_id")  # Should not raise exception
+        await delete_session(test_db, "nonexistent_session_id")  # Should not raise exception
 
 
 class TestPreviewModel:

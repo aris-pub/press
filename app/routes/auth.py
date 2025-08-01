@@ -35,7 +35,7 @@ async def login_page(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/logout")
-async def logout(request: Request):
+async def logout(request: Request, db: AsyncSession = Depends(get_db)):
     """Log out the current user and redirect to homepage.
 
     Destroys the user session and clears the session cookie.
@@ -44,7 +44,7 @@ async def logout(request: Request):
     log_request(request)
     session_id = request.cookies.get("session_id")
     if session_id:
-        delete_session(session_id)
+        await delete_session(db, session_id)
         get_logger().info(f"User session {session_id} destroyed during logout")
 
     # Clear the session cookie in the redirect response
@@ -152,7 +152,7 @@ async def register_form(
         await db.refresh(db_user)
 
         # Create session and auto-login user
-        session_id = create_session(db_user.id)
+        session_id = await create_session(db, db_user.id)
 
         log_auth_event("register", normalized_email, True, request, user_id=str(db_user.id))
 
@@ -244,7 +244,7 @@ async def login_form(
             )
 
         # Create session
-        session_id = create_session(user.id)
+        session_id = await create_session(db, user.id)
 
         log_auth_event("login", normalized_email, True, request, user_id=str(user.id))
 

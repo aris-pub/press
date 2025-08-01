@@ -123,3 +123,6 @@ app/
 - pytest + httpx (testing)
 - Alembic (migrations)
 - uv (package management)
+
+## Database Time Handling
+- All dates and times in the DB are stored in UTC time zone, the client/frontend is responsible for converting to the user's browser's timezone

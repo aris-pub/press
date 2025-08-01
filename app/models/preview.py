@@ -1,6 +1,6 @@
 """Scroll and Subject models for academic preprints."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 import uuid
 
@@ -67,7 +67,9 @@ class Subject(Base):
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
 
     # Relationship
@@ -99,7 +101,9 @@ class Preview(Base):
     original_filename: Mapped[str] = mapped_column(String(255), nullable=True)
     file_size: Mapped[int] = mapped_column(nullable=True)
     upload_date: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
     external_resources: Mapped[dict] = mapped_column(
         JSON, nullable=True
@@ -115,10 +119,15 @@ class Preview(Base):
     status: Mapped[str] = mapped_column(String(20), default="published")  # published only
     version: Mapped[int] = mapped_column(default=1)  # Version number
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -147,4 +156,4 @@ class Preview(Base):
             secrets.choice(string.ascii_letters + string.digits) for _ in range(8)
         )
         self.status = "published"
-        self.published_at = func.now()
+        self.published_at = datetime.now(timezone.utc)
