@@ -41,7 +41,7 @@ async def test_db():
     else:
         connect_args = {}
         poolclass = None
-    
+
     engine = create_async_engine(
         TEST_DATABASE_URL,
         poolclass=poolclass,
