@@ -196,7 +196,7 @@ async def test_css_injection_for_unstyled_content(client: AsyncClient, test_db, 
 
     response = await client.get("/scroll/unstyled123")
     assert response.status_code == 200
-    
+
     # Check that CSS was injected
     assert "<style>" in response.text
     assert ".injected-scroll-content" in response.text
@@ -204,7 +204,7 @@ async def test_css_injection_for_unstyled_content(client: AsyncClient, test_db, 
     assert "font-family: Georgia, serif" in response.text
     assert "var(--gray-bg)" in response.text
     assert "var(--red)" in response.text
-    
+
     # Check that content is wrapped in the injected container
     assert '<div class="injected-scroll-content">' in response.text
     assert "<h1>Plain HTML Content</h1><p>This has no styling.</p>" in response.text
@@ -242,16 +242,16 @@ async def test_no_css_injection_for_styled_content(client: AsyncClient, test_db,
 
     response = await client.get("/scroll/styled123")
     assert response.status_code == 200
-    
+
     # Check that the original CSS is preserved
     assert "background: red;" in response.text
     assert "color: blue;" in response.text
-    
+
     # Check that our CSS injection styles are NOT present
     assert ".injected-scroll-content" not in response.text
     assert "font-family: -apple-system" not in response.text
     assert '<div class="injected-scroll-content">' not in response.text
-    
+
     # Original content should be rendered as-is
     assert "<h1>Styled Content</h1>" in response.text
     assert "<p>This already has CSS.</p>" in response.text
@@ -286,11 +286,11 @@ async def test_css_detection_with_link_tags(client: AsyncClient, test_db, test_u
 
     response = await client.get("/scroll/link123")
     assert response.status_code == 200
-    
+
     # Check that the original link tag is preserved
     assert 'rel="stylesheet"' in response.text
     assert 'href="styles.css"' in response.text
-    
+
     # Check that our CSS injection styles are NOT present
     assert ".injected-scroll-content" not in response.text
     assert "font-family: -apple-system" not in response.text
@@ -325,10 +325,10 @@ async def test_css_detection_with_inline_styles(client: AsyncClient, test_db, te
 
     response = await client.get("/scroll/inline123")
     assert response.status_code == 200
-    
+
     # Check that the original inline styles are preserved
     assert 'style="color: green; font-size: 24px;"' in response.text
-    
+
     # Check that our CSS injection styles are NOT present
     assert ".injected-scroll-content" not in response.text
     assert "font-family: -apple-system" not in response.text

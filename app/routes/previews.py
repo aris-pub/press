@@ -47,10 +47,12 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
     log_preview_event(
         "view", preview_id, str(preview.user_id), request, extra_data={"title": preview.title}
     )
-    
+
     # Check if HTML content has CSS
-    has_css = bool(re.search(r'<style|<link[^>]*stylesheet|style\s*=', preview.html_content, re.IGNORECASE))
-    
+    has_css = bool(
+        re.search(r"<style|<link[^>]*stylesheet|style\s*=", preview.html_content, re.IGNORECASE)
+    )
+
     # If no CSS detected, inject basic styles
     if not has_css:
         basic_css = """
@@ -104,7 +106,7 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
             }
         </style>
         """
-        
+
         # Wrap content in a styled container and inject CSS
         wrapped_content = f"""
         {basic_css}
@@ -113,7 +115,7 @@ async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depe
         </div>
         """
         preview.html_content = wrapped_content
-    
+
     return templates.TemplateResponse(request, "preview.html", {"preview": preview})
 
 
