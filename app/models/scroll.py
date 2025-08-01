@@ -6,7 +6,7 @@ import uuid
 
 from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import TypeDecorator
 
 from app.database import Base
@@ -114,6 +114,9 @@ class Scroll(Base):
         JSON, nullable=True
     )  # Record of changes made during processing
 
+    # License field
+    license: Mapped[str] = mapped_column(String(20), nullable=False)  # 'cc-by-4.0' or 'arr'
+
     # Metadata
     status: Mapped[str] = mapped_column(String(20), default="published")  # published only
     version: Mapped[int] = mapped_column(default=1)  # Version number
@@ -142,6 +145,14 @@ class Scroll(Base):
 
     def __repr__(self):
         return f"<Scroll(title='{self.title[:50]}...', status='{self.status}')>"
+
+    @validates("license")
+    def validate_license(self, key, license_value):
+        """Validate license field to ensure only allowed values."""
+        allowed_licenses = ["cc-by-4.0", "arr"]
+        if license_value not in allowed_licenses:
+            raise ValueError(f"License must be one of: {allowed_licenses}, got: {license_value}")
+        return license_value
 
     def publish(self):
         """Ensure scroll has a public ID."""

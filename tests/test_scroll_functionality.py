@@ -19,6 +19,7 @@ async def test_scroll_page_functionality(client: AsyncClient, test_db, test_user
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Content</h1>",
+        license="cc-by-4.0",
         status="published",  # Always published now
         user_id=test_user.id,
         subject_id=subject.id,

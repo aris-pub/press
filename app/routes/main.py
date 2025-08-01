@@ -443,6 +443,7 @@ def _export_csv(papers, filename):
         "abstract",
         "keywords",
         "subject",
+        "license",
         "version",
         "published_date",
         "scroll_id",
@@ -468,6 +469,7 @@ def _export_csv(papers, filename):
             paper.abstract,
             keywords_str,
             subject_name,
+            paper.license,
             paper.version,
             published_date,
             paper.preview_id,
@@ -499,6 +501,7 @@ def _export_json(papers, include_content, filename):
             "abstract": paper.abstract,
             "keywords": paper.keywords,
             "subject": subject_name,
+            "license": paper.license,
             "version": paper.version,
             "published_date": paper.published_at.isoformat() if paper.published_at else None,
             "scroll_id": paper.preview_id,
@@ -538,12 +541,15 @@ def _export_bibtex(papers, filename):
         # Format authors for BibTeX (replace commas with 'and')
         authors_bibtex = paper.authors.replace(",", " and")
 
+        # Format license for note
+        license_text = "CC BY 4.0" if paper.license == "cc-by-4.0" else "All Rights Reserved"
+
         # Create BibTeX entry
         entry = f"""@misc{{{bibtex_key},
   title={{{{ {paper.title} }}}},
   author={{{{ {authors_bibtex} }}}},
   year={{{year}}},
-  note={{{{ Scroll Press preprint, {subject_name} }}}},
+  note={{{{ Scroll Press preprint, {subject_name}, {license_text} }}}},
   url={{{{ https://press.example.com/scroll/{paper.preview_id} }}}}
 }}"""
 

@@ -11,10 +11,14 @@ from app.models.user import User
 async def seed_users():
     """Create mock users with UTC timestamps."""
     async with AsyncSessionLocal() as session:
-        # Check if users already exist
-        existing_users = await session.execute(text("SELECT COUNT(*) FROM users"))
-        if existing_users.scalar() > 0:
-            print("Users already exist, skipping seed.")
+        # Check if our seed users already exist
+        existing_seed_users = await session.execute(
+            text(
+                "SELECT COUNT(*) FROM users WHERE email LIKE '%university.edu' OR email LIKE '%institute.org' OR email LIKE '%lab.com'"
+            )
+        )
+        if existing_seed_users.scalar() > 0:
+            print("Seed users already exist, skipping seed.")
             return
 
         # Sample users matching the paper authors
@@ -152,6 +156,7 @@ async def seed_scrolls():
                 "status": "published",
                 "preview_id": "gnn2024a",
                 "version": 1,
+                "license": "cc-by-4.0",
             },
             {
                 "title": "Quantum Entanglement in Room-Temperature Superconductors",
@@ -169,6 +174,7 @@ async def seed_scrolls():
                 "status": "published",
                 "preview_id": "quantum24",
                 "version": 1,
+                "license": "arr",
             },
             {
                 "title": "CRISPR-Cas9 Applications in Treating Hereditary Diseases",
@@ -181,6 +187,7 @@ async def seed_scrolls():
                 "status": "published",
                 "preview_id": "crispr23",
                 "version": 2,
+                "license": "cc-by-4.0",
             },
             {
                 "title": "A New Proof of the Riemann Hypothesis",
@@ -198,6 +205,7 @@ async def seed_scrolls():
                 "status": "published",
                 "preview_id": "riemann24",
                 "version": 1,
+                "license": "arr",
             },
         ]
 
@@ -208,6 +216,7 @@ async def seed_scrolls():
                 abstract=scroll_data["abstract"],
                 keywords=scroll_data["keywords"],
                 html_content=scroll_data["html_content"],
+                license=scroll_data.get("license", "cc-by-4.0"),  # Default to CC BY 4.0
                 user_id=scroll_data["user_id"],
                 subject_id=scroll_data["subject_id"],
                 status=scroll_data["status"],

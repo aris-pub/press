@@ -106,6 +106,71 @@
     margin-bottom: 1.5rem;
 }
 
+.form-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: none;
+}
+
+.form-fieldset legend {
+    margin: 0;
+    padding: 0;
+    background: none;
+}
+
+.form-radio-group {
+    margin-top: 1rem;
+}
+
+.form-radio-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--gray-lightest);
+    border-radius: var(--border-radius);
+    background: var(--gray-bg-light);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.form-radio-item:hover {
+    border-color: var(--red);
+    background: var(--white);
+}
+
+.form-radio-item:has(input:checked) {
+    border-color: var(--red);
+    background: var(--white);
+    box-shadow: 0 0 0 2px rgba(237, 94, 81, 0.1);
+}
+
+.form-radio-item input[type="radio"] {
+    margin: 0;
+    transform: scale(1.2);
+    flex-shrink: 0;
+}
+
+.form-radio-label {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.form-radio-label strong {
+    color: var(--black);
+    font-weight: 600;
+}
+
+.form-radio-item .help-text {
+    font-size: 0.75rem;
+    margin: 0;
+    color: var(--gray);
+}
+
 /* Mobile upload form styles */
 @media (max-width: 768px) {
     .upload-container {
@@ -174,6 +239,46 @@
         margin-top: var(--mobile-space-xs);
         margin-bottom: var(--mobile-space-md);
     }
+    
+    .form-fieldset {
+        padding: 0;
+    }
+    
+    .form-fieldset legend {
+        padding: 0;
+        font-size: var(--mobile-text-base);
+    }
+    
+    .form-radio-group {
+        margin-top: var(--mobile-space-md);
+    }
+    
+    .form-radio-item {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--mobile-space-sm);
+        margin-bottom: var(--mobile-space-md);
+        padding: var(--mobile-space-lg);
+        border-radius: var(--border-radius);
+    }
+    
+    .form-radio-item input[type="radio"] {
+        margin: 0;
+        transform: scale(1.3);
+        flex-shrink: 0;
+    }
+    
+    .form-radio-label {
+        gap: var(--mobile-space-xs);
+    }
+    
+    .form-radio-label strong {
+        font-size: var(--mobile-text-base);
+    }
+    
+    .form-radio-item .help-text {
+        font-size: var(--mobile-text-xs);
+    }
 }
 {% endblock %}
 
@@ -237,6 +342,30 @@
 </body>
 </html>">{{ form_data.html_content if form_data else '' }}</textarea>
             <div class="help-text">Complete HTML document with embedded CSS and JavaScript for your interactive scroll</div>
+        </div>
+
+        <div class="form-group">
+            <fieldset class="form-fieldset">
+                <legend class="form-label">License: <span class="required">*</span></legend>
+                <div class="form-radio-group">
+                    <label for="license-cc-by" class="form-radio-item">
+                        <input type="radio" id="license-cc-by" name="license" value="cc-by-4.0" 
+                               {% if form_data and form_data.license == 'cc-by-4.0' %}checked{% elif not form_data %}checked{% endif %} required>
+                        <div class="form-radio-label">
+                            <strong>Open Access (CC BY 4.0)</strong>
+                            <div class="help-text">Anyone can share and adapt with attribution. Recommended for maximum impact.</div>
+                        </div>
+                    </label>
+                    <label for="license-arr" class="form-radio-item">
+                        <input type="radio" id="license-arr" name="license" value="arr" 
+                               {% if form_data and form_data.license == 'arr' %}checked{% endif %} required>
+                        <div class="form-radio-label">
+                            <strong>All Rights Reserved</strong>
+                            <div class="help-text">Standard copyright. Readers need your permission to reuse.</div>
+                        </div>
+                    </label>
+                </div>
+            </fieldset>
         </div>
 
         {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}

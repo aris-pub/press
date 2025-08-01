@@ -10,6 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/main.css">
+  
+  {% if scroll.license == 'cc-by-4.0' %}
+  <link rel="license" href="https://creativecommons.org/licenses/by/4.0/">
+  {% endif %}
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Source Sans 3', sans-serif; background: var(--white); color: var(--black);">
 
@@ -74,6 +78,21 @@
           time_ago="Published " + scroll.published_at.strftime('%B %d, %Y') if scroll.published_at else "Not published",
           version="v" + scroll.version|string
         ) }}
+        
+        <div class="license-info">
+          <div class="license-label">License:</div>
+          <div class="license-value">
+            {% if scroll.license == 'cc-by-4.0' %}
+              <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" class="license-link">
+                CC BY 4.0
+              </a>
+              <span class="license-description">Open Access - Anyone can share and adapt with attribution</span>
+            {% elif scroll.license == 'arr' %}
+              <span class="license-text">All Rights Reserved</span>
+              <span class="license-description">Standard copyright - Permission required for reuse</span>
+            {% endif %}
+          </div>
+        </div>
       </div>
       <div class="modal-actions">
         <a href="/" class="btn btn-secondary">Back to Scroll Press</a>
@@ -303,6 +322,51 @@
 
 .modal-body {
   padding: 1rem 2rem 2rem 2rem;
+}
+
+.license-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--gray-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-lightest);
+}
+
+.license-label {
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.license-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.license-link {
+  color: var(--red);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.license-link:hover {
+  color: var(--red-dark);
+  text-decoration: underline;
+}
+
+.license-text {
+  color: var(--gray-dark);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.license-description {
+  color: var(--gray);
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
 .modal-actions {

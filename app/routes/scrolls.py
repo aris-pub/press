@@ -156,6 +156,7 @@ async def upload_form(
     abstract: str = Form(...),
     keywords: str = Form(""),
     html_content: str = Form(...),
+    license: str = Form(...),
     confirm_rights: str = Form(None),
     action: str = Form("publish"),  # Always publish
     db: AsyncSession = Depends(get_db),
@@ -205,6 +206,8 @@ async def upload_form(
             raise ValueError("Abstract is required")
         if not html_content or not html_content.strip():
             raise ValueError("HTML content is required")
+        if not license or license not in ["cc-by-4.0", "arr"]:
+            raise ValueError("License must be selected (CC BY 4.0 or All Rights Reserved)")
         if not confirm_rights or confirm_rights.lower() != "true":
             raise ValueError("You must confirm that you have the right to publish this content")
 
@@ -232,6 +235,7 @@ async def upload_form(
             abstract=abstract.strip(),
             keywords=keyword_list,
             html_content=html_content.strip(),
+            license=license,
             status="published",
         )
         scroll.publish()
@@ -314,6 +318,7 @@ async def upload_form(
                     "abstract": abstract,
                     "keywords": keywords,
                     "html_content": html_content,
+                    "license": license,
                     "confirm_rights": confirm_rights,
                 },
             },
@@ -330,6 +335,7 @@ async def upload_html_paper(
     subject_id: str = Form(...),
     abstract: str = Form(...),
     keywords: str = Form(""),
+    license: str = Form(...),
     action: str = Form("publish"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -416,6 +422,13 @@ async def upload_html_paper(
         if keywords.strip():
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
+        # Validate license
+        if not license or license not in ["cc-by-4.0", "arr"]:
+            raise HTTPException(
+                status_code=422,
+                detail="License must be selected (CC BY 4.0 or All Rights Reserved)",
+            )
+
         # Create scroll with enhanced metadata
         scroll = Scroll(
             user_id=current_user.id,
@@ -431,6 +444,7 @@ async def upload_html_paper(
             external_resources=processed_data.get("external_resources"),
             validation_status=processed_data.get("validation_status", "approved"),
             sanitization_log=processed_data.get("sanitization_log"),
+            license=license,
             status="published",
         )
 
