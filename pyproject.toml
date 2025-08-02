@@ -23,6 +23,8 @@ dependencies = [
     "bleach>=6.1.0",
     "python-magic>=0.4.27",
     "ruff>=0.1.6",
+    "playwright>=1.40.0",
+    "pytest-playwright>=0.4.3",
 ]
 
 [tool.pytest.ini_options]
@@ -31,8 +33,10 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+pythonpath = ["."]
 markers = [
-    "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')"
+    "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
+    "e2e: marks tests as end-to-end (deselect with '-m \"not e2e\"')"
 ]
 
 [tool.ruff]

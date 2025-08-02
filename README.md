@@ -73,7 +73,7 @@ tests/                 # Comprehensive test suite
 - **Database**: PostgreSQL with SQLAlchemy 2.0 async
 - **Authentication**: Session-based with in-memory storage
 - **Frontend**: Jinja2 templates with HTMX for dynamic interactions
-- **Testing**: pytest with asyncio support and parallel execution
+- **Testing**: pytest with asyncio support, parallel execution, and Playwright e2e tests
 
 ## Database Models
 
@@ -92,11 +92,54 @@ tests/                 # Comprehensive test suite
 - Academic discipline categorization
 - Hierarchical organization for research areas
 
+## Testing
+
+Scroll Press includes comprehensive testing with both unit/integration tests and end-to-end browser tests.
+
+### Unit and Integration Tests
+```bash
+# Run all tests
+just test
+
+# Run with coverage
+just test-cov
+
+# Run specific test file
+uv run pytest tests/test_main.py -v
+```
+
+### End-to-End Tests
+E2E tests use Playwright to verify complete user journeys in real browsers.
+
+```bash
+# Install e2e dependencies (one time)
+uv run playwright install chromium firefox
+
+# Start development server
+just dev
+
+# Run e2e tests (in another terminal)
+just test-e2e
+
+# Or run directly
+./scripts/run-e2e-tests.sh
+```
+
+#### Critical E2E Test Scenarios
+- **Registration → Upload → Public Access**: Verifies scrolls remain publicly accessible
+- **Registration → Upload → Account Deletion → Public Access**: Verifies scroll persistence after user deletion
+- **License Selection**: Tests CC BY 4.0 and All Rights Reserved license workflows
+- **Mobile Responsive**: Validates mobile upload and interaction flows
+- **Search & Discovery**: Tests content search and subject browsing
+
+See [E2E Testing Documentation](tests/e2e/README.md) for detailed information.
+
 ## Contributing
 
-1. **Run tests**: `just test`
-2. **Check code quality**: `just lint`
-3. **Follow existing patterns**: Session-based auth, macro components, async/await
+1. **Run all checks**: `just check` (includes lint, unit tests, and e2e tests)
+2. **Run tests only**: `just test`
+3. **Run e2e tests only**: `just test-e2e`
+4. **Follow existing patterns**: Session-based auth, macro components, async/await
 4. **Write tests**: All new features should include test coverage
 
 ## License

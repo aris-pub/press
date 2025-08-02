@@ -41,19 +41,55 @@ jobs:
     - name: Install dependencies
       run: uv sync
 
+    - name: Install Just
+      uses: extractions/setup-just@v1
+
+    - name: Install Playwright browsers
+      run: uv run playwright install chromium
+
     - name: Run database migrations
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
       run: uv run alembic upgrade head
 
-    - name: Run linting
-      run: |
-        uv run ruff check .
-        uv run ruff format --check .
-
-    - name: Run tests
+    - name: Seed database with test data
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
-      run: uv run pytest -v --tb=short
+        PYTHONPATH: .
+      run: |
+        echo "Seeding database..."
+        uv run python app/seed.py
+        echo "Waiting for seeding to complete..."
+        sleep 2
+
+    - name: Run linting
+      run: just lint
+
+    - name: Run unit tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        TESTING: 1
+      run: uv run pytest -m "not e2e"
+
+    - name: Start development server for e2e tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        TESTING: 1
+        PYTHONPATH: .
+        PORT: 8000
+      run: |
+        echo "Starting FastAPI server for e2e tests..."
+        uv run uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info &
+        echo "Waiting for server to start..."
+        sleep 8
+        echo "Testing server connection..."
+        curl -f http://localhost:8000 || exit 1
+        echo "Server is ready for e2e tests"
+
+    - name: Run critical e2e tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        TESTING: 1
+      run: uv run pytest tests/e2e/test_live_server.py tests/e2e/test_complete_flows.py::test_registration_upload_public_access -v
