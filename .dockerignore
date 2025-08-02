@@ -1,0 +1,15 @@
+.git
+.github
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.local
+.env.example
+tests/
+README.md
+.gitignore
+justfile
