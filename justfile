@@ -15,7 +15,8 @@ dev:
         uv run uvicorn main:app --reload --port $PORT
     fi
 
-# Run tests (unit + critical e2e)
+# Run tests (unit + critical e2e) 
+# Note: CI runs without -n auto to avoid database conflicts
 test:
     uv run pytest -n auto -m "not e2e"
     uv run pytest tests/e2e/test_live_server.py tests/e2e/test_complete_flows.py::test_registration_upload_public_access
