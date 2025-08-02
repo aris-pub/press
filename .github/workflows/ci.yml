@@ -58,30 +58,7 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
         PYTHONPATH: .
-      run: |
-        echo "Starting database seeding..."
-        uv run python app/seed.py
-        echo "Seeding completed. Checking subjects..."
-        uv run python -c "
-        import asyncio
-        from app.database import AsyncSessionLocal
-        from sqlalchemy import text
-        
-        async def check_subjects():
-            async with AsyncSessionLocal() as session:
-                result = await session.execute(text('SELECT COUNT(*) FROM subjects'))
-                count = result.scalar()
-                print(f'Total subjects in database: {count}')
-                
-                if count > 0:
-                    subjects = await session.execute(text('SELECT name FROM subjects LIMIT 5'))
-                    names = [row[0] for row in subjects]
-                    print(f'First 5 subjects: {names}')
-                else:
-                    print('No subjects found in database!')
-        
-        asyncio.run(check_subjects())
-        "
+      run: uv run python app/seed.py
 
     - name: Run linting
       run: just lint
@@ -99,51 +76,9 @@ jobs:
         PYTHONPATH: .
         PORT: 8000
       run: |
-        echo "Starting development server with DATABASE_URL: $DATABASE_URL"
         uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
         sleep 5
-        echo "Checking if server is responding..."
         curl -f http://localhost:8000 || exit 1
-        echo "Checking subjects available via API..."
-        curl -s http://localhost:8000/upload | grep -o 'option.*value="[^"]*"' | head -10 || echo "No option elements found"
-
-    - name: Verify server database connection
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
-        TESTING: 1
-        PYTHONPATH: .
-      run: |
-        echo "Verifying server can connect to database and see subjects..."
-        uv run python -c "
-        import asyncio
-        import httpx
-        
-        async def check_server_subjects():
-            async with httpx.AsyncClient() as client:
-                try:
-                    response = await client.get('http://localhost:8000/upload')
-                    if response.status_code == 200:
-                        content = response.text
-                        if 'Computer Science' in content:
-                            print('✓ Server can see subjects in database')
-                        else:
-                            print('✗ Server cannot see subjects in database')
-                            print('Upload page content preview:')
-                            lines = content.split('\n')
-                            for i, line in enumerate(lines):
-                                if 'select' in line.lower() and 'subject' in line.lower():
-                                    start = max(0, i-2)
-                                    end = min(len(lines), i+8)
-                                    for j in range(start, end):
-                                        print(f'{j:3}: {lines[j]}')
-                                    break
-                    else:
-                        print(f'Server returned status {response.status_code}')
-                except Exception as e:
-                    print(f'Error checking server: {e}')
-        
-        asyncio.run(check_server_subjects())
-        "
 
     - name: Run critical e2e tests
       env:

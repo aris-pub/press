@@ -147,18 +147,25 @@ class E2ETestHelpers:
 
         # Get all options and select the first non-empty one
         options = await subject_select.locator("option").all()
-        option_texts = []
-        for option in options:
-            text = await option.text_content()
-            value = await option.get_attribute("value")
-            option_texts.append(f"'{text}' (value: {value})")
+        if len(options) <= 1:  # Only default option
+            # Debug: Let's see what the page actually contains
+            page_content = await page.content()
+            if "Computer Science" in page_content:
+                print("DEBUG: Subjects exist in page but not in select options")
+            else:
+                print("DEBUG: No subjects found anywhere in page content")
+            
+            # Let's also check if there are any error messages
+            error_elements = await page.locator(".error, .alert, .message").all()
+            if error_elements:
+                for error in error_elements:
+                    text = await error.text_content()
+                    print(f"DEBUG: Page error/message: {text}")
+            
+            raise AssertionError(f"No subjects available in dropdown - found {len(options)} options")
         
-        print(f"DEBUG: Found {len(options)} options: {', '.join(option_texts)}")
-        
-        if len(options) > 1:  # Skip first empty option
-            await page.select_option('select[name="subject_id"]', index=1)
-        else:
-            raise AssertionError(f"No subjects available in database - found options: {option_texts}")
+        # Select the first real subject (skip default empty option)
+        await page.select_option('select[name="subject_id"]', index=1)
 
         # Select license by clicking the container (not just radio button)
         if license == "cc-by-4.0":
