@@ -57,6 +57,7 @@ jobs:
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
+        PYTHONPATH: .
       run: uv run python app/seed.py
 
     - name: Run linting

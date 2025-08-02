@@ -144,9 +144,9 @@ class E2ETestHelpers:
         # Select first available subject (skip the default empty option)
         subject_select = page.locator('select[name="subject_id"]')
         await subject_select.wait_for()
-        
+
         # Get all options and select the first non-empty one
-        options = await subject_select.locator('option').all()
+        options = await subject_select.locator("option").all()
         if len(options) > 1:  # Skip first empty option
             await page.select_option('select[name="subject_id"]', index=1)
         else:
