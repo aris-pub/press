@@ -148,22 +148,8 @@ class E2ETestHelpers:
         # Get all options and select the first non-empty one
         options = await subject_select.locator("option").all()
         if len(options) <= 1:  # Only default option
-            # Debug: Let's see what the page actually contains
-            page_content = await page.content()
-            if "Computer Science" in page_content:
-                print("DEBUG: Subjects exist in page but not in select options")
-            else:
-                print("DEBUG: No subjects found anywhere in page content")
-            
-            # Let's also check if there are any error messages
-            error_elements = await page.locator(".error, .alert, .message").all()
-            if error_elements:
-                for error in error_elements:
-                    text = await error.text_content()
-                    print(f"DEBUG: Page error/message: {text}")
-            
             raise AssertionError(f"No subjects available in dropdown - found {len(options)} options")
-        
+
         # Select the first real subject (skip default empty option)
         await page.select_option('select[name="subject_id"]', index=1)
 

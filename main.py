@@ -27,8 +27,41 @@ async def lifespan(app: FastAPI):
     # Startup
     logger = get_logger()
     logger.info("Starting Scroll Press application")
+    
+    # Log database URL for debugging
+    db_url = os.getenv("DATABASE_URL", "not_set")
+    logger.info(f"Using DATABASE_URL: {db_url}")
+    
     await create_tables()
     logger.info("Database tables created/verified")
+    
+    # Verify database connection and check subjects
+    try:
+        from app.database import AsyncSessionLocal
+        from app.models.scroll import Subject
+        from sqlalchemy import text, select
+        
+        async with AsyncSessionLocal() as session:
+            # Test basic connection
+            await session.execute(text("SELECT 1"))
+            logger.info("✓ Database connection verified")
+            
+            # Count subjects
+            result = await session.execute(select(Subject))
+            subjects = result.scalars().all()
+            subject_count = len(subjects)
+            logger.info(f"Found {subject_count} subjects in database")
+            
+            if subject_count > 0:
+                subject_names = [s.name for s in subjects[:5]]  # First 5
+                logger.info(f"First subjects: {subject_names}")
+            else:
+                logger.warning("⚠️  No subjects found in database - upload form may not work")
+                
+    except Exception as e:
+        logger.error(f"❌ Database verification failed: {e}")
+        logger.error("Upload functionality may not work properly")
+    
     yield
     # Shutdown (if needed)
     logger.info("Shutting down Scroll Press application")

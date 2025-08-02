@@ -58,7 +58,11 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
         PYTHONPATH: .
-      run: uv run python app/seed.py
+      run: |
+        echo "Seeding database..."
+        uv run python app/seed.py
+        echo "Waiting for seeding to complete..."
+        sleep 2
 
     - name: Run linting
       run: just lint
@@ -76,9 +80,13 @@ jobs:
         PYTHONPATH: .
         PORT: 8000
       run: |
-        uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
-        sleep 5
+        echo "Starting FastAPI server for e2e tests..."
+        uv run uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info &
+        echo "Waiting for server to start..."
+        sleep 8
+        echo "Testing server connection..."
         curl -f http://localhost:8000 || exit 1
+        echo "Server is ready for e2e tests"
 
     - name: Run critical e2e tests
       env:

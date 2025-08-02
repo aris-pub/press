@@ -139,8 +139,42 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
     log_request(request, user_id=str(current_user.id))
 
     # Load available subjects
-    result = await db.execute(select(Subject).order_by(Subject.name))
-    subjects = result.scalars().all()
+    get_logger().info("Loading subjects for upload form...")
+    try:
+        result = await db.execute(select(Subject).order_by(Subject.name))
+        subjects = result.scalars().all()
+        subject_count = len(subjects)
+        get_logger().info(f"Loaded {subject_count} subjects for upload form")
+        
+        if subject_count > 0:
+            subject_names = [s.name for s in subjects[:3]]  # First 3
+            get_logger().info(f"Subject names: {subject_names}")
+        else:
+            get_logger().warning("⚠️  No subjects found when loading upload form")
+            # Create default subjects for testing
+            get_logger().info("Creating default subjects for testing...")
+            try:
+                from app.models.scroll import Subject
+                default_subjects = [
+                    Subject(name="Computer Science", description="Computing and algorithms"),
+                    Subject(name="Physics", description="Theoretical and experimental physics"),
+                    Subject(name="Mathematics", description="Pure and applied mathematics"),
+                ]
+                for subject in default_subjects:
+                    db.add(subject)
+                await db.commit()
+                
+                # Reload subjects
+                result = await db.execute(select(Subject).order_by(Subject.name))
+                subjects = result.scalars().all()
+                get_logger().info(f"Created {len(default_subjects)} default subjects")
+            except Exception as create_error:
+                get_logger().error(f"Failed to create default subjects: {create_error}")
+                subjects = []
+            
+    except Exception as e:
+        get_logger().error(f"❌ Failed to load subjects: {e}")
+        subjects = []  # Fallback to empty list
 
     return templates.TemplateResponse(
         request, "upload.html", {"current_user": current_user, "subjects": subjects}
