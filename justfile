@@ -4,15 +4,44 @@
 install:
     uv sync
 
-# Run development server (only if not already running)
-dev:
+# Run development server (detached by default, add 'attach' to run in foreground)
+dev MODE="detached":
     #!/usr/bin/env bash
     set -a && source .env && set +a
     PORT=${PORT:-8000}
+    
+    # Check mode parameter
+    if [[ "{{MODE}}" == "attach" ]]; then
+        ATTACH_MODE=true
+    else
+        ATTACH_MODE=false
+    fi
+    
     if lsof -i :$PORT > /dev/null 2>&1; then
         echo "Server already running on port $PORT"
     else
-        uv run uvicorn main:app --reload --port $PORT
+        if [[ "$ATTACH_MODE" == "true" ]]; then
+            echo "Starting server on port $PORT (attached mode)"
+            uv run uvicorn main:app --reload --port $PORT
+        else
+            nohup uv run uvicorn main:app --reload --port $PORT > server.log 2>&1 &
+            sleep 2
+            echo "Server started on port $PORT (detached mode - use 'just dev attach' for attached mode)"
+        fi
+    fi
+
+# Stop the development server
+stop:
+    #!/usr/bin/env bash
+    set -a && source .env && set +a
+    PORT=${PORT:-8000}
+    
+    if lsof -i :$PORT > /dev/null 2>&1; then
+        echo "Stopping server on port $PORT..."
+        lsof -ti:$PORT | xargs kill -9
+        echo "Server stopped"
+    else
+        echo "No server running on port $PORT"
     fi
 
 # Run tests (unit + critical e2e) 
@@ -36,7 +65,7 @@ migration message:
 
 # Seed database with sample data
 seed:
-    uv run python app/seed.py
+    PYTHONPATH=. uv run python app/seed.py
 
 # Reset database (migrate + seed)
 reset-db: migrate seed

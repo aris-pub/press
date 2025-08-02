@@ -26,8 +26,8 @@ Usage:
         action="{{ action }}" 
         method="post"
         hx-post="{{ action }}"
-        hx-target=".auth-container:has(#{{ form_type }}-form-container)"
-        hx-swap="innerHTML"
+        hx-target="#{{ form_type }}-form-container"
+        hx-swap="outerHTML"
         hx-indicator="#{{ form_type }}-spinner">
     
     {% for field in fields %}
