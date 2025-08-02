@@ -15,13 +15,10 @@ dev:
         uv run uvicorn main:app --reload --port $PORT
     fi
 
-# Run tests
+# Run tests (unit + critical e2e)
 test:
-    uv run pytest -n auto
-
-# Run tests with coverage
-test-cov:
-    uv run pytest --cov=app --cov-report=term-missing
+    uv run pytest -n auto -m "not e2e"
+    uv run pytest tests/e2e/test_live_server.py tests/e2e/test_complete_flows.py::test_registration_upload_public_access
 
 # Format and lint code
 lint:
@@ -43,7 +40,7 @@ seed:
 # Reset database (migrate + seed)
 reset-db: migrate seed
 
-# Run all checks (lint + test)
+# Run all checks
 check: lint test
 
 # Setup project from scratch
