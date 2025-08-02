@@ -89,6 +89,65 @@ async def client(test_db):
 
 
 @pytest_asyncio.fixture
+async def test_subject(test_db):
+    """Create a test subject in the database."""
+    from app.models.scroll import Subject
+
+    subject = Subject(
+        name="Computer Science",
+        description="Computing, algorithms, and software engineering",
+    )
+
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    return subject
+
+
+async def create_content_addressable_scroll(
+    test_db,
+    test_user,
+    test_subject,
+    title: str = "Test Scroll",
+    authors: str = "Test Author",
+    abstract: str = "Test abstract",
+    html_content: str = "<h1>Test Content</h1>",
+    license: str = "cc-by-4.0",
+    keywords: list = None,
+):
+    """Helper function to create a scroll with proper content-addressable storage."""
+    from app.models.scroll import Scroll
+    from app.storage.content_processing import generate_permanent_url
+
+    if keywords is None:
+        keywords = []
+
+    # Generate content-addressable storage fields
+    url_hash, content_hash, tar_data = await generate_permanent_url(html_content)
+
+    scroll = Scroll(
+        title=title,
+        authors=authors,
+        abstract=abstract,
+        keywords=keywords,
+        html_content=html_content,
+        license=license,
+        content_hash=content_hash,
+        url_hash=url_hash,
+        status="draft",
+        user_id=test_user.id,
+        subject_id=test_subject.id,
+    )
+
+    test_db.add(scroll)
+    await test_db.commit()
+    await test_db.refresh(scroll)
+
+    return scroll
+
+
+@pytest_asyncio.fixture
 async def test_user(test_db):
     """Create a test user in the database."""
     from app.auth.utils import get_password_hash

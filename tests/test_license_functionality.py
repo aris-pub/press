@@ -4,6 +4,7 @@ from httpx import AsyncClient
 import pytest
 
 from app.models.scroll import Scroll, Subject
+from tests.conftest import create_content_addressable_scroll
 
 
 class TestLicenseValidation:
@@ -18,17 +19,16 @@ class TestLicenseValidation:
         await test_db.refresh(subject)
 
         # Valid license should work
-        valid_scroll = Scroll(
+        await create_content_addressable_scroll(
+            test_db,
+            test_user,
+            subject,
             title="Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test</h1>",
             license="cc-by-4.0",
-            user_id=test_user.id,
-            subject_id=subject.id,
         )
-        test_db.add(valid_scroll)
-        await test_db.commit()
 
         # Invalid license should raise ValueError
         with pytest.raises(ValueError, match="License must be one of"):
@@ -88,7 +88,7 @@ class TestLicenseValidation:
                 "authors": "Test Author",
                 "subject_id": str(subject.id),
                 "abstract": "Test abstract",
-                "html_content": "<h1>Test Content</h1>",
+                "html_content": f"<h1>Test Content for {license_value}</h1>",  # Make content unique
                 "license": license_value,
                 "confirm_rights": "true",
             }
@@ -109,22 +109,21 @@ class TestLicenseDisplay:
         await test_db.commit()
         await test_db.refresh(subject)
 
-        scroll = Scroll(
+        scroll = await create_content_addressable_scroll(
+            test_db,
+            test_user,
+            subject,
             title="CC BY Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test Content</h1>",
             license="cc-by-4.0",
-            status="published",
-            preview_id="ccby123",
-            user_id=test_user.id,
-            subject_id=subject.id,
         )
-        test_db.add(scroll)
+        scroll.publish()
         await test_db.commit()
 
         # Check scroll page
-        response = await client.get(f"/scroll/{scroll.preview_id}")
+        response = await client.get(f"/scroll/{scroll.url_hash}")
         assert response.status_code == 200
 
         # Should contain CC BY link and metadata
@@ -140,22 +139,21 @@ class TestLicenseDisplay:
         await test_db.commit()
         await test_db.refresh(subject)
 
-        scroll = Scroll(
+        scroll = await create_content_addressable_scroll(
+            test_db,
+            test_user,
+            subject,
             title="ARR Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test Content</h1>",
             license="arr",
-            status="published",
-            preview_id="arr123",
-            user_id=test_user.id,
-            subject_id=subject.id,
         )
-        test_db.add(scroll)
+        scroll.publish()
         await test_db.commit()
 
         # Check scroll page
-        response = await client.get(f"/scroll/{scroll.preview_id}")
+        response = await client.get(f"/scroll/{scroll.url_hash}")
         assert response.status_code == 200
 
         # Should contain ARR text but no CC license link
@@ -177,19 +175,17 @@ class TestLicenseExport:
         await test_db.commit()
         await test_db.refresh(subject)
 
-        scroll = Scroll(
+        scroll = await create_content_addressable_scroll(
+            test_db,
+            test_user,
+            subject,
             title="Export Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test Content</h1>",
             license="cc-by-4.0",
-            status="published",
-            preview_id="export123",
-            user_id=test_user.id,
-            subject_id=subject.id,
         )
         scroll.publish()
-        test_db.add(scroll)
         await test_db.commit()
 
         # Test CSV export
@@ -210,19 +206,17 @@ class TestLicenseExport:
         await test_db.commit()
         await test_db.refresh(subject)
 
-        scroll = Scroll(
+        scroll = await create_content_addressable_scroll(
+            test_db,
+            test_user,
+            subject,
             title="JSON Export Test",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test Content</h1>",
             license="arr",
-            status="published",
-            preview_id="json123",
-            user_id=test_user.id,
-            subject_id=subject.id,
         )
         scroll.publish()
-        test_db.add(scroll)
         await test_db.commit()
 
         # Test JSON export

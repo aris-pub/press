@@ -25,7 +25,7 @@
             subject_name,
             "recently",
             "v" + paper.version|string,
-            paper.preview_id
+            paper.url_hash or paper.preview_id
         ) }}
         {% endfor %}
       </div>

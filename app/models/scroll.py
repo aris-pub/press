@@ -79,21 +79,31 @@ class Subject(Base):
 
 
 class Scroll(Base):
-    """Academic scroll model."""
+    """Academic scroll model with content-addressable storage."""
 
     __tablename__ = "scrolls"
 
     id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+
+    # Content-addressable storage fields
+    content_hash: Mapped[Optional[str]] = mapped_column(
+        String(64), unique=True, nullable=True
+    )  # Full SHA-256 hash
+    url_hash: Mapped[Optional[str]] = mapped_column(
+        String(20), unique=True, nullable=True
+    )  # Shortened hash for URL (12+ chars)
+
+    # Legacy field for backward compatibility
     preview_id: Mapped[str] = mapped_column(
         String(20), unique=True, nullable=True
     )  # Short public ID for scrolls
 
-    # Content fields
+    # Content fields - for MVP, only HTML content is stored in database
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     authors: Mapped[str] = mapped_column(String(1000), nullable=False)  # Comma-separated for now
     abstract: Mapped[str] = mapped_column(Text, nullable=False)
     keywords: Mapped[List[str]] = mapped_column(StringArray, nullable=True)
-    html_content: Mapped[str] = mapped_column(Text, nullable=False)
+    html_content: Mapped[str] = mapped_column(Text, nullable=False)  # Normalized HTML content
 
     # New fields for HTML scrolls
     content_type: Mapped[str] = mapped_column(String(50), default="html")  # 'html' only for now
@@ -155,17 +165,21 @@ class Scroll(Base):
         return license_value
 
     def publish(self):
-        """Ensure scroll has a public ID."""
-        if self.preview_id:
-            return  # Already has ID
+        """Publish the scroll and set published timestamp."""
+        # For content-addressable scrolls, ensure they have the required fields
+        if not self.content_hash or not self.url_hash:
+            raise ValueError("Cannot publish scroll without content hash")
 
-        # Generate a short, unique scroll ID
-        import secrets
-        import string
-
-        # Generate 8-character alphanumeric ID
-        self.preview_id = "".join(
-            secrets.choice(string.ascii_letters + string.digits) for _ in range(8)
-        )
+        # Set published status and timestamp
         self.status = "published"
-        self.published_at = datetime.now(timezone.utc)
+        if not self.published_at:
+            self.published_at = datetime.now(timezone.utc)
+
+    @property
+    def permanent_url(self) -> str:
+        """Get the permanent content-addressable URL for this scroll."""
+        if self.url_hash:
+            return f"/scroll/{self.url_hash}"
+        else:
+            # Fall back to legacy URL for backward compatibility
+            return f"/scroll/{self.preview_id}"

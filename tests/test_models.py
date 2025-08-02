@@ -7,9 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.session import _get_user_id_from_session_id, create_session, delete_session
 from app.auth.utils import get_password_hash, verify_password
-from app.models.scroll import Scroll, Subject
+from app.models.scroll import Subject
 from app.models.session import Session
 from app.models.user import User
+from tests.conftest import create_content_addressable_scroll
 
 
 class TestPasswordUtils:
@@ -131,23 +132,21 @@ class TestScrollModel:
         await test_db.refresh(subject)
 
         # Create a draft scroll
-        scroll = Scroll(
+        scroll = await create_content_addressable_scroll(
+            test_db,
+            test_user,
+            subject,
             title="Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test Content</h1>",
             license="cc-by-4.0",
-            user_id=test_user.id,
-            subject_id=subject.id,
-            status="draft",
         )
-        test_db.add(scroll)
-        await test_db.commit()
-        await test_db.refresh(scroll)
 
         # Test initial state
         assert scroll.status == "draft"
-        assert scroll.preview_id is None
+        assert scroll.url_hash is not None  # Content-addressable scroll has url_hash
+        assert len(scroll.url_hash) >= 12  # Should be 12+ character hash
         assert scroll.published_at is None
 
         # Publish the scroll
@@ -157,8 +156,8 @@ class TestScrollModel:
 
         # Test published state
         assert scroll.status == "published"
-        assert scroll.preview_id is not None
-        assert len(scroll.preview_id) == 8  # Should be 8-character ID
+        assert scroll.url_hash is not None
+        assert len(scroll.url_hash) >= 12  # Should be 12+ character hash
         assert scroll.published_at is not None
 
     async def test_scroll_publish_idempotent(self, test_db, test_user):
@@ -170,29 +169,27 @@ class TestScrollModel:
         await test_db.refresh(subject)
 
         # Create and publish scroll
-        scroll = Scroll(
+        scroll = await create_content_addressable_scroll(
+            test_db,
+            test_user,
+            subject,
             title="Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
             html_content="<h1>Test Content</h1>",
             license="cc-by-4.0",
-            user_id=test_user.id,
-            subject_id=subject.id,
-            status="draft",
         )
-        test_db.add(scroll)
-        await test_db.commit()
 
         # Publish once
         scroll.publish()
-        first_preview_id = scroll.preview_id
+        first_url_hash = scroll.url_hash
         first_published_at = scroll.published_at
 
         # Publish again
         scroll.publish()
 
         # Should be unchanged
-        assert scroll.preview_id == first_preview_id
+        assert scroll.url_hash == first_url_hash
         assert scroll.published_at == first_published_at
         assert scroll.status == "published"
 
@@ -207,17 +204,16 @@ class TestScrollModel:
         # Create and publish multiple scrolls
         scrolls = []
         for i in range(5):
-            scroll = Scroll(
+            scroll = await create_content_addressable_scroll(
+                test_db,
+                test_user,
+                subject,
                 title=f"Test Scroll {i}",
                 authors="Test Author",
                 abstract="Test abstract",
-                html_content="<h1>Test Content</h1>",
+                html_content=f"<h1>Test Content {i}</h1>",  # Different content for each scroll
                 license="cc-by-4.0",
-                user_id=test_user.id,
-                subject_id=subject.id,
-                status="draft",
             )
-            test_db.add(scroll)
             await test_db.commit()
 
             scroll.publish()
@@ -226,9 +222,9 @@ class TestScrollModel:
 
             scrolls.append(scroll)
 
-        # Check all preview IDs are unique
-        preview_ids = [s.preview_id for s in scrolls]
-        assert len(set(preview_ids)) == len(preview_ids)  # All unique
+        # Check all URL hashes are unique
+        url_hashes = [s.url_hash for s in scrolls]
+        assert len(set(url_hashes)) == len(url_hashes)  # All unique
 
-        # Check all are 8 characters
-        assert all(len(pid) == 8 for pid in preview_ids)
+        # Check all are 12+ characters (content-addressable hash prefixes)
+        assert all(len(hash) >= 12 for hash in url_hashes)

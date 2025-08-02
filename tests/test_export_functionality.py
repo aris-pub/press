@@ -2,7 +2,8 @@
 
 from httpx import AsyncClient
 
-from app.models.scroll import Scroll, Subject
+from app.models.scroll import Subject
+from tests.conftest import create_content_addressable_scroll
 
 
 async def test_dashboard_has_export_button(authenticated_client: AsyncClient, test_db, test_user):
@@ -13,19 +14,16 @@ async def test_dashboard_has_export_button(authenticated_client: AsyncClient, te
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        status="draft",
-        user_id=test_user.id,
-        subject_id=subject.id,
     )
-    test_db.add(preview)
-    await test_db.commit()
-    await test_db.refresh(preview)
 
     # Publish preview
     preview.publish()
@@ -74,20 +72,17 @@ async def test_export_csv_metadata_only(authenticated_client: AsyncClient, test_
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         keywords=["test", "preview"],
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        status="draft",
-        user_id=test_user.id,
-        subject_id=subject.id,
     )
-    test_db.add(preview)
-    await test_db.commit()
-    await test_db.refresh(preview)
 
     # Publish preview
     preview.publish()
@@ -113,20 +108,17 @@ async def test_export_json_metadata_only(authenticated_client: AsyncClient, test
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         keywords=["test", "preview"],
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        status="draft",
-        user_id=test_user.id,
-        subject_id=subject.id,
     )
-    test_db.add(preview)
-    await test_db.commit()
-    await test_db.refresh(preview)
 
     # Publish preview
     preview.publish()
@@ -154,20 +146,17 @@ async def test_export_json_with_content(authenticated_client: AsyncClient, test_
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         keywords=["test", "preview"],
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        status="draft",
-        user_id=test_user.id,
-        subject_id=subject.id,
     )
-    test_db.add(preview)
-    await test_db.commit()
-    await test_db.refresh(preview)
 
     # Publish preview
     preview.publish()
@@ -210,20 +199,17 @@ async def test_export_bibtex_metadata_only(authenticated_client: AsyncClient, te
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Machine Learning Research",
         authors="John Doe, Jane Smith",
         abstract="This is a test abstract about machine learning.",
         keywords=["machine learning", "AI"],
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        status="draft",
-        user_id=test_user.id,
-        subject_id=subject.id,
     )
-    test_db.add(preview)
-    await test_db.commit()
-    await test_db.refresh(preview)
 
     # Publish preview
     preview.publish()

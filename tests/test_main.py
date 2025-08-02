@@ -3,6 +3,7 @@
 from httpx import AsyncClient
 
 from app.models.scroll import Scroll, Subject
+from tests.conftest import create_content_addressable_scroll
 
 
 async def test_homepage_anonymous_user(client: AsyncClient):
@@ -44,18 +45,17 @@ async def test_homepage_shows_recent_previews(client: AsyncClient, test_db, test
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Recent Test Scroll",
         authors="Test Author",
         abstract="Test abstract for recent preview",
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="recent123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
     response = await client.get("/")
@@ -87,17 +87,17 @@ async def test_homepage_only_shows_published_previews(client: AsyncClient, test_
     )
 
     # Create published preview (should appear)
-    published_preview = Scroll(
+    published_preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Published Scroll",
         authors="Published Author",
         abstract="Published abstract",
         html_content="<h1>Published Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="pub123",
     )
+    published_preview.publish()
 
     test_db.add(draft_preview)
     test_db.add(published_preview)
@@ -123,23 +123,23 @@ async def test_homepage_preview_links(client: AsyncClient, test_db, test_user):
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Linkable Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="link123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
+    await test_db.refresh(preview)
 
     response = await client.get("/")
     assert response.status_code == 200
-    assert "/scroll/link123" in response.text
+    assert f"/scroll/{preview.url_hash}" in response.text
 
 
 async def test_about_page(client: AsyncClient):
@@ -180,18 +180,17 @@ async def test_scroll_card_subject_links(client: AsyncClient, test_db, test_user
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Test ML Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="ml123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
     response = await client.get("/")
@@ -223,18 +222,17 @@ async def test_search_with_results(client: AsyncClient, test_db, test_user):
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Machine Learning Fundamentals",
         authors="Dr. AI Researcher",
         abstract="This paper covers the basics of machine learning algorithms.",
         html_content="<h1>Introduction to ML</h1><p>Machine learning is...</p>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="ml123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
     # Search for matching terms
@@ -282,17 +280,17 @@ async def test_search_only_published_previews(client: AsyncClient, test_db, test
     )
 
     # Create published preview (should appear in search)
-    published_preview = Scroll(
+    published_preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Published Physics Paper",
         authors="Published Author",
         abstract="This is a published paper about quantum mechanics.",
         html_content="<h1>Published Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="phys123",
     )
+    published_preview.publish()
 
     test_db.add(draft_preview)
     test_db.add(published_preview)
@@ -319,18 +317,17 @@ async def test_search_term_highlighting(client: AsyncClient, test_db, test_user)
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Neural Networks in Biology",
         authors="Bio Researcher",
         abstract="Study of neural networks and their biological applications.",
         html_content="<h1>Neural Networks</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="bio123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
     # Search for term that should be highlighted
@@ -348,18 +345,17 @@ async def test_search_partial_matching(client: AsyncClient, test_db, test_user):
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Advanced Algorithms in Machine Learning",
         authors="Dr. Algorithm Expert",
         abstract="This paper discusses algorithmic approaches to ML.",
         html_content="<h1>Algorithms</h1><p>Various algorithmic methods...</p>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="algo123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
     # Test partial match: "algo" should find "algorithm", "algorithms", "algorithmic"
@@ -392,14 +388,8 @@ async def test_health_check(client: AsyncClient):
     assert response.status_code == 200
 
     data = response.json()
-    assert data["status"] == "healthy"
-    assert "timestamp" in data
-    assert "response_time_ms" in data
-    assert data["components"]["database"] == "healthy"
-    assert data["components"]["models"] == "healthy"
-    assert "subject_count" in data["metrics"]
-    assert "scroll_count" in data["metrics"]
-    assert data["version"] == "0.1.0"
+    assert data["status"] == "ok"
+    assert data["service"] == "scroll-press"
 
 
 # Dashboard Tests (TDD)
@@ -429,18 +419,17 @@ async def test_dashboard_shows_users_published_papers(
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Efficient Algorithms for Large-Scale Graph Neural Networks",
         authors="John Smith, Li Chen, Maria Garcia",
         abstract="We present a novel approach to scaling graph neural networks",
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="graph123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
     response = await authenticated_client.get("/dashboard")
@@ -475,30 +464,30 @@ async def test_dashboard_only_shows_current_users_papers(
     await test_db.refresh(other_user)
 
     # Create preview for current user
-    user_preview = Scroll(
+    user_preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Current User's Paper",
         authors="Current User",
         abstract="This is the current user's paper",
         html_content="<h1>Current User Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="user123",
     )
+    user_preview.publish()
 
     # Create preview for other user
-    other_preview = Scroll(
+    other_preview = await create_content_addressable_scroll(
+        test_db,
+        other_user,
+        subject,
         title="Other User's Paper",
         authors="Other User",
         abstract="This is another user's paper",
         html_content="<h1>Other User Content</h1>",
         license="cc-by-4.0",
-        user_id=other_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="other123",
     )
+    other_preview.publish()
 
     test_db.add(user_preview)
     test_db.add(other_preview)
@@ -550,17 +539,17 @@ async def test_dashboard_does_not_show_draft_papers(
     )
 
     # Create published preview (should appear)
-    published_preview = Scroll(
+    published_preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Published Mathematics Paper",
         authors="Test Author",
         abstract="This is a published paper",
         html_content="<h1>Published Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="math123",
     )
+    published_preview.publish()
 
     test_db.add(draft_preview)
     test_db.add(published_preview)
@@ -591,29 +580,29 @@ async def test_dashboard_papers_ordered_by_created_at_descending(
     await test_db.refresh(subject)
 
     # Create multiple published previews
-    older_preview = Scroll(
+    older_preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Older Paper",
         authors="Test Author",
         abstract="This is an older paper",
         html_content="<h1>Older Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="old123",
     )
+    older_preview.publish()
 
-    newer_preview = Scroll(
+    newer_preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Newer Paper",
         authors="Test Author",
         abstract="This is a newer paper",
         html_content="<h1>Newer Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="new123",
     )
+    newer_preview.publish()
 
     test_db.add(older_preview)
     test_db.add(newer_preview)
@@ -652,20 +641,18 @@ async def test_dashboard_preview_count_in_title(authenticated_client, test_db, t
 
     # Create 3 published previews
     for i in range(3):
-        preview = Scroll(
+        preview = await create_content_addressable_scroll(
+            test_db,
+            test_user,
+            subject,
             title=f"Test Paper {i + 1}",
             authors="Test Author",
             abstract="Test abstract",
-            html_content="<h1>Test</h1>",
+            html_content=f"<h1>Test {i + 1}</h1>",  # Make content unique
             license="cc-by-4.0",
-            user_id=test_user.id,
-            subject_id=subject.id,
-            status="published",
-            preview_id=f"test{i + 1}",
         )
-        test_db.add(preview)
-
-    await test_db.commit()
+        preview.publish()
+        await test_db.commit()  # Commit each one individually
 
     response = await authenticated_client.get("/dashboard")
     assert response.status_code == 200

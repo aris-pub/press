@@ -49,7 +49,7 @@
                     subject_name,
                     "recently",
                     "v" + preview.version|string,
-                    preview.preview_id
+                    preview.url_hash or preview.preview_id
        ) }}
     {% endfor %}
   </div>

@@ -21,31 +21,41 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 
-@router.get("/scroll/{preview_id}", response_class=HTMLResponse)
-async def view_scroll(request: Request, preview_id: str, db: AsyncSession = Depends(get_db)):
-    """Display a published scroll by its scroll_id.
+@router.get("/scroll/{identifier}", response_class=HTMLResponse)
+async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depends(get_db)):
+    """Display a published scroll by its identifier.
 
-    Shows the full HTML content of a published research scroll. Only published
-    scrolls are accessible to the public.
+    Shows the full HTML content of a published research scroll. Supports both:
+    - Legacy preview_id format (backward compatibility)
+    - Content-addressable hash format (new permanent URLs)
 
+    Only published scrolls are accessible to the public.
     """
-    log_request(request, extra_data={"preview_id": preview_id})
+    log_request(request, extra_data={"identifier": identifier})
 
+    # Try to find scroll by url_hash first (content-addressable), then by preview_id (legacy)
     result = await db.execute(
         select(Scroll)
         .options(selectinload(Scroll.subject))
-        .where(Scroll.preview_id == preview_id, Scroll.status == "published")
+        .where(
+            (Scroll.url_hash == identifier) | (Scroll.preview_id == identifier),
+            Scroll.status == "published",
+        )
     )
     scroll = result.scalar_one_or_none()
 
     if not scroll:
-        get_logger().warning(f"Scroll not found: {preview_id}")
+        get_logger().warning(f"Scroll not found: {identifier}")
         return templates.TemplateResponse(
             request, "404.html", {"message": "Scroll not found"}, status_code=404
         )
 
     log_preview_event(
-        "view", preview_id, str(scroll.user_id), request, extra_data={"title": scroll.title}
+        "view",
+        identifier,
+        str(scroll.user_id) if scroll.user_id else None,
+        request,
+        extra_data={"title": scroll.title, "url_hash": scroll.url_hash},
     )
 
     # Check if HTML content has CSS
@@ -145,7 +155,7 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
         subjects = result.scalars().all()
         subject_count = len(subjects)
         get_logger().info(f"Loaded {subject_count} subjects for upload form")
-        
+
         if subject_count > 0:
             subject_names = [s.name for s in subjects[:3]]  # First 3
             get_logger().info(f"Subject names: {subject_names}")
@@ -162,7 +172,7 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
                 for subject in default_subjects:
                     db.add(subject)
                 await db.commit()
-                
+
                 # Reload subjects
                 result = await db.execute(select(Subject).order_by(Subject.name))
                 subjects = result.scalars().all()
@@ -170,7 +180,7 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
             except Exception as create_error:
                 get_logger().error(f"Failed to create default subjects: {create_error}")
                 subjects = []
-            
+
     except Exception as e:
         get_logger().error(f"❌ Failed to load subjects: {e}")
         subjects = []  # Fallback to empty list
@@ -259,7 +269,12 @@ async def upload_form(
         if keywords.strip():
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
-        # Create scroll
+        # Generate content-addressable storage fields
+        from app.storage.content_processing import generate_permanent_url
+
+        url_hash, content_hash, tar_data = await generate_permanent_url(html_content.strip())
+
+        # Create scroll with content-addressable storage
         scroll = Scroll(
             user_id=current_user.id,
             title=title.strip(),
@@ -269,6 +284,8 @@ async def upload_form(
             keywords=keyword_list,
             html_content=html_content.strip(),
             license=license,
+            content_hash=content_hash,
+            url_hash=url_hash,
             status="published",
         )
         scroll.publish()
@@ -296,7 +313,7 @@ async def upload_form(
             await db.commit()  # Commit the publish changes
             log_preview_event(
                 "publish",
-                scroll.preview_id,
+                scroll.url_hash,
                 str(current_user.id),
                 request,
                 extra_data={"title": scroll.title},
@@ -304,29 +321,18 @@ async def upload_form(
 
         # Return success response - just the content for HTMX
         success_message = "Your scroll has been published successfully!"
-        preview_url = f"/scroll/{scroll.preview_id}"
+        preview_url = f"/scroll/{scroll.url_hash}"
 
-        # Return just the success content (not full page) for HTMX
-        success_html = f"""
-        <div class="success-container" style="max-width: 600px; margin: 4rem auto; padding: 3rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; text-align: center;">
-            <h1 style="color: #15803d; margin-bottom: 1rem;">✅ Success!</h1>
-            <p style="color: #166534; font-size: 1.1rem; margin-bottom: 2rem;">{success_message}</p>
-
-            <div style="margin-bottom: 2rem;">
-                <p><strong>Title:</strong> {scroll.title}</p>
-                <p><strong>Status:</strong> Published</p>
-                <p><strong>Scroll ID:</strong> {scroll.preview_id}</p>
-            </div>
-
-            <div style="display: flex; gap: 1rem; justify-content: center;">
-                <a href="{preview_url}" class="btn btn-primary">View Scroll</a>
-                <a href="/upload" class="btn btn-secondary">Upload Another</a>
-                <a href="/" class="btn btn-secondary">Go Home</a>
-            </div>
-        </div>
-        """
-
-        return HTMLResponse(content=success_html)
+        # Return success response using proper template
+        return templates.TemplateResponse(
+            request,
+            "upload_success.html",
+            {
+                "scroll": scroll,
+                "preview_url": preview_url,
+                "success_message": success_message,
+            },
+        )
 
     except Exception as e:
         error_message = str(e) if str(e) else "Upload failed. Please try again."
@@ -536,3 +542,193 @@ async def upload_html_paper(
     finally:
         if temp_file_path.exists():
             temp_file_path.unlink()
+
+
+@router.post("/upload")
+async def upload_content_addressable(
+    request: Request,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Upload HTML content with content-addressable storage.
+
+    MVP implementation that accepts single HTML files and returns permanent URLs
+    based on cryptographic hashes of the content.
+
+    Args:
+        request: HTTP request object
+        file: Uploaded HTML file (enforced UTF-8 encoding)
+        db: Database session
+
+    Returns:
+        JSONResponse with permanent URL and content hash
+
+    Raises:
+        HTTPException: For validation errors, encoding issues, or processing failures
+    """
+    from app.storage.content_processing import (
+        generate_permanent_url,
+        validate_utf8_content,
+    )
+
+    log_request(request, extra_data={"filename": file.filename})
+
+    try:
+        # Validate file type
+        if not file.filename or not file.filename.lower().endswith(".html"):
+            raise HTTPException(status_code=422, detail="Only HTML files are accepted")
+
+        # Read file content
+        content_bytes = await file.read()
+
+        # Enforce UTF-8 validation
+        if not validate_utf8_content(content_bytes):
+            raise HTTPException(status_code=422, detail="File content must be UTF-8 encoded")
+
+        # Convert to string and validate size (5MB limit)
+        content_str = content_bytes.decode("utf-8")
+        if len(content_bytes) > 5 * 1024 * 1024:  # 5MB
+            raise HTTPException(status_code=422, detail="File size cannot exceed 5MB")
+
+        # Validate content is not empty
+        if not content_str.strip():
+            raise HTTPException(status_code=422, detail="File content cannot be empty")
+
+        # Generate permanent URL using content-addressable storage
+        url_hash, content_hash, tar_data = await generate_permanent_url(content_str)
+
+        # Check if content already exists
+        result = await db.execute(select(Scroll).where(Scroll.content_hash == content_hash))
+        existing_scroll = result.scalar_one_or_none()
+
+        if existing_scroll:
+            # Content already exists, return existing URL
+            return JSONResponse(
+                content={
+                    "success": True,
+                    "permanent_url": f"/scroll/{existing_scroll.url_hash}",
+                    "url_hash": existing_scroll.url_hash,
+                    "content_hash": content_hash,
+                    "exists": True,
+                    "message": "Content already exists with permanent URL",
+                }
+            )
+
+        # Create new scroll with content-addressable storage
+        scroll = Scroll(
+            content_hash=content_hash,
+            url_hash=url_hash,
+            title=f"Content {url_hash[:8]}",  # Temporary title for MVP
+            authors="Anonymous",  # Default for MVP
+            abstract="Content uploaded via content-addressable storage",  # Default for MVP
+            html_content=content_str,
+            content_type="html",
+            original_filename=file.filename,
+            file_size=len(content_bytes),
+            license="arr",  # Default license for MVP
+            status="published",
+            # Set a default subject for MVP - we'll need to handle this properly
+            subject_id=(await db.execute(select(Subject).limit(1))).scalar_one().id,
+        )
+
+        db.add(scroll)
+        await db.commit()
+        await db.refresh(scroll)
+
+        log_preview_event(
+            "create_content_addressable",
+            url_hash,
+            None,  # No user for MVP
+            request,
+            extra_data={
+                "content_hash": content_hash,
+                "file_size": len(content_bytes),
+                "filename": file.filename,
+            },
+        )
+
+        return JSONResponse(
+            content={
+                "success": True,
+                "permanent_url": f"/scroll/{url_hash}",
+                "url_hash": url_hash,
+                "content_hash": content_hash,
+                "exists": False,
+                "message": "Content uploaded successfully with permanent URL",
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error(e, request, context="content_addressable_upload")
+        raise HTTPException(status_code=500, detail=f"Upload processing failed: {str(e)}")
+
+
+@router.get("/scroll/{identifier}/raw")
+async def get_raw_content(request: Request, identifier: str, db: AsyncSession = Depends(get_db)):
+    """
+    Serve raw tar content for content-addressable stored scrolls.
+
+    Returns the uncompressed tar archive of the original content.
+    For MVP with HTML-only content, this recreates the tar from stored HTML.
+
+    Args:
+        request: HTTP request object
+        identifier: Content hash or legacy preview_id
+        db: Database session
+
+    Returns:
+        Raw tar content as application/x-tar
+
+    Raises:
+        HTTPException: If scroll not found or not content-addressable
+    """
+    from fastapi.responses import Response
+
+    from app.storage.content_processing import process_html_content
+
+    log_request(request, extra_data={"identifier": identifier, "endpoint": "raw"})
+
+    # Find scroll (prioritize url_hash)
+    result = await db.execute(
+        select(Scroll).where(
+            (Scroll.url_hash == identifier) | (Scroll.preview_id == identifier),
+            Scroll.status == "published",
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Scroll not found")
+
+    # For content-addressable scrolls, regenerate tar from stored content
+    if scroll.url_hash:
+        try:
+            # Process the stored HTML content to create tar
+            normalized_content, tar_data = process_html_content(scroll.html_content)
+
+            log_preview_event(
+                "view_raw",
+                identifier,
+                str(scroll.user_id) if scroll.user_id else None,
+                request,
+                extra_data={"content_hash": scroll.content_hash},
+            )
+
+            return Response(
+                content=tar_data,
+                media_type="application/x-tar",
+                headers={
+                    "Content-Disposition": f"attachment; filename=content-{scroll.url_hash}.tar",
+                    "Content-Length": str(len(tar_data)),
+                },
+            )
+
+        except Exception as e:
+            log_error(e, request, context="raw_content_generation")
+            raise HTTPException(status_code=500, detail="Failed to generate raw content")
+    else:
+        # Legacy scroll without content-addressable storage
+        raise HTTPException(status_code=422, detail="Raw content not available for legacy scrolls")

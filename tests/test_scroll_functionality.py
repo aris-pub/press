@@ -2,7 +2,8 @@
 
 from httpx import AsyncClient
 
-from app.models.scroll import Scroll, Subject
+from app.models.scroll import Subject
+from tests.conftest import create_content_addressable_scroll
 
 
 async def test_scroll_page_functionality(client: AsyncClient, test_db, test_user):
@@ -13,28 +14,23 @@ async def test_scroll_page_functionality(client: AsyncClient, test_db, test_user
     await test_db.commit()
     await test_db.refresh(subject)
 
-    # Create and publish scroll (all scrolls are published directly)
-    preview = Scroll(
+    # Create and publish scroll using content-addressable storage
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Basic Test Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Content</h1>",
         license="cc-by-4.0",
-        status="published",  # Always published now
-        user_id=test_user.id,
-        subject_id=subject.id,
     )
-    test_db.add(preview)
-    await test_db.commit()
-    await test_db.refresh(preview)
-
-    # Publish to get preview_id
     preview.publish()
     await test_db.commit()
     await test_db.refresh(preview)
 
     # Test the page
-    response = await client.get(f"/scroll/{preview.preview_id}")
+    response = await client.get(f"/scroll/{preview.url_hash}")
     assert response.status_code == 200
 
     # Functionality: Check key components are present

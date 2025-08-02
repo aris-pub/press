@@ -4,6 +4,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 
 from app.models.scroll import Scroll, Subject
+from tests.conftest import create_content_addressable_scroll
 
 
 async def test_upload_page_requires_auth(client: AsyncClient):
@@ -81,7 +82,7 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
     result = await test_db.execute(select(Scroll).where(Scroll.title == "Published Scroll"))
     preview = result.scalar_one()
     assert preview.status == "published"
-    assert preview.preview_id is not None
+    assert preview.url_hash is not None
 
 
 async def test_upload_form_validation_errors(authenticated_client: AsyncClient, test_db):
@@ -134,21 +135,20 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Test Published Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Test Published Content</h1>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="test123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
-    response = await client.get("/scroll/test123")
+    response = await client.get(f"/scroll/{preview.url_hash}")
     assert response.status_code == 200
     assert "Test Published Scroll" in response.text
     assert "Test Author" in response.text
@@ -215,21 +215,20 @@ async def test_css_injection_for_unstyled_content(client: AsyncClient, test_db, 
     await test_db.commit()
     await test_db.refresh(subject)
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Unstyled Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content="<h1>Plain HTML Content</h1><p>This has no styling.</p>",
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="unstyled123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
-    response = await client.get("/scroll/unstyled123")
+    response = await client.get(f"/scroll/{preview.url_hash}")
     assert response.status_code == 200
 
     # Check that CSS was injected
@@ -262,21 +261,20 @@ async def test_no_css_injection_for_styled_content(client: AsyncClient, test_db,
     <p>This already has CSS.</p>
     """
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Styled Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content=styled_content,
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="styled123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
-    response = await client.get("/scroll/styled123")
+    response = await client.get(f"/scroll/{preview.url_hash}")
     assert response.status_code == 200
 
     # Check that the original CSS is preserved
@@ -307,21 +305,20 @@ async def test_css_detection_with_link_tags(client: AsyncClient, test_db, test_u
     <p>This has CSS via link tag.</p>
     """
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Link CSS Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content=content_with_link,
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="link123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
-    response = await client.get("/scroll/link123")
+    response = await client.get(f"/scroll/{preview.url_hash}")
     assert response.status_code == 200
 
     # Check that the original link tag is preserved
@@ -347,21 +344,20 @@ async def test_css_detection_with_inline_styles(client: AsyncClient, test_db, te
     <p>This has CSS via inline styles.</p>
     """
 
-    preview = Scroll(
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
         title="Inline CSS Scroll",
         authors="Test Author",
         abstract="Test abstract",
         html_content=content_with_inline,
         license="cc-by-4.0",
-        user_id=test_user.id,
-        subject_id=subject.id,
-        status="published",
-        preview_id="inline123",
     )
-    test_db.add(preview)
+    preview.publish()
     await test_db.commit()
 
-    response = await client.get("/scroll/inline123")
+    response = await client.get(f"/scroll/{preview.url_hash}")
     assert response.status_code == 200
 
     # Check that the original inline styles are preserved
