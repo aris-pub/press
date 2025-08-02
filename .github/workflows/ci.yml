@@ -58,7 +58,30 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
         PYTHONPATH: .
-      run: uv run python app/seed.py
+      run: |
+        echo "Starting database seeding..."
+        uv run python app/seed.py
+        echo "Seeding completed. Checking subjects..."
+        uv run python -c "
+        import asyncio
+        from app.database import AsyncSessionLocal
+        from sqlalchemy import text
+        
+        async def check_subjects():
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(text('SELECT COUNT(*) FROM subjects'))
+                count = result.scalar()
+                print(f'Total subjects in database: {count}')
+                
+                if count > 0:
+                    subjects = await session.execute(text('SELECT name FROM subjects LIMIT 5'))
+                    names = [row[0] for row in subjects]
+                    print(f'First 5 subjects: {names}')
+                else:
+                    print('No subjects found in database!')
+        
+        asyncio.run(check_subjects())
+        "
 
     - name: Run linting
       run: just lint
