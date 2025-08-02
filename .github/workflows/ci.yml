@@ -53,6 +53,12 @@ jobs:
         TESTING: 1
       run: uv run alembic upgrade head
 
+    - name: Seed database with test data
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        TESTING: 1
+      run: uv run python app/seed.py
+
     - name: Run linting
       run: just lint
 
