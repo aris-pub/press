@@ -148,7 +148,9 @@ class E2ETestHelpers:
         # Get all options and select the first non-empty one
         options = await subject_select.locator("option").all()
         if len(options) <= 1:  # Only default option
-            raise AssertionError(f"No subjects available in dropdown - found {len(options)} options")
+            raise AssertionError(
+                f"No subjects available in dropdown - found {len(options)} options"
+            )
 
         # Select the first real subject (skip default empty option)
         await page.select_option('select[name="subject_id"]', index=1)

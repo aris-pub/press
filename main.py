@@ -11,7 +11,6 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.database import create_tables
 from app.logging_config import get_logger
 from app.middleware import LoggingMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
 from app.routes import auth, main, scrolls
@@ -27,42 +26,14 @@ async def lifespan(app: FastAPI):
     # Startup
     logger = get_logger()
     logger.info("Starting Scroll Press application")
-    
+
     # Log database URL for debugging
     db_url = os.getenv("DATABASE_URL", "not_set")
     logger.info(f"Using DATABASE_URL: {db_url}")
-    
-    await create_tables()
-    logger.info("Database tables created/verified")
-    
-    # Verify database connection and check subjects
-    try:
-        from sqlalchemy import select, text
 
-        from app.database import AsyncSessionLocal
-        from app.models.scroll import Subject
-        
-        async with AsyncSessionLocal() as session:
-            # Test basic connection
-            await session.execute(text("SELECT 1"))
-            logger.info("✓ Database connection verified")
-            
-            # Count subjects
-            result = await session.execute(select(Subject))
-            subjects = result.scalars().all()
-            subject_count = len(subjects)
-            logger.info(f"Found {subject_count} subjects in database")
-            
-            if subject_count > 0:
-                subject_names = [s.name for s in subjects[:5]]  # First 5
-                logger.info(f"First subjects: {subject_names}")
-            else:
-                logger.warning("⚠️  No subjects found in database - upload form may not work")
-                
-    except Exception as e:
-        logger.error(f"❌ Database verification failed: {e}")
-        logger.error("Upload functionality may not work properly")
-    
+    # Skip database operations during startup to avoid Supabase pgbouncer prepared statement issues
+    logger.info("⚠️ Skipping database verification during startup to avoid connection issues")
+
     yield
     # Shutdown (if needed)
     logger.info("Shutting down Scroll Press application")
@@ -86,6 +57,14 @@ app.add_middleware(RateLimitMiddleware, enabled=rate_limit_enabled)
 
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+# Health check endpoint for monitoring
+@app.get("/health")
+def health_check():
+    """Fast health check endpoint for load balancers and monitoring."""
+    return {"status": "ok", "service": "scroll-press"}
+
 
 # Include routers
 app.include_router(main.router)
