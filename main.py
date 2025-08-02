@@ -37,9 +37,10 @@ async def lifespan(app: FastAPI):
     
     # Verify database connection and check subjects
     try:
+        from sqlalchemy import select, text
+
         from app.database import AsyncSessionLocal
         from app.models.scroll import Subject
-        from sqlalchemy import text, select
         
         async with AsyncSessionLocal() as session:
             # Test basic connection

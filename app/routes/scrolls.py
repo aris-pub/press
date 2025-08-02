@@ -154,7 +154,6 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
             # Create default subjects for testing
             get_logger().info("Creating default subjects for testing...")
             try:
-                from app.models.scroll import Subject
                 default_subjects = [
                     Subject(name="Computer Science", description="Computing and algorithms"),
                     Subject(name="Physics", description="Theoretical and experimental physics"),
