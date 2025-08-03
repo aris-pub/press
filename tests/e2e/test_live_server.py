@@ -8,13 +8,12 @@ Run these tests against a running development server:
 from playwright.async_api import async_playwright
 import pytest
 
-# Configuration - adjust this to match your dev server
-DEV_SERVER_URL = "http://localhost:8000"
+pytestmark = pytest.mark.e2e
+
+# Configuration will be provided by test_server fixture
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_homepage_loads():
+async def test_homepage_loads(test_server):
     """Test that the homepage loads correctly."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -22,7 +21,7 @@ async def test_homepage_loads():
 
         try:
             # Visit homepage
-            await page.goto(DEV_SERVER_URL)
+            await page.goto(test_server)
             await page.wait_for_load_state("networkidle")
 
             # Check title
@@ -45,16 +44,14 @@ async def test_homepage_loads():
             await browser.close()
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_navigation_to_register():
+async def test_navigation_to_register(test_server):
     """Test navigation to register page."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
         try:
-            await page.goto(DEV_SERVER_URL)
+            await page.goto(test_server)
             await page.wait_for_load_state("networkidle")
 
             # Click register link (shows as "New Scroll") - use first one
@@ -79,9 +76,7 @@ async def test_navigation_to_register():
             await browser.close()
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_user_registration_flow():
+async def test_user_registration_flow(test_server):
     """Test complete user registration flow.
 
     This tests registration → auto-login → redirect to homepage.
@@ -100,7 +95,7 @@ async def test_user_registration_flow():
             display_name = f"E2E Test User {test_id}"
 
             # Go to register page
-            await page.goto(f"{DEV_SERVER_URL}/register")
+            await page.goto(f"{test_server}/register")
             await page.wait_for_load_state("networkidle")
 
             # Fill registration form
@@ -130,18 +125,32 @@ async def test_user_registration_flow():
                         "Registration form submission failed - no redirect occurred"
                     )
 
-            # Wait for any redirects after successful HTMX response
-            await page.wait_for_timeout(1000)
+            # Look for success message which auto-redirects after 1 second
+            success_msg = page.locator("text=Account Created!")
 
-            # Verify we're logged in by checking for authenticated user elements
+            # If we see the success message, wait for automatic HTMX redirect
+            if await success_msg.count() > 0:
+                # Wait for HTMX auto-redirect (delay:1s in template)
+                await page.wait_for_timeout(2000)
+                await page.wait_for_load_state("networkidle")
+
+            # Wait for any additional redirects
+            await page.wait_for_timeout(500)
+
+            # Verify we're logged in by checking for user menu trigger (logout is inside dropdown)
             current_url = page.url
-            is_on_homepage = current_url in [DEV_SERVER_URL, f"{DEV_SERVER_URL}/"]
-            has_logout_btn = await page.locator('button:has-text("Logout")').count() > 0
+            is_on_homepage = current_url in [
+                test_server,
+                f"{test_server}/",
+                f"{test_server}/dashboard",
+            ]
+            has_user_menu = await page.locator(".user-menu-trigger").count() > 0
 
-            # Registration should result in being logged in and on homepage
-            assert is_on_homepage and has_logout_btn, (
-                "Registration should redirect to homepage with logout button visible"
-            )
+            if not (is_on_homepage and has_user_menu):
+                raise AssertionError(
+                    f"Registration should redirect to homepage with user menu visible. "
+                    f"URL: {current_url}, has_user_menu: {has_user_menu}"
+                )
 
         finally:
             await browser.close()

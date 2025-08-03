@@ -563,7 +563,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.7" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.11.7" },
     { name = "pytest", specifier = ">=7.4.3" },
-    { name = "pytest-asyncio", specifier = ">=0.21.1" },
+    { name = "pytest-asyncio", specifier = ">=0.26.0" },
     { name = "pytest-playwright", specifier = ">=0.4.3" },
     { name = "pytest-xdist", specifier = ">=3.3.1" },
     { name = "python-dotenv", specifier = ">=1.0.0" },

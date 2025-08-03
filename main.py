@@ -27,12 +27,7 @@ async def lifespan(app: FastAPI):
     logger = get_logger()
     logger.info("Starting Scroll Press application")
 
-    # Log database URL for debugging
-    db_url = os.getenv("DATABASE_URL", "not_set")
-    logger.info(f"Using DATABASE_URL: {db_url}")
-
     # Skip database operations during startup to avoid Supabase pgbouncer prepared statement issues
-    logger.info("⚠️ Skipping database verification during startup to avoid connection issues")
 
     yield
     # Shutdown (if needed)

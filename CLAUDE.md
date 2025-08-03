@@ -126,3 +126,22 @@ app/
 
 ## Database Time Handling
 - All dates and times in the DB are stored in UTC time zone, the client/frontend is responsible for converting to the user's browser's timezone
+
+## Puppeteer and Screenshot Handling
+- Whenever taking screenshots with Puppeteer, specify width/height or the MCP will hang
+
+## Playwright E2E Testing
+- **CRITICAL**: Do NOT use session-scoped Playwright fixtures (`page`, `browser`, `browser_context`) in e2e tests
+- Session fixtures cause deadlocks with pytest-asyncio due to event loop conflicts
+- **SOLUTION**: Use `async with async_playwright()` directly in test functions:
+  ```python
+  async with async_playwright() as p:
+      browser = await p.chromium.launch(headless=True)
+      page = await browser.new_page()
+      # ... test code ...
+      await browser.close()
+  ```
+- This pattern avoids event loop conflicts and ensures tests don't hang
+
+## Code Generation Guidelines
+- You MUST NEVER use emoji for any reason under any circumstance

@@ -1,12 +1,12 @@
 """Simple app e2e test."""
 
-from playwright.async_api import Page
+from playwright.async_api import async_playwright
 import pytest
 
+pytestmark = pytest.mark.e2e
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_app_setup(page: Page, test_app, seeded_database):
+
+async def test_app_setup(test_app, seeded_database):
     """Test that our test app setup works."""
     # Just verify fixtures are working
     assert test_app is not None
@@ -14,7 +14,13 @@ async def test_app_setup(page: Page, test_app, seeded_database):
     assert len(seeded_database["subjects"]) == 4
     assert len(seeded_database["users"]) == 2
 
-    # Test basic page functionality
-    await page.goto("https://example.com")
-    title = await page.title()
-    assert "Example Domain" in title
+    # Test basic page functionality using direct playwright
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        await page.goto("https://example.com")
+        title = await page.title()
+        assert "Example Domain" in title
+
+        await browser.close()

@@ -14,8 +14,7 @@ import uuid
 from playwright.async_api import async_playwright, expect
 import pytest
 
-# Configuration
-DEV_SERVER_URL = "http://localhost:8000"
+pytestmark = pytest.mark.e2e
 
 # Sample HTML content for testing
 SAMPLE_HTML_CONTENT = """
@@ -77,11 +76,34 @@ class E2ETestHelpers:
     """Helper methods for e2e testing."""
 
     @staticmethod
-    async def register_and_login_user(page, email: str, password: str, display_name: str):
+    async def register_and_login_user(
+        page, email: str, password: str, display_name: str, server_url: str
+    ):
         """Register a new user and verify login."""
-        # Go to register page
-        await page.goto(f"{DEV_SERVER_URL}/register")
-        await page.wait_for_load_state("networkidle")
+        # Go to register page with debugging
+        print(f"Navigating to: {server_url}/register")
+
+        # Enable console and error logging
+        page.on("console", lambda msg: print(f"CONSOLE: {msg.text}"))
+        page.on("pageerror", lambda err: print(f"PAGE ERROR: {err}"))
+
+        try:
+            response = await page.goto(
+                f"{server_url}/register", wait_until="domcontentloaded", timeout=5000
+            )
+            print(f"Response status: {response.status if response else 'None'}")
+
+            # Check if page loaded
+            title = await page.title()
+            print(f"Page title: {title}")
+
+        except Exception as e:
+            print(f"Navigation failed: {e}")
+            # Try to get page content anyway
+            content = await page.content()
+            print(f"Page content length: {len(content)}")
+            print(f"Page content preview: {content[:500]}")
+            raise
 
         # Fill registration form
         await page.fill('input[name="email"]', email)
@@ -98,7 +120,7 @@ class E2ETestHelpers:
         # Check if we still have the registration form (indicates failure)
         register_form = page.locator("#register-form-container")
         form_count = await register_form.count()
-        
+
         if form_count > 0:
             # Look for error messages
             error_msgs = page.locator(".form-error, .error-message, .alert-danger")
@@ -107,26 +129,32 @@ class E2ETestHelpers:
                 raise AssertionError(f"Registration failed with error: {error_text}")
             else:
                 # Debug: get page content to see what's there
-                page_content = await page.content()
+                await page.content()
                 current_url = page.url
-                raise AssertionError(f"Registration form submission failed. URL: {current_url}, Form still present. Page title: {await page.title()}")
+                raise AssertionError(
+                    f"Registration form submission failed. URL: {current_url}, Form still present. Page title: {await page.title()}"
+                )
 
         # Look for success message which auto-redirects after 1 second
         success_msg = page.locator("text=Account Created!")
-        
+
         # If we see the success message, wait for automatic HTMX redirect
         if await success_msg.count() > 0:
             # Wait for HTMX auto-redirect (delay:1s in template)
             await page.wait_for_timeout(2000)
             await page.wait_for_load_state("networkidle")
-        
+
         # Wait for any additional redirects
         await page.wait_for_timeout(500)
 
         # Verify we're logged in by checking for user menu trigger (logout is inside dropdown)
         current_url = page.url
-        is_on_homepage = current_url in [DEV_SERVER_URL, f"{DEV_SERVER_URL}/", f"{DEV_SERVER_URL}/dashboard"]
-        has_user_menu = await page.locator('.user-menu-trigger').count() > 0
+        is_on_homepage = current_url in [
+            server_url,
+            f"{server_url}/",
+            f"{server_url}/dashboard",
+        ]
+        has_user_menu = await page.locator(".user-menu-trigger").count() > 0
 
         if not (is_on_homepage and has_user_menu):
             raise AssertionError(
@@ -143,18 +171,57 @@ class E2ETestHelpers:
         authors: str,
         abstract: str,
         html_content: str,
+        server_url: str,
         license: str = "cc-by-4.0",
     ):
         """Upload a scroll and return the public URL."""
         # Navigate to upload page
-        await page.goto(f"{DEV_SERVER_URL}/upload")
+        await page.goto(f"{server_url}/upload")
         await page.wait_for_load_state("networkidle")
 
-        # Fill upload form
+        # Fill upload form metadata
         await page.fill('input[name="title"]', title)
         await page.fill('input[name="authors"]', authors)
         await page.fill('textarea[name="abstract"]', abstract)
-        await page.fill('textarea[name="html_content"]', html_content)
+
+        # Create a temporary HTML file and upload it using Playwright's file upload
+        import os
+        import tempfile
+
+        # Create temporary file with HTML content
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".html", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(html_content)
+            temp_file_path = f.name
+
+        try:
+            # Upload the file using the file input
+            file_input = page.locator("#html_file")
+            await file_input.set_input_files(temp_file_path)
+
+            # Wait for JavaScript validation to complete and verify success
+            success_message = page.locator("#file-success")
+            await success_message.wait_for(state="visible", timeout=10000)
+
+            # Verify success message text
+            success_text = await success_message.text_content()
+            if "uploaded successfully" not in success_text.lower():
+                raise AssertionError(f"File upload validation failed: {success_text}")
+
+            # Verify the hidden input was populated correctly
+            html_content_value = await page.evaluate(
+                "document.getElementById('html_content').value"
+            )
+            if not html_content_value.strip():
+                raise AssertionError(
+                    "Hidden html_content field was not populated after file upload"
+                )
+
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
 
         # Select first available subject (skip the default empty option)
         subject_select = page.locator('select[name="subject_id"]')
@@ -181,21 +248,111 @@ class E2ETestHelpers:
 
         # Submit form - click the "Publish Scroll" button specifically
         submit_button = page.locator('button[name="action"][value="publish"]')
+
+        # Log form state before submission for debugging
+        await page.evaluate("""
+            () => {
+                const form = document.getElementById('upload-form');
+                const formData = new FormData(form);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    data[key] = typeof value === 'string' ? value.substring(0, 100) + '...' : '[FILE]';
+                }
+                return data;
+            }
+        """)
+
+        # Capture network requests to see what happens with HTMX
+        requests = []
+        responses = []
+
+        def handle_request(request):
+            if "upload-form" in request.url or request.method == "POST":
+                requests.append(f"REQUEST: {request.method} {request.url}")
+
+        def handle_response(response):
+            if "upload-form" in response.url or response.request.method == "POST":
+                responses.append(f"RESPONSE: {response.status} {response.url}")
+
+        page.on("request", handle_request)
+        page.on("response", handle_response)
+
+        # Check if form validation prevents submission
+        form_validation_result = await page.evaluate("""
+            () => {
+                const form = document.getElementById('upload-form');
+                const htmlContent = document.getElementById('html_content');
+                return {
+                    formValid: form.checkValidity(),
+                    htmlContentValid: htmlContent.checkValidity(),
+                    htmlContentValue: htmlContent.value ? 'HAS_VALUE' : 'EMPTY',
+                    htmlContentRequired: htmlContent.required
+                };
+            }
+        """)
+
         await submit_button.click()
+
+        # Wait for HTMX response - this should show success page or errors
+        await page.wait_for_timeout(3000)
         await page.wait_for_load_state("networkidle")
+
+        # Check if form submission failed (still on upload page)
+        upload_form = page.locator("#upload-form")
+        if await upload_form.count() > 0:
+            # Look for error messages - check all possible error containers including hidden ones
+            error_containers = [
+                ".form-error",
+                ".error-message",
+                ".alert-danger",
+                "#file-error",
+                ".file-error",
+                ".form-errors",
+            ]
+
+            all_errors = []
+            for selector in error_containers:
+                elements = page.locator(selector)
+                count = await elements.count()
+                if count > 0:
+                    for i in range(count):
+                        element = elements.nth(i)
+                        text = await element.text_content()
+                        is_visible = await element.is_visible()
+                        # Only consider non-empty and visible errors as actual errors
+                        if text.strip() and is_visible:
+                            all_errors.append(f"{selector}: '{text}' (visible: {is_visible})")
+
+            if all_errors:
+                raise AssertionError(f"Upload failed with errors: {all_errors}")
+            else:
+                current_url = page.url
+                page_title = await page.title()
+                # Check the hidden input value to see if it was set correctly
+                html_content_value = await page.evaluate(
+                    "document.getElementById('html_content').value"
+                )
+                raise AssertionError(
+                    f"Upload form submission failed. Still on upload page. "
+                    f"URL: {current_url}, Title: {page_title}. "
+                    f"HTML content length: {len(html_content_value)}. "
+                    f"Form validation: {form_validation_result}. "
+                    f"Network requests: {requests}. "
+                    f"Network responses: {responses}"
+                )
 
         # Wait for success page and extract scroll URL
         view_scroll_link = page.locator('a:has-text("View Scroll")')
-        await view_scroll_link.wait_for()
+        await view_scroll_link.wait_for(timeout=10000)
 
         scroll_href = await view_scroll_link.get_attribute("href")
-        return f"{DEV_SERVER_URL}{scroll_href}"
+        return f"{server_url}{scroll_href}"
 
     @staticmethod
-    async def delete_user_account(page):
+    async def delete_user_account(page, server_url: str):
         """Delete user account via dashboard."""
         # Go to dashboard
-        await page.goto(f"{DEV_SERVER_URL}/dashboard")
+        await page.goto(f"{server_url}/dashboard")
         await page.wait_for_load_state("networkidle")
 
         # Click delete account button
@@ -212,12 +369,10 @@ class E2ETestHelpers:
 
         # Wait for redirect to homepage
         await page.wait_for_load_state("networkidle")
-        return page.url in [DEV_SERVER_URL, f"{DEV_SERVER_URL}/"]
+        return page.url in [server_url, f"{server_url}/"]
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_registration_upload_public_access():
+async def test_registration_upload_public_access(test_server):
     """Critical Test 1: User creates account → uploads document → public link works without auth.
 
     This test verifies:
@@ -243,7 +398,7 @@ async def test_registration_upload_public_access():
             scroll_abstract = f"Testing scroll persistence functionality {test_id}. This validates public access to published content."
 
             # Step 1: Register and login user
-            await helpers.register_and_login_user(page, email, password, display_name)
+            await helpers.register_and_login_user(page, email, password, display_name, test_server)
 
             # Step 2: Upload scroll with CC BY license
             scroll_url = await helpers.upload_scroll(
@@ -252,6 +407,7 @@ async def test_registration_upload_public_access():
                 scroll_authors,
                 scroll_abstract,
                 SAMPLE_HTML_CONTENT,
+                test_server,
                 license="cc-by-4.0",
             )
 
@@ -279,7 +435,7 @@ async def test_registration_upload_public_access():
 
             # Step 4: Logout user to test true public access
             # Go to homepage first to ensure we have access to logout
-            await page.goto(DEV_SERVER_URL)
+            await page.goto(test_server)
             await page.wait_for_load_state("networkidle")
 
             # Open user dropdown menu first
@@ -351,9 +507,7 @@ async def test_registration_upload_public_access():
             await browser.close()
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_registration_upload_deletion_public_access():
+async def test_registration_upload_deletion_public_access(test_server):
     """Critical Test 2: User creates account → uploads → deletes account → public link still works.
 
     This test verifies:
@@ -379,7 +533,7 @@ async def test_registration_upload_deletion_public_access():
             scroll_abstract = f"Testing scroll persistence after account deletion {test_id}. Content should remain accessible."
 
             # Step 1: Register and login user
-            await helpers.register_and_login_user(page, email, password, display_name)
+            await helpers.register_and_login_user(page, email, password, display_name, test_server)
 
             # Step 2: Upload scroll with All Rights Reserved license
             scroll_url = await helpers.upload_scroll(
@@ -388,6 +542,7 @@ async def test_registration_upload_deletion_public_access():
                 scroll_authors,
                 scroll_abstract,
                 SAMPLE_HTML_CONTENT,
+                test_server,
                 license="arr",  # Test ARR license
             )
 
@@ -410,12 +565,12 @@ async def test_registration_upload_deletion_public_access():
             await page.click(".modal-close")
 
             # Step 4: Delete user account
-            account_deleted = await helpers.delete_user_account(page)
+            account_deleted = await helpers.delete_user_account(page, test_server)
             assert account_deleted
 
             # Verify redirect with success indication
             current_url = page.url
-            assert current_url in [DEV_SERVER_URL, f"{DEV_SERVER_URL}/"]
+            assert current_url in [test_server, f"{test_server}/"]
 
             # Step 5: Test scroll persistence after account deletion
             new_context = await browser.new_context()
@@ -463,9 +618,7 @@ async def test_registration_upload_deletion_public_access():
             await browser.close()
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_upload_form_license_interaction():
+async def test_upload_form_license_interaction(test_server):
     """Test license selection UI interaction in upload form.
 
     Verifies:
@@ -485,11 +638,11 @@ async def test_upload_form_license_interaction():
             email = f"license_{test_id}@example.com"
 
             await helpers.register_and_login_user(
-                page, email, "testpass123", f"License User {test_id}"
+                page, email, "testpass123", f"License User {test_id}", test_server
             )
 
             # Navigate to upload form
-            await page.goto(f"{DEV_SERVER_URL}/upload")
+            await page.goto(f"{test_server}/upload")
             await page.wait_for_load_state("networkidle")
 
             # Test 1: Verify CC BY 4.0 is selected by default
@@ -527,9 +680,7 @@ async def test_upload_form_license_interaction():
             await browser.close()
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_mobile_responsive_upload():
+async def test_mobile_responsive_upload(test_server):
     """Test upload form on mobile viewport.
 
     Verifies:
@@ -554,11 +705,11 @@ async def test_mobile_responsive_upload():
             email = f"mobile_{test_id}@example.com"
 
             await helpers.register_and_login_user(
-                page, email, "testpass123", f"Mobile User {test_id}"
+                page, email, "testpass123", f"Mobile User {test_id}", test_server
             )
 
             # Navigate to upload form
-            await page.goto(f"{DEV_SERVER_URL}/upload")
+            await page.goto(f"{test_server}/upload")
             await page.wait_for_load_state("networkidle")
 
             # Verify form is responsive
@@ -594,9 +745,7 @@ async def test_mobile_responsive_upload():
             await browser.close()
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_file_upload_drag_and_drop_flow():
+async def test_file_upload_drag_and_drop_flow(test_server):
     """Test complete drag and drop file upload workflow.
 
     Verifies:
@@ -616,11 +765,11 @@ async def test_file_upload_drag_and_drop_flow():
             email = f"fileupload_{test_id}@example.com"
 
             await helpers.register_and_login_user(
-                page, email, "testpass123", f"File Upload User {test_id}"
+                page, email, "testpass123", f"File Upload User {test_id}", test_server
             )
 
             # Navigate to upload form
-            await page.goto(f"{DEV_SERVER_URL}/upload")
+            await page.goto(f"{test_server}/upload")
             await page.wait_for_load_state("networkidle")
 
             # Verify file upload zone is present
@@ -730,7 +879,7 @@ async def test_file_upload_drag_and_drop_flow():
             scroll_url = await scroll_link.get_attribute("href")
 
             # Verify the uploaded content is accessible
-            await page.goto(f"{DEV_SERVER_URL}{scroll_url}")
+            await page.goto(f"{test_server}{scroll_url}")
             await page.wait_for_load_state("networkidle")
 
             # Verify uploaded content is rendered correctly
@@ -752,9 +901,7 @@ async def test_file_upload_drag_and_drop_flow():
             await browser.close()
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_file_upload_validation_feedback():
+async def test_file_upload_validation_feedback(test_server):
     """Test real-time file upload validation feedback.
 
     Verifies:
@@ -774,11 +921,11 @@ async def test_file_upload_validation_feedback():
             email = f"validation_{test_id}@example.com"
 
             await helpers.register_and_login_user(
-                page, email, "testpass123", f"Validation User {test_id}"
+                page, email, "testpass123", f"Validation User {test_id}", test_server
             )
 
             # Navigate to upload form
-            await page.goto(f"{DEV_SERVER_URL}/upload")
+            await page.goto(f"{test_server}/upload")
             await page.wait_for_load_state("networkidle")
 
             # Test 1: Verify initial state
@@ -858,9 +1005,7 @@ async def test_file_upload_validation_feedback():
             await browser.close()
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_file_upload_complete_research_workflow():
+async def test_file_upload_complete_research_workflow(test_server):
     """Test complete research publication workflow with file upload.
 
     Verifies:
@@ -880,11 +1025,11 @@ async def test_file_upload_complete_research_workflow():
             email = f"research_{test_id}@university.edu"
 
             await helpers.register_and_login_user(
-                page, email, "research123", f"Dr. Research {test_id}"
+                page, email, "research123", f"Dr. Research {test_id}", test_server
             )
 
             # Navigate to upload form
-            await page.goto(f"{DEV_SERVER_URL}/upload")
+            await page.goto(f"{test_server}/upload")
             await page.wait_for_load_state("networkidle")
 
             # Create realistic research document
@@ -1071,7 +1216,7 @@ async def test_file_upload_complete_research_workflow():
             # Navigate to published research
             scroll_link = page.locator('a:has-text("View Scroll")')
             scroll_url = await scroll_link.get_attribute("href")
-            await page.goto(f"{DEV_SERVER_URL}{scroll_url}")
+            await page.goto(f"{test_server}{scroll_url}")
             await page.wait_for_load_state("networkidle")
 
             # Verify research content integrity

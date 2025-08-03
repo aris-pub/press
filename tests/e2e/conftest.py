@@ -1,4 +1,17 @@
-"""E2E test configuration and fixtures for Scroll Press."""
+"""E2E test configuration and fixtures for Scroll Press.
+
+IMPORTANT: Due to pytest-asyncio event loop conflicts, DO NOT use the session-scoped
+Playwright fixtures (browser, browser_context, page) in e2e tests. They cause deadlocks.
+
+Instead, use async with async_playwright() directly in test functions:
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        # ... test code ...
+        await browser.close()
+
+The session fixtures below are kept for reference but should be avoided.
+"""
 
 import asyncio
 import os
@@ -18,7 +31,8 @@ from app.auth.utils import get_password_hash
 from app.database import Base, get_db
 from app.models.scroll import Subject
 from app.models.user import User
-from main import app as fastapi_app
+
+# Import moved inside function to avoid startup issues
 
 # Test server configuration
 TEST_SERVER_HOST = "127.0.0.1"
@@ -78,6 +92,9 @@ async def test_app(test_database_url: str):
         finally:
             await session.close()
 
+    # Import FastAPI app after database setup to avoid startup issues
+    from main import app as fastapi_app
+
     # Override the database dependency
     fastapi_app.dependency_overrides[get_db] = override_get_db
 
@@ -113,7 +130,7 @@ async def test_server(test_app: FastAPI):
     server_task = asyncio.create_task(server.serve())
 
     # Wait for server to start
-    await asyncio.sleep(1)
+    await asyncio.sleep(2)  # Simple wait instead of health check
 
     yield test_server_url
 

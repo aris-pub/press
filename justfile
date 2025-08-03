@@ -44,11 +44,10 @@ stop:
         echo "No server running on port $PORT"
     fi
 
-# Run tests (unit + critical e2e) 
-# Note: CI runs without -n auto to avoid database conflicts
+# Run all tests (unit + e2e)
 test:
     uv run pytest -n auto -m "not e2e"
-    uv run pytest tests/e2e/test_live_server.py tests/e2e/test_complete_flows.py::test_registration_upload_public_access
+    uv run pytest tests/e2e/ -v
 
 # Format and lint code
 lint:

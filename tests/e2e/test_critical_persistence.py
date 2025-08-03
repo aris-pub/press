@@ -4,7 +4,7 @@ These tests verify the core functionality that scrolls remain publicly accessibl
 through permanent links, both with active user accounts and after account deletion.
 """
 
-from playwright.async_api import Page, expect
+from playwright.async_api import async_playwright, expect
 import pytest
 
 from tests.e2e.conftest import E2EHelpers
@@ -17,7 +17,6 @@ class TestCriticalPersistence:
 
     async def test_registration_upload_public_access(
         self,
-        page: Page,
         test_server: str,
         seeded_database: dict,
         sample_html_content: str,
@@ -44,103 +43,120 @@ class TestCriticalPersistence:
         scroll_authors = f"{user_display_name}, Co-Author Example"
         scroll_abstract = f"This is a test abstract for paper {test_id}. It contains research findings about e2e testing methodologies."
 
-        # Step 1: Register new user (should auto-login)
-        success = await e2e_helpers.register_user(
-            page, test_server, user_email, user_password, user_display_name
-        )
-        assert success, "User registration should succeed"
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
 
-        # Verify user is logged in (check for logout button or user menu)
-        await expect(page.locator('text="Upload"')).to_be_visible()
+            try:
+                # Step 1: Register new user (should auto-login)
+                success = await e2e_helpers.register_user(
+                    page, test_server, user_email, user_password, user_display_name
+                )
+                assert success, "User registration should succeed"
 
-        # Step 2: Upload scroll
-        scroll_url = await e2e_helpers.upload_scroll(
-            page=page,
-            server_url=test_server,
-            title=scroll_title,
-            authors=scroll_authors,
-            abstract=scroll_abstract,
-            html_content=sample_html_content,
-            subject_name="Computer Science",
-            license="cc-by-4.0",
-        )
+                # Verify user is logged in (check for logout button or user menu)
+                await expect(page.locator('text="Upload"')).to_be_visible()
 
-        assert scroll_url is not None, "Scroll upload should return a URL"
-        assert "/scroll/" in scroll_url, "Scroll URL should contain /scroll/ path"
+                # Step 2: Upload scroll
+                scroll_url = await e2e_helpers.upload_scroll(
+                    page=page,
+                    server_url=test_server,
+                    title=scroll_title,
+                    authors=scroll_authors,
+                    abstract=scroll_abstract,
+                    html_content=sample_html_content,
+                    subject_name="Computer Science",
+                    license="cc-by-4.0",
+                )
 
-        # Step 3: Verify scroll is accessible while logged in
-        await page.goto(scroll_url)
-        await page.wait_for_load_state("networkidle")
+                assert scroll_url is not None, "Scroll upload should return a URL"
+                assert "/scroll/" in scroll_url, "Scroll URL should contain /scroll/ path"
 
-        # Verify scroll content loads
-        await expect(page.locator("h1")).to_contain_text("A Novel Approach to E2E Testing")
+                # Step 3: Verify scroll is accessible while logged in
+                await page.goto(scroll_url)
+                await page.wait_for_load_state("networkidle")
 
-        # Verify scroll info modal works
-        await page.click(".fab")  # Click info button
-        await page.wait_for_selector(".modal.show", state="visible")
+                # Verify scroll content loads
+                await expect(page.locator("h1")).to_contain_text("A Novel Approach to E2E Testing")
 
-        # Verify scroll metadata in modal
-        await expect(page.locator(".modal")).to_contain_text(scroll_title)
-        await expect(page.locator(".modal")).to_contain_text(scroll_authors)
-        await expect(page.locator(".modal")).to_contain_text("CC BY 4.0")
+                # Verify scroll info modal works
+                await page.click(".fab")  # Click info button
+                await page.wait_for_selector(".modal.show", state="visible")
 
-        # Close modal
-        await page.click(".modal-close")
-        await page.wait_for_selector(".modal.show", state="hidden")
+                # Verify scroll metadata in modal
+                await expect(page.locator(".modal")).to_contain_text(scroll_title)
+                await expect(page.locator(".modal")).to_contain_text(scroll_authors)
+                await expect(page.locator(".modal")).to_contain_text("CC BY 4.0")
 
-        # Step 4: Logout user
-        await page.click('button:has-text("Logout")')
-        await page.wait_for_load_state("networkidle")
+                # Close modal
+                await page.click(".modal-close")
+                await page.wait_for_selector(".modal.show", state="hidden")
 
-        # Verify logout successful (should be on homepage without upload link)
-        await expect(page.locator('text="Upload"')).not_to_be_visible()
-        await expect(page.locator('text="Login"')).to_be_visible()
+                # Step 4: Logout user
+                await page.click('button:has-text("Logout")')
+                await page.wait_for_load_state("networkidle")
 
-        # Step 5: Test public access without authentication
-        # Use new browser context to ensure no session data
-        new_context = await page.context.browser.new_context()
-        new_page = await new_context.new_page()
+                # Verify logout successful (should be on homepage without upload link)
+                await expect(page.locator('text="Upload"')).not_to_be_visible()
+                await expect(page.locator('text="Login"')).to_be_visible()
 
-        try:
-            # Visit scroll URL in clean browser context
-            await new_page.goto(scroll_url)
-            await new_page.wait_for_load_state("networkidle")
+                # Step 5: Test public access without authentication
+                # Use new browser context to ensure no session data
+                new_context = await browser.new_context()
+                new_page = await new_context.new_page()
 
-            # Verify content loads without authentication
-            await expect(new_page.locator("h1")).to_contain_text("A Novel Approach to E2E Testing")
+                try:
+                    # Visit scroll URL in clean browser context
+                    await new_page.goto(scroll_url)
+                    await new_page.wait_for_load_state("networkidle")
 
-            # Verify interactive elements work
-            await expect(new_page.locator("h2")).to_contain_text("Introduction")
-            await expect(new_page.locator("h2")).to_contain_text("Methodology")
-            await expect(new_page.locator("h2")).to_contain_text("Results")
+                    # Verify content loads without authentication
+                    await expect(new_page.locator("h1")).to_contain_text(
+                        "A Novel Approach to E2E Testing"
+                    )
 
-            # Verify modal still works without auth
-            await new_page.click(".fab")
-            await new_page.wait_for_selector(".modal.show", state="visible")
+                    # Verify interactive elements work
+                    await expect(new_page.locator("h2")).to_contain_text("Introduction")
+                    await expect(new_page.locator("h2")).to_contain_text("Methodology")
+                    await expect(new_page.locator("h2")).to_contain_text("Results")
 
-            # Verify license information displays correctly
-            await expect(new_page.locator(".license-info")).to_contain_text("License:")
-            await expect(new_page.locator(".license-link")).to_contain_text("CC BY 4.0")
-            await expect(new_page.locator(".license-description")).to_contain_text("Open Access")
+                    # Verify modal still works without auth
+                    await new_page.click(".fab")
+                    await new_page.wait_for_selector(".modal.show", state="visible")
 
-            # Verify CC BY link works
-            cc_link = new_page.locator('.license-link[href*="creativecommons.org"]')
-            await expect(cc_link).to_be_visible()
+                    # Verify license information displays correctly
+                    await expect(new_page.locator(".license-info")).to_contain_text("License:")
+                    await expect(new_page.locator(".license-link")).to_contain_text("CC BY 4.0")
+                    await expect(new_page.locator(".license-description")).to_contain_text(
+                        "Open Access"
+                    )
 
-            # Close modal
-            await new_page.click(".modal-close")
+                    # Verify CC BY link works
+                    cc_link = new_page.locator('.license-link[href*="creativecommons.org"]')
+                    await expect(cc_link).to_be_visible()
 
-            # Verify scroll metadata
-            await expect(new_page.locator(".attribution-title")).to_contain_text(scroll_title[:60])
-            await expect(new_page.locator(".attribution-meta")).to_contain_text(scroll_authors)
-            await expect(new_page.locator(".attribution-meta")).to_contain_text("Computer Science")
+                    # Close modal
+                    await new_page.click(".modal-close")
 
-        finally:
-            await new_context.close()
+                    # Verify scroll metadata
+                    await expect(new_page.locator(".attribution-title")).to_contain_text(
+                        scroll_title[:60]
+                    )
+                    await expect(new_page.locator(".attribution-meta")).to_contain_text(
+                        scroll_authors
+                    )
+                    await expect(new_page.locator(".attribution-meta")).to_contain_text(
+                        "Computer Science"
+                    )
+
+                finally:
+                    await new_context.close()
+
+            finally:
+                await browser.close()
 
     async def test_registration_upload_account_deletion_public_access(
         self,
-        page: Page,
         test_server: str,
         seeded_database: dict,
         sample_html_content: str,
@@ -169,96 +185,112 @@ class TestCriticalPersistence:
             f"This paper {test_id} tests scroll persistence after user account deletion."
         )
 
-        # Step 1: Register new user
-        success = await e2e_helpers.register_user(
-            page, test_server, user_email, user_password, user_display_name
-        )
-        assert success, "User registration should succeed"
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
 
-        # Step 2: Upload scroll with All Rights Reserved license
-        scroll_url = await e2e_helpers.upload_scroll(
-            page=page,
-            server_url=test_server,
-            title=scroll_title,
-            authors=scroll_authors,
-            abstract=scroll_abstract,
-            html_content=sample_html_content,
-            subject_name="Biology",
-            license="arr",  # Test All Rights Reserved license
-        )
+            try:
+                # Step 1: Register new user
+                success = await e2e_helpers.register_user(
+                    page, test_server, user_email, user_password, user_display_name
+                )
+                assert success, "User registration should succeed"
 
-        assert scroll_url is not None, "Scroll upload should return a URL"
+                # Step 2: Upload scroll with All Rights Reserved license
+                scroll_url = await e2e_helpers.upload_scroll(
+                    page=page,
+                    server_url=test_server,
+                    title=scroll_title,
+                    authors=scroll_authors,
+                    abstract=scroll_abstract,
+                    html_content=sample_html_content,
+                    subject_name="Biology",
+                    license="arr",  # Test All Rights Reserved license
+                )
 
-        # Step 3: Verify scroll works before deletion
-        await page.goto(scroll_url)
-        await page.wait_for_load_state("networkidle")
-        await expect(page.locator("h1")).to_contain_text("A Novel Approach to E2E Testing")
+                assert scroll_url is not None, "Scroll upload should return a URL"
 
-        # Verify All Rights Reserved license displays
-        await page.click(".fab")
-        await page.wait_for_selector(".modal.show", state="visible")
-        await expect(page.locator(".license-text")).to_contain_text("All Rights Reserved")
-        await expect(page.locator(".license-description")).to_contain_text("Standard copyright")
-        await page.click(".modal-close")
+                # Step 3: Verify scroll works before deletion
+                await page.goto(scroll_url)
+                await page.wait_for_load_state("networkidle")
+                await expect(page.locator("h1")).to_contain_text("A Novel Approach to E2E Testing")
 
-        # Step 4: Delete user account
-        account_deleted = await e2e_helpers.delete_user_account(page, test_server)
-        assert account_deleted, "Account deletion should succeed"
+                # Verify All Rights Reserved license displays
+                await page.click(".fab")
+                await page.wait_for_selector(".modal.show", state="visible")
+                await expect(page.locator(".license-text")).to_contain_text("All Rights Reserved")
+                await expect(page.locator(".license-description")).to_contain_text(
+                    "Standard copyright"
+                )
+                await page.click(".modal-close")
 
-        # Verify redirect to homepage with success message
-        await expect(page.locator("body")).to_contain_text("account_deleted")
+                # Step 4: Delete user account
+                account_deleted = await e2e_helpers.delete_user_account(page, test_server)
+                assert account_deleted, "Account deletion should succeed"
 
-        # Step 5: Test scroll persistence after account deletion
-        # Use new browser context to ensure clean state
-        new_context = await page.context.browser.new_context()
-        new_page = await new_context.new_page()
+                # Verify redirect to homepage with success message
+                await expect(page.locator("body")).to_contain_text("account_deleted")
 
-        try:
-            # Visit scroll URL after account deletion
-            await new_page.goto(scroll_url)
-            await new_page.wait_for_load_state("networkidle")
+                # Step 5: Test scroll persistence after account deletion
+                # Use new browser context to ensure clean state
+                new_context = await browser.new_context()
+                new_page = await new_context.new_page()
 
-            # Verify scroll content still loads
-            await expect(new_page.locator("h1")).to_contain_text("A Novel Approach to E2E Testing")
+                try:
+                    # Visit scroll URL after account deletion
+                    await new_page.goto(scroll_url)
+                    await new_page.wait_for_load_state("networkidle")
 
-            # Verify scroll structure is intact
-            await expect(new_page.locator(".abstract")).to_contain_text("Abstract:")
-            await expect(new_page.locator("h2")).to_contain_text("Introduction")
-            await expect(new_page.locator(".equation")).to_be_visible()
+                    # Verify scroll content still loads
+                    await expect(new_page.locator("h1")).to_contain_text(
+                        "A Novel Approach to E2E Testing"
+                    )
 
-            # Verify attribution still shows (though user may be anonymized)
-            await expect(new_page.locator(".attribution-title")).to_contain_text(scroll_title[:60])
-            await expect(new_page.locator(".attribution-meta")).to_contain_text("Biology")
+                    # Verify scroll structure is intact
+                    await expect(new_page.locator(".abstract")).to_contain_text("Abstract:")
+                    await expect(new_page.locator("h2")).to_contain_text("Introduction")
+                    await expect(new_page.locator(".equation")).to_be_visible()
 
-            # Verify modal and license information persists
-            await new_page.click(".fab")
-            await new_page.wait_for_selector(".modal.show", state="visible")
+                    # Verify attribution still shows (though user may be anonymized)
+                    await expect(new_page.locator(".attribution-title")).to_contain_text(
+                        scroll_title[:60]
+                    )
+                    await expect(new_page.locator(".attribution-meta")).to_contain_text("Biology")
 
-            # Verify license information is preserved
-            await expect(new_page.locator(".license-info")).to_contain_text("License:")
-            await expect(new_page.locator(".license-text")).to_contain_text("All Rights Reserved")
-            await expect(new_page.locator(".license-description")).to_contain_text(
-                "Permission required for reuse"
-            )
+                    # Verify modal and license information persists
+                    await new_page.click(".fab")
+                    await new_page.wait_for_selector(".modal.show", state="visible")
 
-            # Verify no CC BY link (since this is ARR license)
-            cc_link = new_page.locator('.license-link[href*="creativecommons.org"]')
-            await expect(cc_link).not_to_be_visible()
+                    # Verify license information is preserved
+                    await expect(new_page.locator(".license-info")).to_contain_text("License:")
+                    await expect(new_page.locator(".license-text")).to_contain_text(
+                        "All Rights Reserved"
+                    )
+                    await expect(new_page.locator(".license-description")).to_contain_text(
+                        "Permission required for reuse"
+                    )
 
-            # Verify download still works
-            download_btn = new_page.locator("#download-btn")
-            await expect(download_btn).to_be_visible()
+                    # Verify no CC BY link (since this is ARR license)
+                    cc_link = new_page.locator('.license-link[href*="creativecommons.org"]')
+                    await expect(cc_link).not_to_be_visible()
 
-            # Close modal
-            await new_page.click(".modal-close")
+                    # Verify download still works
+                    download_btn = new_page.locator("#download-btn")
+                    await expect(download_btn).to_be_visible()
 
-            # Verify interactive JavaScript still works
-            equation = new_page.locator(".equation").first()
-            await equation.hover()
-            # Note: Can't easily test hover styles in Playwright, but hover action should not error
+                    # Close modal
+                    await new_page.click(".modal-close")
 
-        finally:
-            await new_context.close()
+                    # Verify interactive JavaScript still works
+                    equation = new_page.locator(".equation").first()
+                    await equation.hover()
+                    # Note: Can't easily test hover styles in Playwright, but hover action should not error
+
+                finally:
+                    await new_context.close()
+
+            finally:
+                await browser.close()
 
     async def test_cross_browser_public_access(
         self,
