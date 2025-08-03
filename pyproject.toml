@@ -37,7 +37,8 @@ python_functions = ["test_*"]
 pythonpath = ["."]
 markers = [
     "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
-    "e2e: marks tests as end-to-end (deselect with '-m \"not e2e\"')"
+    "e2e: marks tests as end-to-end (deselect with '-m \"not e2e\"')",
+    "mobile: marks tests as mobile-only (deselect with '-m \"not mobile\"')"
 ]
 
 [tool.ruff]

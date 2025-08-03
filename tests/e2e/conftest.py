@@ -190,7 +190,7 @@ async def mobile_page(mobile_context: BrowserContext) -> AsyncGenerator[Page, No
     await page.close()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="session")
 async def seeded_database(test_database_url: str):
     """Database with seeded test data for e2e tests."""
     # Create session for the test database

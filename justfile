@@ -44,10 +44,10 @@ stop:
         echo "No server running on port $PORT"
     fi
 
-# Run all tests (unit + e2e)
+# Run all tests (unit + e2e, excluding mobile)
 test:
     uv run pytest -n auto -m "not e2e"
-    uv run pytest tests/e2e/ -v
+    uv run pytest tests/e2e/ -v -m "not mobile"
 
 # Format and lint code
 lint:

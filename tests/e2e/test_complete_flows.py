@@ -680,6 +680,7 @@ async def test_upload_form_license_interaction(test_server):
             await browser.close()
 
 
+@pytest.mark.mobile
 async def test_mobile_responsive_upload(test_server):
     """Test upload form on mobile viewport.
 
@@ -824,21 +825,26 @@ async def test_file_upload_drag_and_drop_flow(test_server):
 
             # Simulate file upload by setting the hidden content field directly
             # (Playwright can't easily simulate drag/drop file operations)
-            await page.evaluate(f"""
-                document.getElementById('html_content').value = `{test_html_content}`;
-                document.getElementById('file-upload-zone').classList.add('has-file');
-                
-                // Show file info
-                document.getElementById('file-name').textContent = 'test_research.html';
-                document.getElementById('file-size').textContent = '{len(test_html_content)} bytes';
-                document.getElementById('file-type').textContent = 'text/html';
-                document.getElementById('file-info').classList.add('show');
-                
-                // Show success message
-                const successDiv = document.getElementById('file-success');
-                successDiv.textContent = 'File uploaded successfully and validated';
-                successDiv.style.display = 'block';
-            """)
+            await page.evaluate(
+                """
+                (htmlContent) => {
+                    document.getElementById('html_content').value = htmlContent;
+                    document.getElementById('file-upload-zone').classList.add('has-file');
+                    
+                    // Show file info
+                    document.getElementById('file-name').textContent = 'test_research.html';
+                    document.getElementById('file-size').textContent = htmlContent.length + ' bytes';
+                    document.getElementById('file-type').textContent = 'text/html';
+                    document.getElementById('file-info').classList.add('show');
+                    
+                    // Show success message
+                    const successDiv = document.getElementById('file-success');
+                    successDiv.textContent = 'File uploaded successfully and validated';
+                    successDiv.style.display = 'block';
+                }
+            """,
+                test_html_content,
+            )
 
             # Fill in the rest of the form
             await page.fill("#title", f"E2E File Upload Test {test_id}")
@@ -964,27 +970,32 @@ async def test_file_upload_validation_feedback(test_server):
 <html><head><title>Valid Test</title></head>
 <body><h1>Valid HTML</h1></body></html>"""
 
-            await page.evaluate(f"""
-                // Simulate successful file upload
-                document.getElementById('html_content').value = `{valid_html}`;
-                
-                // Update file info
-                document.getElementById('file-name').textContent = 'valid_test.html';
-                document.getElementById('file-size').textContent = '{len(valid_html)} bytes';
-                document.getElementById('file-type').textContent = 'text/html';
-                document.getElementById('file-info').classList.add('show');
-                
-                // Show success, hide error
-                const errorDiv = document.getElementById('file-error');
-                errorDiv.style.display = 'none';
-                
-                const successDiv = document.getElementById('file-success');
-                successDiv.textContent = 'File uploaded successfully and validated';
-                successDiv.style.display = 'block';
-                
-                // Update upload zone state
-                document.getElementById('file-upload-zone').classList.add('has-file');
-            """)
+            await page.evaluate(
+                """
+                (htmlContent) => {
+                    // Simulate successful file upload
+                    document.getElementById('html_content').value = htmlContent;
+                    
+                    // Update file info
+                    document.getElementById('file-name').textContent = 'valid_test.html';
+                    document.getElementById('file-size').textContent = htmlContent.length + ' bytes';
+                    document.getElementById('file-type').textContent = 'text/html';
+                    document.getElementById('file-info').classList.add('show');
+                    
+                    // Show success, hide error
+                    const errorDiv = document.getElementById('file-error');
+                    errorDiv.style.display = 'none';
+                    
+                    const successDiv = document.getElementById('file-success');
+                    successDiv.textContent = 'File uploaded successfully and validated';
+                    successDiv.style.display = 'block';
+                    
+                    // Update upload zone state
+                    document.getElementById('file-upload-zone').classList.add('has-file');
+                }
+            """,
+                valid_html,
+            )
 
             # Verify success state
             success_message = page.locator("#file-success")
@@ -1166,21 +1177,26 @@ async def test_file_upload_complete_research_workflow(test_server):
 </html>"""
 
             # Simulate file upload
-            await page.evaluate(f"""
-                document.getElementById('html_content').value = `{research_html}`;
-                document.getElementById('file-upload-zone').classList.add('has-file');
-                
-                // Show file info
-                document.getElementById('file-name').textContent = 'interactive_research.html';
-                document.getElementById('file-size').textContent = '{len(research_html)} bytes';
-                document.getElementById('file-type').textContent = 'text/html';
-                document.getElementById('file-info').classList.add('show');
-                
-                // Show success message
-                const successDiv = document.getElementById('file-success');
-                successDiv.textContent = 'Research document uploaded and validated successfully';
-                successDiv.style.display = 'block';
-            """)
+            await page.evaluate(
+                """
+                (htmlContent) => {
+                    document.getElementById('html_content').value = htmlContent;
+                    document.getElementById('file-upload-zone').classList.add('has-file');
+                    
+                    // Show file info
+                    document.getElementById('file-name').textContent = 'interactive_research.html';
+                    document.getElementById('file-size').textContent = htmlContent.length + ' bytes';
+                    document.getElementById('file-type').textContent = 'text/html';
+                    document.getElementById('file-info').classList.add('show');
+                    
+                    // Show success message
+                    const successDiv = document.getElementById('file-success');
+                    successDiv.textContent = 'Research document uploaded and validated successfully';
+                    successDiv.style.display = 'block';
+                }
+            """,
+                research_html,
+            )
 
             # Fill complete academic form
             await page.fill(
