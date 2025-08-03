@@ -64,10 +64,119 @@
     font-family: monospace;
 }
 
-.form-textarea#html_content {
-    min-height: 300px;
-    font-family: 'Courier New', monospace;
+/* File upload drag and drop styles */
+.file-upload-zone {
+    border: 2px dashed var(--gray-lighter);
+    border-radius: var(--border-radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    background: var(--gray-bg-light);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.file-upload-zone:hover {
+    border-color: var(--red);
+    background: var(--white);
+}
+
+.file-upload-zone.dragover {
+    border-color: var(--red);
+    background: rgba(237, 94, 81, 0.05);
+    border-style: solid;
+}
+
+.file-upload-zone.has-file {
+    border-color: var(--red);
+    background: var(--white);
+    border-style: solid;
+}
+
+.file-upload-icon {
+    font-size: 3rem;
+    color: var(--gray);
+    margin-bottom: 1rem;
+}
+
+.file-upload-text {
+    color: var(--gray-dark);
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.file-upload-subtext {
+    color: var(--gray);
     font-size: 0.85rem;
+}
+
+.file-upload-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-info {
+    display: none;
+    padding: 1rem;
+    background: var(--white);
+    border: 1px solid var(--gray-lighter);
+    border-radius: var(--border-radius);
+    margin-top: 1rem;
+}
+
+.file-info.show {
+    display: block;
+}
+
+.file-info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.file-info-item:last-child {
+    margin-bottom: 0;
+}
+
+.file-info-label {
+    font-weight: 500;
+    color: var(--gray-dark);
+}
+
+.file-info-value {
+    color: var(--gray);
+}
+
+.file-error {
+    background: rgba(237, 94, 81, 0.1);
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.file-success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid #22c55e;
+    color: #15803d;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-top: 1rem;
+    font-size: 0.9rem;
 }
 
 .form-actions {
@@ -214,8 +323,23 @@
         min-height: 100px;
     }
     
-    .form-textarea#html_content {
-        min-height: 200px;
+    .file-upload-zone {
+        padding: var(--mobile-space-2xl) var(--mobile-space-lg);
+        min-height: 150px;
+        gap: var(--mobile-space-md);
+    }
+    
+    .file-upload-icon {
+        font-size: 2rem;
+        margin-bottom: var(--mobile-space-sm);
+    }
+    
+    .file-upload-text {
+        font-size: var(--mobile-text-base);
+        margin-bottom: var(--mobile-space-xs);
+    }
+    
+    .file-upload-subtext {
         font-size: var(--mobile-text-sm);
     }
     
@@ -324,24 +448,36 @@
         {{ form_input("Keywords", "keywords", "text", form_data.keywords if form_data else "", required=false, help_text="Comma-separated keywords to help others discover your work") }}
 
         <div class="form-group">
-            <label for="html_content" class="form-label">HTML Content: <span class="required">*</span></label>
-            <textarea id="html_content" name="html_content" class="form-textarea" required placeholder="<html>
-<head>
-    <title>Your Research Title</title>
-    <style>
-        /* Your custom styles */
-    </style>
-</head>
-<body>
-    <h1>Your Interactive Research</h1>
-    <p>Your research content with interactive elements...</p>
-    
-    <script>
-        // Your interactive JavaScript
-    </script>
-</body>
-</html>">{{ form_data.html_content if form_data else '' }}</textarea>
-            <div class="help-text">Complete HTML document with embedded CSS and JavaScript for your interactive scroll</div>
+            <label for="html_file" class="form-label">HTML File: <span class="required">*</span></label>
+            <div class="file-upload-zone" id="file-upload-zone">
+                <div class="file-upload-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                        <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                    </svg>
+                </div>
+                <div class="file-upload-text">Drop your HTML file here or click to browse</div>
+                <div class="file-upload-subtext">Only .html files are accepted (max 5MB, UTF-8 encoded)</div>
+                <input type="file" id="html_file" name="html_file" class="file-upload-input" accept=".html,text/html" required>
+                <input type="hidden" id="html_content" name="html_content" required>
+            </div>
+            <div id="file-info" class="file-info">
+                <div class="file-info-item">
+                    <span class="file-info-label">File name:</span>
+                    <span class="file-info-value" id="file-name"></span>
+                </div>
+                <div class="file-info-item">
+                    <span class="file-info-label">File size:</span>
+                    <span class="file-info-value" id="file-size"></span>
+                </div>
+                <div class="file-info-item">
+                    <span class="file-info-label">MIME type:</span>
+                    <span class="file-info-value" id="file-type"></span>
+                </div>
+            </div>
+            <div id="file-error" class="file-error" style="display: none;"></div>
+            <div id="file-success" class="file-success" style="display: none;"></div>
+            <div class="help-text">Upload a complete HTML document with embedded CSS and JavaScript for your interactive scroll</div>
         </div>
 
         <div class="form-group">
@@ -377,11 +513,148 @@
 </div>
 
 <script>
+// File upload handling
+const fileUploadZone = document.getElementById('file-upload-zone');
+const fileInput = document.getElementById('html_file');
+const hiddenContent = document.getElementById('html_content');
+const fileInfo = document.getElementById('file-info');
+const fileError = document.getElementById('file-error');
+const fileSuccess = document.getElementById('file-success');
+
+// Drag and drop handlers
+fileUploadZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    fileUploadZone.classList.add('dragover');
+});
+
+fileUploadZone.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    fileUploadZone.classList.remove('dragover');
+});
+
+fileUploadZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    fileUploadZone.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFileSelection(files[0]);
+    }
+});
+
+// File input change handler
+fileInput.addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+        handleFileSelection(e.target.files[0]);
+    }
+});
+
+// File validation and processing
+function handleFileSelection(file) {
+    hideMessages();
+    
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.html') && file.type !== 'text/html') {
+        showError('Please select an HTML file (.html extension required)');
+        return;
+    }
+    
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        showError('File size cannot exceed 5MB');
+        return;
+    }
+    
+    // Read file content
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+            
+            // Validate UTF-8 encoding by checking for replacement characters
+            if (content.includes('�')) {
+                showError('File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding.');
+                return;
+            }
+            
+            // Basic HTML validation
+            if (!content.trim()) {
+                showError('File content cannot be empty');
+                return;
+            }
+            
+            // Check if it looks like HTML
+            const hasHtmlTags = /<html|<head|<body|<title|<div|<p|<h[1-6]|<script|<style/i.test(content);
+            if (!hasHtmlTags) {
+                showError('File does not appear to contain valid HTML content');
+                return;
+            }
+            
+            // File is valid - update UI and hidden input
+            hiddenContent.value = content;
+            showFileInfo(file);
+            fileUploadZone.classList.add('has-file');
+            showSuccess('File uploaded successfully and validated');
+            
+        } catch (error) {
+            showError('Error reading file: ' + error.message);
+        }
+    };
+    
+    reader.onerror = function() {
+        showError('Error reading file. Please try again.');
+    };
+    
+    // Read as UTF-8 text
+    reader.readAsText(file, 'UTF-8');
+}
+
+function showFileInfo(file) {
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = formatFileSize(file.size);
+    document.getElementById('file-type').textContent = file.type || 'text/html';
+    fileInfo.classList.add('show');
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function showError(message) {
+    fileError.textContent = message;
+    fileError.style.display = 'block';
+    fileSuccess.style.display = 'none';
+}
+
+function showSuccess(message) {
+    fileSuccess.textContent = message;
+    fileSuccess.style.display = 'block';
+    fileError.style.display = 'none';
+}
+
+function hideMessages() {
+    fileError.style.display = 'none';
+    fileSuccess.style.display = 'none';
+}
+
 // Add HTMX configuration for better form handling
 document.body.addEventListener('htmx:configRequest', function(evt) {
     // Ensure form data is sent correctly
     if (evt.detail.verb === 'post' && evt.detail.path === '/upload-form') {
         evt.detail.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    }
+});
+
+// Form validation before submission
+document.getElementById('upload-form').addEventListener('submit', function(e) {
+    if (!hiddenContent.value.trim()) {
+        e.preventDefault();
+        showError('Please select and upload an HTML file before submitting');
+        return false;
     }
 });
 </script>

@@ -20,7 +20,7 @@ async def test_upload_page_shows_form(authenticated_client: AsyncClient):
     assert response.status_code == 200
     assert "Upload New Scroll" in response.text
     assert "Title" in response.text
-    assert "HTML Content" in response.text
+    assert "HTML File" in response.text
 
 
 async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, test_db, test_user):
@@ -289,6 +289,161 @@ async def test_no_css_injection_for_styled_content(client: AsyncClient, test_db,
     # Original content should be rendered as-is
     assert "<h1>Styled Content</h1>" in response.text
     assert "<p>This already has CSS.</p>" in response.text
+
+
+async def test_upload_form_with_file_content_integration(
+    authenticated_client: AsyncClient, test_db, test_user
+):
+    """Test complete file upload integration from form to database."""
+    # Create a subject for the test
+    subject = Subject(name="File Upload Subject", description="Test subject for file uploads")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Simulate content that would come from a file upload
+    file_html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Uploaded Research Document</title>
+    <style>
+        body { 
+            font-family: 'Times New Roman', serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; }
+        .abstract { background: #ecf0f1; padding: 1.5rem; margin: 2rem 0; }
+        .figure { text-align: center; margin: 2rem 0; }
+        code { background: #f8f9fa; padding: 0.2rem 0.4rem; }
+    </style>
+</head>
+<body>
+    <h1>Advanced Machine Learning Techniques for Research Data Analysis</h1>
+    
+    <div class="abstract">
+        <strong>Abstract:</strong> This paper presents novel approaches to analyzing 
+        research data using advanced machine learning algorithms. We demonstrate 
+        improved accuracy and efficiency through innovative preprocessing techniques.
+    </div>
+    
+    <h2>Introduction</h2>
+    <p>Modern research generates vast amounts of data requiring sophisticated 
+    analysis methods. Traditional statistical approaches often fall short when 
+    dealing with high-dimensional datasets.</p>
+    
+    <h2>Methodology</h2>
+    <p>Our approach combines several techniques:</p>
+    <ul>
+        <li>Deep neural networks for feature extraction</li>
+        <li>Ensemble methods for robust predictions</li>
+        <li>Cross-validation for model selection</li>
+    </ul>
+    
+    <div class="figure">
+        <p><strong>Figure 1:</strong> Model Performance Comparison</p>
+        <p><code>accuracy = train_model(data, params)</code></p>
+    </div>
+    
+    <h2>Results</h2>
+    <p>Our experiments show significant improvements over baseline methods, 
+    with accuracy increases of up to 15% on benchmark datasets.</p>
+    
+    <h2>Conclusion</h2>
+    <p>The proposed methodology offers a practical solution for researchers 
+    dealing with complex data analysis challenges.</p>
+    
+    <script>
+        // Interactive elements for research demonstration
+        function toggleMethodology() {
+            const section = document.getElementById('methodology');
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Research document loaded successfully');
+        });
+    </script>
+</body>
+</html>"""
+
+    upload_data = {
+        "title": "Advanced ML Techniques for Research Data",
+        "authors": "Dr. Jane Smith, Prof. John Doe",
+        "subject_id": str(subject.id),
+        "abstract": "Novel approaches to research data analysis using ML algorithms with improved accuracy and efficiency.",
+        "keywords": "machine learning, data analysis, research, neural networks, ensemble methods",
+        "html_content": file_html_content,  # Content from file upload
+        "license": "cc-by-4.0",
+        "confirm_rights": "true",
+        "action": "publish",
+    }
+
+    response = await authenticated_client.post("/upload-form", data=upload_data)
+    assert response.status_code == 200
+    assert "Your scroll has been published successfully!" in response.text
+
+    # Verify the scroll was created with file content
+    result = await test_db.execute(
+        select(Scroll).where(Scroll.title == "Advanced ML Techniques for Research Data")
+    )
+    scroll = result.scalar_one()
+    assert scroll.status == "published"
+    assert scroll.user_id == test_user.id
+    assert scroll.url_hash is not None
+    assert scroll.content_hash is not None
+
+    # Verify the HTML content was preserved exactly as uploaded
+    assert "Advanced Machine Learning Techniques" in scroll.html_content
+    assert "font-family: 'Times New Roman'" in scroll.html_content
+    assert "toggleMethodology()" in scroll.html_content
+    assert "console.log('Research document loaded successfully')" in scroll.html_content
+
+
+async def test_upload_form_file_validation_server_side(authenticated_client: AsyncClient, test_db):
+    """Test server-side validation of file upload content."""
+    # Create a subject for the test
+    subject = Subject(name="Validation Subject", description="Test validation")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Test with content that would fail validation (whitespace only)
+    invalid_upload_data = {
+        "title": "Invalid Content Test",
+        "authors": "Test Author",
+        "subject_id": str(subject.id),
+        "abstract": "Testing server-side validation",
+        "keywords": "validation, test",
+        "html_content": "   \n\t  \n   ",  # Only whitespace
+        "license": "cc-by-4.0",
+        "confirm_rights": "true",
+        "action": "publish",
+    }
+
+    response = await authenticated_client.post("/upload-form", data=invalid_upload_data)
+    assert response.status_code == 422
+    assert "HTML content is required" in response.text
+
+    # Test with valid minimal content
+    valid_upload_data = {
+        "title": "Valid Minimal Content Test",
+        "authors": "Test Author",
+        "subject_id": str(subject.id),
+        "abstract": "Testing valid minimal content",
+        "keywords": "minimal, valid",
+        "html_content": "<html><body><h1>Valid</h1></body></html>",
+        "license": "cc-by-4.0",
+        "confirm_rights": "true",
+        "action": "publish",
+    }
+
+    response = await authenticated_client.post("/upload-form", data=valid_upload_data)
+    assert response.status_code == 200
+    assert "Your scroll has been published successfully!" in response.text
 
 
 async def test_css_detection_with_link_tags(client: AsyncClient, test_db, test_user):
