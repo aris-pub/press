@@ -131,6 +131,21 @@ async def about_page(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(request, "about.html", {"current_user": current_user})
 
 
+@router.get("/how-it-works", response_class=HTMLResponse)
+async def how_it_works_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the How It Works page.
+
+    Shows the complete workflow, features, and foundational pillars of Scroll Press.
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "how_it_works.html", {"current_user": current_user})
+
+
 @router.get("/contact", response_class=HTMLResponse)
 async def contact_page(request: Request, db: AsyncSession = Depends(get_db)):
     """Display the Contact page.
