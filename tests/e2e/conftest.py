@@ -170,26 +170,6 @@ async def page(browser_context: BrowserContext) -> AsyncGenerator[Page, None]:
     await page.close()
 
 
-@pytest_asyncio.fixture
-async def mobile_context(browser: Browser) -> AsyncGenerator[BrowserContext, None]:
-    """Mobile browser context for responsive testing."""
-    context = await browser.new_context(
-        viewport={"width": 375, "height": 812},
-        locale="en-US",
-        user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15",
-    )
-    yield context
-    await context.close()
-
-
-@pytest_asyncio.fixture
-async def mobile_page(mobile_context: BrowserContext) -> AsyncGenerator[Page, None]:
-    """Mobile page instance for responsive testing."""
-    page = await mobile_context.new_page()
-    yield page
-    await page.close()
-
-
 @pytest_asyncio.fixture(scope="session")
 async def seeded_database(test_database_url: str):
     """Database with seeded test data for e2e tests."""
@@ -260,68 +240,99 @@ async def seeded_database(test_database_url: str):
 
 @pytest_asyncio.fixture
 async def sample_html_content():
-    """Sample HTML content for testing scroll uploads."""
-    return """
+    """Sample HTML content for testing scroll uploads - generates unique content per test."""
+    import random
+    import uuid
+
+    # Generate unique content for each test to avoid database constraint violations
+    test_id = uuid.uuid4().hex[:8]
+    version = random.randint(1, 999)
+
+    # Vary the research focus and methodology for each test
+    research_topics = [
+        ("Machine Learning Applications", "deep neural networks and transformer architectures"),
+        ("Distributed Systems Design", "microservices and event-driven architectures"),
+        ("Human-Computer Interaction", "user experience patterns and accessibility standards"),
+        ("Data Science Methodologies", "statistical analysis and predictive modeling"),
+        ("Cybersecurity Frameworks", "threat detection and vulnerability assessment"),
+        ("Software Engineering Practices", "agile development and continuous integration"),
+    ]
+
+    topic, focus = random.choice(research_topics)
+
+    return f"""
     <html>
     <head>
-        <title>Test Research Paper</title>
+        <title>Research Paper v{version} - {topic}</title>
         <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
-            h1 { color: #2c3e50; }
-            h2 { color: #34495e; border-bottom: 2px solid #ecf0f1; }
-            .abstract { background: #f8f9fa; padding: 1rem; border-left: 4px solid #3498db; }
-            .equation { text-align: center; margin: 1rem 0; font-family: 'Times New Roman', serif; }
+            body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }}
+            h1 {{ color: #2c3e50; font-family: Arial, sans-serif; }}
+            h2 {{ color: #34495e; border-bottom: 2px solid #ecf0f1; font-family: Arial, sans-serif; }}
+            .abstract {{ background: #f8f9fa; padding: 1rem; border-left: 4px solid #3498db; font-style: italic; }}
+            .equation {{ text-align: center; margin: 1rem 0; font-family: Arial, sans-serif; background: #f5f5f5; padding: 1rem; }}
+            .unique-id {{ font-size: 0.8em; color: #666; margin-top: 2rem; }}
         </style>
     </head>
     <body>
-        <h1>A Novel Approach to E2E Testing in Web Applications</h1>
+        <h1>A Novel Approach to {topic} in Modern Applications</h1>
         
         <div class="abstract">
             <strong>Abstract:</strong> This paper presents a comprehensive methodology for 
-            implementing end-to-end testing in modern web applications using Playwright. 
-            We demonstrate the effectiveness of our approach through real-world testing scenarios.
+            implementing {focus} in contemporary software systems. 
+            We demonstrate the effectiveness of our approach through rigorous testing and validation.
+            Research ID: {test_id}
         </div>
         
         <h2>Introduction</h2>
-        <p>End-to-end testing has become crucial for ensuring web application reliability. 
-        Our research focuses on creating robust testing frameworks that simulate real user interactions.</p>
+        <p>The field of {topic.lower()} has evolved significantly in recent years. 
+        Our research addresses critical challenges in {focus} and proposes innovative solutions.</p>
         
         <h2>Methodology</h2>
-        <p>We implemented a testing suite using the following technologies:</p>
+        <p>We implemented a comprehensive testing framework incorporating:</p>
         <ul>
-            <li>Playwright for browser automation</li>
-            <li>Python for test scripting</li>
-            <li>Headless browser execution</li>
+            <li>Automated testing with Playwright v{version}</li>
+            <li>Python-based test orchestration</li>
+            <li>Cross-browser validation protocols</li>
+            <li>Performance benchmarking suite</li>
         </ul>
         
         <div class="equation">
-            <em>Testing_Coverage = (Tested_Scenarios / Total_Scenarios) × 100%</em>
+            <em>Effectiveness_Score = (Successful_Cases / Total_Cases) × {90 + random.randint(1, 10)}%</em>
         </div>
         
         <h2>Results</h2>
-        <p>Our approach achieved 95% test coverage with minimal false positives. 
-        The automated testing reduced manual testing time by 80%.</p>
+        <p>Our methodology achieved {85 + random.randint(1, 15)}% accuracy with minimal false positives. 
+        The automated approach reduced manual intervention by {70 + random.randint(1, 25)}%.</p>
         
         <h2>Conclusion</h2>
-        <p>E2E testing with Playwright provides reliable validation of user workflows 
-        and significantly improves application quality assurance.</p>
+        <p>The proposed framework for {topic.lower()} provides robust validation of system behaviors 
+        and significantly enhances development workflow efficiency.</p>
+        
+        <div class="unique-id">
+            <p><strong>Document ID:</strong> {test_id} | <strong>Version:</strong> {version}</p>
+        </div>
         
         <script>
-            // Add some interactivity
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('Test paper loaded successfully');
+            // Add unique interactivity per test
+            document.addEventListener('DOMContentLoaded', function() {{
+                console.log('Research paper {test_id} loaded successfully');
                 
-                // Highlight equations on hover
+                // Dynamic equation highlighting
                 const equations = document.querySelectorAll('.equation');
-                equations.forEach(eq => {
-                    eq.addEventListener('mouseenter', () => {
+                equations.forEach(eq => {{
+                    eq.addEventListener('mouseenter', () => {{
                         eq.style.backgroundColor = '#fff3cd';
-                    });
-                    eq.addEventListener('mouseleave', () => {
-                        eq.style.backgroundColor = 'transparent';
-                    });
-                });
-            });
+                        eq.style.transform = 'scale(1.02)';
+                    }});
+                    eq.addEventListener('mouseleave', () => {{
+                        eq.style.backgroundColor = '#f5f5f5';
+                        eq.style.transform = 'scale(1)';
+                    }});
+                }});
+                
+                // Unique test identifier
+                console.log('Test version: {version}');
+            }});
         </script>
     </body>
     </html>
