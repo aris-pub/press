@@ -234,16 +234,16 @@ class TestHashCollisionHandling:
 
     def test_check_hash_collision_no_collision(self):
         """Test collision check when no collision exists."""
-        # Mock the function for now since we don't want to depend on database state
-        from unittest.mock import AsyncMock, patch
+        # Test the URL generation logic without needing database mocking
+        # This is a unit test for the deterministic hash-to-URL conversion
+        test_hash = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+        url_10 = generate_url_from_hash(test_hash, length=10)
+        url_12 = generate_url_from_hash(test_hash, length=12)
 
-        with patch(
-            "app.storage.content_processing.check_hash_collision", new_callable=AsyncMock
-        ) as mock_check:
-            mock_check.return_value = False
-            # This would be called in the real function
-            result = mock_check("abcdef123456")
-            assert hasattr(result, "__await__")  # Check it's an awaitable
+        assert len(url_10) == 10
+        assert len(url_12) == 12
+        assert url_10 == test_hash[:10]
+        assert url_12 == test_hash[:12]
 
     def test_collision_resolution_extends_hash(self):
         """Test that collision resolution extends hash length."""

@@ -75,6 +75,9 @@ class TestHTMLProcessorIntegration:
             filepath, "research.html", self.user_id
         )
 
+        if not success:
+            print(f"Upload failed. Errors: {errors}")
+            print(f"Data: {data}")
         assert success
         assert data["validation_status"] == "approved"
         assert data["content_type"] == "html"
@@ -130,24 +133,23 @@ class TestHTMLProcessorIntegration:
             filepath, "xss_attempt.html", self.user_id
         )
 
-        if not success:
-            print(f"Errors: {errors}")
-        assert success
-        assert data["validation_status"] == "approved"
+        # Upload should be rejected due to dangerous content
+        assert not success
+        assert data["validation_status"] == "rejected"
+        assert data["rejection_reason"] == "dangerous_content"
 
-        # Check XSS was handled - scripts preserved, but event handlers and js URLs removed
-        assert "<script>" in data["html_content"]  # Scripts should be preserved
-        assert "onclick=" not in data["html_content"]
-        assert "onerror=" not in data["html_content"]
-        assert "javascript:" not in data["html_content"]
+        # Should have multiple security errors
+        assert len(errors) > 0
+        error_types = [error["type"] for error in errors]
+        assert "forbidden_tag" in error_types  # script tag
+        assert "forbidden_attribute" in error_types  # onclick, onerror
+        assert "javascript_url" in error_types  # javascript: URL
 
-        # Check sanitization log
-        assert len(data["sanitization_log"]) > 0
-        log_types = [entry["type"] for entry in data["sanitization_log"]]
-        # Scripts should NOT be removed anymore
-        assert "script_removed" not in log_types
-        assert "event_handler_removed" in log_types
-        assert "javascript_url_removed" in log_types
+        # Verify specific dangerous content was detected
+        error_messages = [error["message"] for error in errors]
+        assert any("script" in msg.lower() for msg in error_messages)
+        assert any("onclick" in msg.lower() for msg in error_messages)
+        assert any("javascript" in msg.lower() for msg in error_messages)
 
     @pytest.mark.asyncio
     async def test_process_html_with_spam_content(self):

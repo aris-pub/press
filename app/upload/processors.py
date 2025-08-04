@@ -1,11 +1,11 @@
 """HTML upload processing module."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 import logging
 from typing import Any, Dict, List, Tuple
 
-from ..security.sanitizer import HTMLSanitizer
+from ..security.html_validator import HTMLValidator
 from ..security.validation import ContentValidator
 from .validators import FileValidator
 
@@ -16,7 +16,7 @@ class HTMLProcessor:
     """Processes HTML uploads for storage and display."""
 
     def __init__(self, max_external_links: int = 10):
-        self.sanitizer = HTMLSanitizer()
+        self.html_validator = HTMLValidator()
         self.content_validator = ContentValidator(max_external_links=max_external_links)
         self.file_validator = FileValidator()
 
@@ -37,7 +37,7 @@ class HTMLProcessor:
         errors = []
         processed_data = {
             "original_filename": filename,
-            "upload_date": datetime.utcnow().isoformat(),
+            "upload_date": datetime.now(timezone.utc).isoformat(),
             "user_id": user_id,
             "validation_status": "pending",
         }
@@ -59,7 +59,15 @@ class HTMLProcessor:
             errors.append({"type": "read_error", "message": "Failed to read file content"})
             return False, processed_data, errors
 
-        # Step 3: Validate content
+        # Step 3: Validate HTML security - REJECT if dangerous content found
+        is_html_safe, html_errors = self.html_validator.validate(html_content)
+        if not is_html_safe:
+            errors.extend(html_errors)
+            processed_data["validation_status"] = "rejected"
+            processed_data["rejection_reason"] = "dangerous_content"
+            return False, processed_data, errors
+
+        # Step 4: Validate content quality (spam, external links, etc.)
         is_valid, validation_errors = self.content_validator.validate(html_content)
         if not is_valid:
             errors.extend(validation_errors)
@@ -67,27 +75,26 @@ class HTMLProcessor:
             has_blocking_errors = any(e.get("severity") == "error" for e in validation_errors)
             if has_blocking_errors:
                 processed_data["validation_status"] = "rejected"
+                processed_data["rejection_reason"] = "content_quality"
                 return False, processed_data, errors
 
-        # Step 4: Sanitize HTML
-        sanitized_html, sanitization_log = self.sanitizer.sanitize(html_content)
-        processed_data["sanitization_log"] = sanitization_log
-        processed_data["html_content"] = sanitized_html
+        # Step 5: Store original HTML (no sanitization needed - validation passed)
+        processed_data["html_content"] = html_content
 
-        # Step 5: Extract metadata
-        metadata = self._extract_metadata(sanitized_html)
+        # Step 6: Extract metadata from clean HTML
+        metadata = self._extract_metadata(html_content)
         processed_data.update(metadata)
 
-        # Step 6: Extract external resources
-        external_resources = self.sanitizer.extract_external_resources(sanitized_html)
+        # Step 7: Extract external resources (for transparency)
+        external_resources = self._extract_external_resources(html_content)
         processed_data["external_resources"] = external_resources
 
-        # Step 7: Calculate content metrics
-        metrics = self.content_validator.calculate_content_metrics(sanitized_html)
+        # Step 8: Calculate content metrics
+        metrics = self.content_validator.calculate_content_metrics(html_content)
         processed_data["content_metrics"] = metrics
 
-        # Step 8: Generate content hash for duplicate detection
-        content_hash = hashlib.sha256(sanitized_html.encode("utf-8")).hexdigest()
+        # Step 9: Generate content hash for duplicate detection
+        content_hash = hashlib.sha256(html_content.encode("utf-8")).hexdigest()
         processed_data["content_hash"] = content_hash
 
         # Set final status
@@ -144,3 +151,34 @@ class HTMLProcessor:
             metadata["author"] = author_match.group(1).strip()
 
         return metadata
+
+    def _extract_external_resources(self, html_content: str) -> List[Dict[str, str]]:
+        """Extract list of external resources referenced in HTML."""
+        import re
+
+        resources = []
+
+        # Extract images
+        img_pattern = re.compile(r'<img[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
+        for match in img_pattern.finditer(html_content):
+            src = match.group(1)
+            if src.startswith(("http://", "https://")):
+                resources.append({"type": "image", "url": src})
+
+        # Extract stylesheets
+        link_pattern = re.compile(
+            r'<link[^>]*rel=["\']stylesheet["\'][^>]*href=["\']([^"\']+)["\']', re.IGNORECASE
+        )
+        for match in link_pattern.finditer(html_content):
+            href = match.group(1)
+            if href.startswith(("http://", "https://")):
+                resources.append({"type": "stylesheet", "url": href})
+
+        # Extract links
+        a_pattern = re.compile(r'<a[^>]+href=["\']([^"\']+)["\']', re.IGNORECASE)
+        for match in a_pattern.finditer(html_content):
+            href = match.group(1)
+            if href.startswith(("http://", "https://")):
+                resources.append({"type": "link", "url": href})
+
+        return resources

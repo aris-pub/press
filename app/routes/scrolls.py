@@ -269,6 +269,27 @@ async def upload_form(
         if keywords.strip():
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
+        # Validate HTML content for security - REJECT if dangerous content found
+        from app.security.html_validator import HTMLValidator
+
+        html_validator = HTMLValidator()
+        is_html_safe, html_errors = html_validator.validate(html_content.strip())
+
+        if not is_html_safe:
+            # Format errors for user display
+            error_messages = []
+            for error in html_errors:
+                if error.get("line_number"):
+                    error_messages.append(f"Line {error['line_number']}: {error['message']}")
+                else:
+                    error_messages.append(error["message"])
+
+            error_summary = (
+                "Your HTML contains content that is not allowed for security reasons:\n\n"
+                + "\n".join(error_messages)
+            )
+            raise ValueError(error_summary)
+
         # Generate content-addressable storage fields
         from app.storage.content_processing import generate_permanent_url
 

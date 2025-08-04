@@ -184,27 +184,27 @@ class TestFileUploadFormSubmission:
         assert response.status_code == 200
         assert "Your scroll has been published successfully!" in response.text
 
-    async def test_upload_form_with_interactive_elements(
+    async def test_upload_form_rejects_dangerous_html(
         self, authenticated_client: AsyncClient, test_db
     ):
-        """Test form accepts HTML with interactive JavaScript elements."""
+        """Test form rejects HTML with dangerous JavaScript elements."""
         # Create a subject for the test
         subject = Subject(name="Test Subject", description="Test description")
         test_db.add(subject)
         await test_db.commit()
         await test_db.refresh(subject)
 
-        interactive_html = """<!DOCTYPE html>
+        dangerous_html = """<!DOCTYPE html>
 <html>
 <head>
-    <title>Interactive Research</title>
+    <title>Dangerous Research</title>
     <style>
         .interactive { padding: 1rem; border: 1px solid #ccc; }
         button { padding: 0.5rem; background: #007bff; color: white; }
     </style>
 </head>
 <body>
-    <h1>Interactive Research Document</h1>
+    <h1>Research Document with Dangerous Content</h1>
     <div class="interactive">
         <button onclick="showResult()">Run Experiment</button>
         <div id="result"></div>
@@ -218,20 +218,26 @@ class TestFileUploadFormSubmission:
 </html>"""
 
         upload_data = {
-            "title": "Interactive HTML Test",
+            "title": "Dangerous HTML Test",
             "authors": "Test Author",
             "subject_id": str(subject.id),
-            "abstract": "Testing interactive HTML elements",
-            "keywords": "interactive, javascript",
-            "html_content": interactive_html,
+            "abstract": "Testing dangerous HTML rejection",
+            "keywords": "security, validation",
+            "html_content": dangerous_html,
             "license": "cc-by-4.0",
             "confirm_rights": "true",
             "action": "publish",
         }
 
         response = await authenticated_client.post("/upload-form", data=upload_data)
-        assert response.status_code == 200
-        assert "Your scroll has been published successfully!" in response.text
+        assert response.status_code == 422
+        # Check that the validation error is displayed in the form
+        assert (
+            "Your HTML contains content that is not allowed for security reasons" in response.text
+        )
+        # The specific error details should be present somewhere in the response
+        assert "script" in response.text.lower()
+        assert "button" in response.text.lower()
 
 
 class TestFileUploadUIElements:

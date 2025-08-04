@@ -301,7 +301,7 @@ async def test_upload_form_with_file_content_integration(
     await test_db.commit()
     await test_db.refresh(subject)
 
-    # Simulate content that would come from a file upload
+    # Simulate content that would come from a file upload (safe HTML without scripts)
     file_html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -355,18 +355,6 @@ async def test_upload_form_with_file_content_integration(
     <h2>Conclusion</h2>
     <p>The proposed methodology offers a practical solution for researchers 
     dealing with complex data analysis challenges.</p>
-    
-    <script>
-        // Interactive elements for research demonstration
-        function toggleMethodology() {
-            const section = document.getElementById('methodology');
-            section.style.display = section.style.display === 'none' ? 'block' : 'none';
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Research document loaded successfully');
-        });
-    </script>
 </body>
 </html>"""
 
@@ -396,11 +384,13 @@ async def test_upload_form_with_file_content_integration(
     assert scroll.url_hash is not None
     assert scroll.content_hash is not None
 
-    # Verify the HTML content was preserved exactly as uploaded
+    # Verify the HTML content was preserved (JavaScript was removed for security)
     assert "Advanced Machine Learning Techniques" in scroll.html_content
     assert "font-family: 'Times New Roman'" in scroll.html_content
-    assert "toggleMethodology()" in scroll.html_content
-    assert "console.log('Research document loaded successfully')" in scroll.html_content
+    assert "<h2>Introduction</h2>" in scroll.html_content
+    assert "<h2>Methodology</h2>" in scroll.html_content
+    assert "<h2>Results</h2>" in scroll.html_content
+    assert "<h2>Conclusion</h2>" in scroll.html_content
 
 
 async def test_upload_form_file_validation_server_side(authenticated_client: AsyncClient, test_db):
