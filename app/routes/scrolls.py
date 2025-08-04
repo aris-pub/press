@@ -6,7 +6,6 @@ import uuid as uuid_module
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -15,10 +14,10 @@ from app.auth.session import get_current_user_from_session
 from app.database import get_db
 from app.logging_config import get_logger, log_error, log_preview_event, log_request
 from app.models.scroll import Scroll, Subject
+from app.templates_config import templates
 from app.upload import HTMLProcessor
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/scroll/{identifier}", response_class=HTMLResponse)
@@ -33,12 +32,12 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
     """
     log_request(request, extra_data={"identifier": identifier})
 
-    # Try to find scroll by url_hash first (content-addressable), then by preview_id (legacy)
+    # Find scroll by content-addressable hash only (no legacy preview_id support)
     result = await db.execute(
         select(Scroll)
         .options(selectinload(Scroll.subject))
         .where(
-            (Scroll.url_hash == identifier) | (Scroll.preview_id == identifier),
+            Scroll.url_hash == identifier,
             Scroll.status == "published",
         )
     )
@@ -712,10 +711,10 @@ async def get_raw_content(request: Request, identifier: str, db: AsyncSession = 
 
     log_request(request, extra_data={"identifier": identifier, "endpoint": "raw"})
 
-    # Find scroll (prioritize url_hash)
+    # Find scroll by content-addressable hash only (no legacy preview_id support)
     result = await db.execute(
         select(Scroll).where(
-            (Scroll.url_hash == identifier) | (Scroll.preview_id == identifier),
+            Scroll.url_hash == identifier,
             Scroll.status == "published",
         )
     )

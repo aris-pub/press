@@ -35,9 +35,14 @@
     </svg>
   </button>
 
+  <!-- Store user HTML content as JSON data for strict-dynamic processing -->
+  <script type="application/json" id="user-content-data">
+    {{ scroll.html_content | tojson }}
+  </script>
+
   <div class="scroll-container">
-    <div class="scroll-content">
-      {{ scroll.html_content | safe }}
+    <div class="scroll-content" id="user-content-container">
+      <!-- User content will be loaded here by nonce'd script -->
     </div>
   </div>
 
@@ -444,7 +449,76 @@ body.modal-open {
 }
 </style>
 
-<script>
+<!-- Nonce'd script for strict-dynamic user content loading -->
+<script{% if nonce %} nonce="{{ nonce }}"{% endif %}>
+// Load user HTML content using strict-dynamic pattern
+(function() {
+  try {
+    // Get user content data
+    const userDataElement = document.getElementById('user-content-data');
+    if (!userDataElement) {
+      console.error('User content data not found');
+      return;
+    }
+    
+    const userHtmlContent = JSON.parse(userDataElement.textContent);
+    const container = document.getElementById('user-content-container');
+    
+    if (!container) {
+      console.error('User content container not found');
+      return;
+    }
+    
+    // Inject HTML structure first
+    container.innerHTML = userHtmlContent;
+    
+    // Find and dynamically re-execute user scripts (inherits trust via strict-dynamic)
+    const scripts = container.querySelectorAll('script');
+    console.log(`Found ${scripts.length} user scripts to execute`);
+    
+    scripts.forEach(function(originalScript, index) {
+      try {
+        const newScript = document.createElement('script');
+        
+        // Copy script content
+        if (originalScript.textContent) {
+          newScript.textContent = originalScript.textContent;
+        }
+        
+        // Copy important attributes
+        if (originalScript.src) {
+          newScript.src = originalScript.src;
+        }
+        if (originalScript.type && originalScript.type !== 'application/json') {
+          newScript.type = originalScript.type;
+        }
+        
+        // Remove the original script to avoid duplicate execution warnings
+        originalScript.remove();
+        
+        // Append new script (inherits nonce trust via strict-dynamic)
+        document.head.appendChild(newScript);
+        
+        console.log(`Executed user script ${index + 1}/${scripts.length}`);
+      } catch (scriptError) {
+        console.error(`Error executing user script ${index + 1}:`, scriptError);
+      }
+    });
+    
+    console.log('✓ User content loaded successfully with strict-dynamic');
+    
+  } catch (error) {
+    console.error('Error loading user content:', error);
+    // Fallback: show an error message
+    const container = document.getElementById('user-content-container');
+    if (container) {
+      container.innerHTML = '<div style="padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; color: #721c24;"><strong>Error:</strong> Unable to load content. Please try refreshing the page.</div>';
+    }
+  }
+})();
+</script>
+
+<script{% if nonce %} nonce="{{ nonce }}"{% endif %}>
 // Theme management for preview page
 (function() {
   // Get saved theme preference or default to system preference
