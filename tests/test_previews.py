@@ -152,8 +152,14 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
     assert response.status_code == 200
     assert "Test Published Scroll" in response.text
     assert "Test Author" in response.text
-    # HTML content should be rendered directly (no iframe)
-    assert "<h1>Test Published Content</h1>" in response.text
+    # HTML content should be available in the JSON data section for dynamic loading
+    # The content gets CSS-injected and JSON-encoded, so we check for the text content
+    assert "Test Published Content" in response.text
+    # Verify dynamic loading infrastructure is present
+    assert "user-content-data" in response.text
+    assert "user-content-container" in response.text
+    # Verify CSS injection happened (content should be wrapped)
+    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' in response.text
 
 
 async def test_view_nonexistent_scroll_404(client: AsyncClient):
@@ -239,9 +245,11 @@ async def test_css_injection_for_unstyled_content(client: AsyncClient, test_db, 
     assert "var(--gray-bg)" in response.text
     assert "var(--red)" in response.text
 
-    # Check that content is wrapped in the injected container
-    assert '<div class="injected-scroll-content">' in response.text
-    assert "<h1>Plain HTML Content</h1><p>This has no styling.</p>" in response.text
+    # Check that content is wrapped in the injected container (JSON-encoded)
+    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' in response.text
+    assert "Plain HTML Content" in response.text
+    # Verify dynamic loading infrastructure is present
+    assert "user-content-data" in response.text
 
 
 async def test_no_css_injection_for_styled_content(client: AsyncClient, test_db, test_user):
@@ -284,11 +292,13 @@ async def test_no_css_injection_for_styled_content(client: AsyncClient, test_db,
     # Check that our CSS injection styles are NOT present
     assert ".injected-scroll-content" not in response.text
     assert "font-family: -apple-system" not in response.text
-    assert '<div class="injected-scroll-content">' not in response.text
+    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' not in response.text
 
-    # Original content should be rendered as-is
-    assert "<h1>Styled Content</h1>" in response.text
-    assert "<p>This already has CSS.</p>" in response.text
+    # Original content should be in JSON data
+    assert "Styled Content" in response.text
+    assert "This already has CSS" in response.text
+    # Verify dynamic loading infrastructure is present
+    assert "user-content-data" in response.text
 
 
 async def test_upload_form_with_file_content_integration(
@@ -466,14 +476,16 @@ async def test_css_detection_with_link_tags(client: AsyncClient, test_db, test_u
     response = await client.get(f"/scroll/{preview.url_hash}")
     assert response.status_code == 200
 
-    # Check that the original link tag is preserved
-    assert 'rel="stylesheet"' in response.text
-    assert 'href="styles.css"' in response.text
+    # Check that the original link tag is preserved (in JSON data)
+    assert 'rel="stylesheet"' in response.text or 'rel=\\"stylesheet\\"' in response.text
+    assert 'href="styles.css"' in response.text or 'href=\\"styles.css\\"' in response.text
 
     # Check that our CSS injection styles are NOT present
     assert ".injected-scroll-content" not in response.text
     assert "font-family: -apple-system" not in response.text
-    assert '<div class="injected-scroll-content">' not in response.text
+    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' not in response.text
+    # Verify dynamic loading infrastructure is present
+    assert "user-content-data" in response.text
 
 
 async def test_css_detection_with_inline_styles(client: AsyncClient, test_db, test_user):
@@ -505,10 +517,15 @@ async def test_css_detection_with_inline_styles(client: AsyncClient, test_db, te
     response = await client.get(f"/scroll/{preview.url_hash}")
     assert response.status_code == 200
 
-    # Check that the original inline styles are preserved
-    assert 'style="color: green; font-size: 24px;"' in response.text
+    # Check that the original inline styles are preserved (in JSON data)
+    assert (
+        'style="color: green; font-size: 24px;"' in response.text
+        or 'style=\\"color: green; font-size: 24px;\\"' in response.text
+    )
 
     # Check that our CSS injection styles are NOT present
     assert ".injected-scroll-content" not in response.text
     assert "font-family: -apple-system" not in response.text
-    assert '<div class="injected-scroll-content">' not in response.text
+    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' not in response.text
+    # Verify dynamic loading infrastructure is present
+    assert "user-content-data" in response.text

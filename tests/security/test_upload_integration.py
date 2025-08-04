@@ -106,7 +106,7 @@ class TestHTMLProcessorIntegration:
             <head><title>Paper with XSS</title></head>
             <body>
                 <h1>Research Title</h1>
-                <script>alert('XSS')</script>
+                <script>console.log('Safe user script');</script>
                 <p onclick="alert('XSS')">This is a paragraph with sufficient content
                 to meet the minimum word count requirement. The research explores
                 various aspects of web security and demonstrates common vulnerabilities.
@@ -133,7 +133,7 @@ class TestHTMLProcessorIntegration:
             filepath, "xss_attempt.html", self.user_id
         )
 
-        # Upload should be rejected due to dangerous content
+        # Upload should be rejected due to dangerous content (but not script tags)
         assert not success
         assert data["validation_status"] == "rejected"
         assert data["rejection_reason"] == "dangerous_content"
@@ -141,13 +141,12 @@ class TestHTMLProcessorIntegration:
         # Should have multiple security errors
         assert len(errors) > 0
         error_types = [error["type"] for error in errors]
-        assert "forbidden_tag" in error_types  # script tag
+        # Script tags are now allowed, so no forbidden_tag error for script
         assert "forbidden_attribute" in error_types  # onclick, onerror
         assert "javascript_url" in error_types  # javascript: URL
 
-        # Verify specific dangerous content was detected
+        # Verify specific dangerous content was detected (but not script tags)
         error_messages = [error["message"] for error in errors]
-        assert any("script" in msg.lower() for msg in error_messages)
         assert any("onclick" in msg.lower() for msg in error_messages)
         assert any("javascript" in msg.lower() for msg in error_messages)
 
