@@ -33,23 +33,20 @@ class TestHTMLValidator:
         assert is_valid
         assert len(errors) == 0
 
-    def test_script_tags_rejected(self):
-        """Test that script tags are rejected."""
-        dangerous_html = """
+    def test_script_tags_allowed(self):
+        """Test that script tags are now allowed (controlled by nonce system)."""
+        html_with_script = """
         <html>
             <body>
                 <h1>Title</h1>
-                <script>alert('xss')</script>
+                <script>console.log('Safe user script');</script>
                 <p>Content</p>
             </body>
         </html>
         """
-        is_valid, errors = self.validator.validate(dangerous_html)
-        assert not is_valid
-        assert len(errors) == 1
-        assert errors[0]["type"] == "forbidden_tag"
-        assert "script" in errors[0]["message"]
-        assert errors[0]["line_number"] is not None
+        is_valid, errors = self.validator.validate(html_with_script)
+        assert is_valid, f"Script tags should be allowed now. Errors: {errors}"
+        assert len(errors) == 0
 
     def test_event_handlers_rejected(self):
         """Test that event handlers are rejected."""
@@ -139,29 +136,28 @@ class TestHTMLValidator:
         html = """<html>
 <body>
 <h1>Title</h1>
-<script>alert('xss')</script>
+<iframe src="evil.html"></iframe>
 <p>More content</p>
 </body>
 </html>"""
         is_valid, errors = self.validator.validate(html)
         assert not is_valid
         assert len(errors) == 1
-        assert errors[0]["line_number"] == 4  # Script is on line 4
+        assert errors[0]["line_number"] == 4  # iframe is on line 4
 
     def test_multiple_errors_reported(self):
         """Test that multiple errors are all reported."""
         html = """
-        <script>alert('xss1')</script>
         <div onclick="evil()">Click</div>
         <a href="javascript:alert('xss2')">Link</a>
         <iframe src="evil.html"></iframe>
         """
         is_valid, errors = self.validator.validate(html)
         assert not is_valid
-        assert len(errors) == 4  # Should find all 4 issues
+        assert len(errors) == 3  # Should find all 3 issues (script tags are now allowed)
 
         error_types = [error["type"] for error in errors]
-        assert "forbidden_tag" in error_types  # script and iframe
+        assert "forbidden_tag" in error_types  # iframe only
         assert "forbidden_attribute" in error_types  # onclick
         assert "javascript_url" in error_types  # javascript: URL
 
@@ -253,7 +249,7 @@ class TestHTMLValidator:
 
     def test_error_details_complete(self):
         """Test that error objects contain all expected details."""
-        html = '<script>alert("xss")</script>'
+        html = '<iframe src="evil.html"></iframe>'
         is_valid, errors = self.validator.validate(html)
 
         assert not is_valid
@@ -266,6 +262,6 @@ class TestHTMLValidator:
         assert "element" in error
 
         assert error["type"] == "forbidden_tag"
-        assert "script" in error["message"]
+        assert "iframe" in error["message"]
         assert isinstance(error["line_number"], int)
         assert error["element"] is not None

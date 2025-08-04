@@ -30,7 +30,7 @@ class HTMLValidator:
 
     # Tags that are completely forbidden
     FORBIDDEN_TAGS = [
-        "script",  # No JavaScript allowed
+        # "script" removed - now allowed, controlled by nonce system
         "iframe",
         "frame",
         "frameset",
