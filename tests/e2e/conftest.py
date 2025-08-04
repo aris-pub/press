@@ -14,6 +14,7 @@ The session fixtures below are kept for reference but should be avoided.
 """
 
 import asyncio
+import hashlib
 import os
 import socket
 import tempfile
@@ -29,7 +30,7 @@ import uvicorn
 
 from app.auth.utils import get_password_hash
 from app.database import Base, get_db
-from app.models.scroll import Subject
+from app.models.scroll import Scroll, Subject
 from app.models.user import User
 
 # Import moved inside function to avoid startup issues
@@ -112,8 +113,8 @@ async def test_app(test_database_url: str):
 
 
 @pytest_asyncio.fixture(scope="session")
-async def test_server(test_app: FastAPI):
-    """Start test server for e2e tests."""
+async def test_server(test_app: FastAPI, seeded_database):
+    """Start test server for e2e tests with seeded data."""
     # Find a free port for the test server
     test_port = find_free_port()
     test_server_url = f"http://{TEST_SERVER_HOST}:{test_port}"
@@ -226,9 +227,85 @@ async def seeded_database(test_database_url: str):
 
         await session.commit()
 
+        # Refresh subjects and users to get their IDs
+        for subject in subjects:
+            await session.refresh(subject)
+        for user in users:
+            await session.refresh(user)
+
+        # Create test scrolls
+        scrolls_data = [
+            {
+                "title": "Machine Learning in Browser Testing",
+                "authors": "Test User One",
+                "abstract": "This paper explores the application of machine learning techniques in automated browser testing, focusing on element detection and user interaction prediction.",
+                "keywords": ["machine learning", "testing", "automation", "browser"],
+                "html_content": "<h1>ML in Browser Testing</h1><p>This scroll demonstrates computer science content filtering.</p><script>console.log('CS scroll loaded');</script>",
+                "user_id": users[0].id,
+                "subject_id": next(s.id for s in subjects if s.name == "Computer Science"),
+                "license": "cc-by-4.0",
+            },
+            {
+                "title": "Quantum Mechanics and Modern Physics",
+                "authors": "Test User Two",
+                "abstract": "An exploration of quantum mechanical principles and their applications in modern physics research.",
+                "keywords": ["quantum", "physics", "mechanics", "research"],
+                "html_content": "<h1>Quantum Mechanics</h1><p>This scroll demonstrates physics content filtering.</p><script>console.log('Physics scroll loaded');</script>",
+                "user_id": users[1].id,
+                "subject_id": next(s.id for s in subjects if s.name == "Physics"),
+                "license": "cc-by-4.0",
+            },
+            {
+                "title": "Biological Systems Analysis",
+                "authors": "Test User One",
+                "abstract": "A comprehensive analysis of complex biological systems using computational methods.",
+                "keywords": ["biology", "systems", "analysis", "computational"],
+                "html_content": "<h1>Biological Systems</h1><p>This scroll demonstrates biology content filtering.</p><script>console.log('Biology scroll loaded');</script>",
+                "user_id": users[0].id,
+                "subject_id": next(s.id for s in subjects if s.name == "Biology"),
+                "license": "arr",
+            },
+            {
+                "title": "Mathematical Proofs in Computer Science",
+                "authors": "Test User Two",
+                "abstract": "Exploring the mathematical foundations underlying computer science algorithms and data structures.",
+                "keywords": ["mathematics", "proofs", "algorithms", "computer science"],
+                "html_content": "<h1>Mathematical Proofs</h1><p>This scroll demonstrates math/CS content filtering.</p><script>console.log('Math scroll loaded');</script>",
+                "user_id": users[1].id,
+                "subject_id": next(s.id for s in subjects if s.name == "Mathematics"),
+                "license": "cc-by-4.0",
+            },
+        ]
+
+        scrolls = []
+        for scroll_data in scrolls_data:
+            # Generate content-addressable hash
+            content_hash = hashlib.sha256(scroll_data["html_content"].encode()).hexdigest()
+            url_hash = content_hash[:12]  # Use first 12 characters for URL
+
+            scroll = Scroll(
+                title=scroll_data["title"],
+                authors=scroll_data["authors"],
+                abstract=scroll_data["abstract"],
+                keywords=scroll_data["keywords"],
+                html_content=scroll_data["html_content"],
+                content_hash=content_hash,
+                url_hash=url_hash,
+                license=scroll_data["license"],
+                user_id=scroll_data["user_id"],
+                subject_id=scroll_data["subject_id"],
+                status="published",  # Make sure scrolls are published so they show on homepage
+                version=1,
+            )
+            session.add(scroll)
+            scrolls.append(scroll)
+
+        await session.commit()
+
         yield {
             "subjects": subjects,
             "users": users,
+            "scrolls": scrolls,
             "user_credentials": [
                 {"email": u["email"], "password": u["password"]} for u in users_data
             ],
