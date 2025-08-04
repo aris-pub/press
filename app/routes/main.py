@@ -10,7 +10,6 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,9 +17,9 @@ from app.auth.session import get_current_user_from_session
 from app.database import get_db
 from app.logging_config import get_logger, log_error, log_request
 from app.models.scroll import Scroll, Subject
+from app.templates_config import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -53,7 +52,7 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
         .join(Subject)
         .where(Scroll.status == "published")
         .order_by(Scroll.created_at.desc())
-        .limit(4)
+        .limit(10)
     )
     scrolls = scrolls_result.all()
 
