@@ -5,10 +5,10 @@ Usage:
 {{ scroll_card("Title", "Authors", "Abstract", ["tag1", "tag2"], "Computer Science", "2 hours ago", "v1") }}
 #}
 
-{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", preview_id="") %}
-<div class="scroll" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
-  {% if preview_id %}
-  <a href="/scroll/{{ preview_id }}" class="scroll-link">
+{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", url_hash="") %}
+<div class="scroll preview" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
+  {% if url_hash %}
+  <a href="/scroll/{{ url_hash }}" class="scroll-link">
     <div class="scroll-title">{{ title }}</div>
   </a>
   {% else %}
@@ -22,7 +22,7 @@ Usage:
       <span class="tag">{{ tag }}</span>
       {% endfor %}
     </div>
-    <div class="scroll-meta">{% if subject %}<span class="scroll-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: var(--red);">{{ version }}</span></div>
+    <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: var(--red);">{{ version }}</span></div>
   </div>
 </div>
 {% endmacro %}

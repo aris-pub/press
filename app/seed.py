@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 
 from sqlalchemy import text
 
@@ -154,7 +155,6 @@ async def seed_scrolls():
                 "user_id": users["John Smith"],
                 "subject_id": subjects["Computer Science"],
                 "status": "published",
-                "preview_id": "gnn2024a",
                 "version": 1,
                 "license": "cc-by-4.0",
             },
@@ -172,7 +172,6 @@ async def seed_scrolls():
                 "user_id": users["Robert Watson"],
                 "subject_id": subjects["Physics"],
                 "status": "published",
-                "preview_id": "quantum24",
                 "version": 1,
                 "license": "arr",
             },
@@ -185,7 +184,6 @@ async def seed_scrolls():
                 "user_id": users["Anita Patel"],
                 "subject_id": subjects["Biology"],
                 "status": "published",
-                "preview_id": "crispr23",
                 "version": 2,
                 "license": "cc-by-4.0",
             },
@@ -203,24 +201,140 @@ async def seed_scrolls():
                 "user_id": users["Pavel Kowalski"],
                 "subject_id": subjects["Mathematics"],
                 "status": "published",
-                "preview_id": "riemann24",
                 "version": 1,
                 "license": "arr",
+            },
+            {
+                "title": "Interactive Test Document - Nonce System Demo",
+                "authors": "Test User",
+                "abstract": "A simple test document with JavaScript to validate the nonce system implementation. This document contains interactive elements that demonstrate script execution through CSP nonces.",
+                "keywords": ["test", "nonce", "javascript", "interactive", "csp"],
+                "html_content": """<!DOCTYPE html>
+<html>
+<head>
+    <title>Nonce Test Document</title>
+    <style>
+        .test-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .test-button { 
+            padding: 12px 24px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            display: none;
+        }
+        .success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .info { background: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Interactive Test Document</h1>
+        <p>This document tests JavaScript execution through the nonce system. It demonstrates that user-uploaded content with scripts can work securely.</p>
+        
+        <h2>Interactive Tests</h2>
+        <p>Click the buttons below to test different JavaScript functionality:</p>
+        
+        <button class="test-button" id="basicTest">Basic Click Test</button>
+        <button class="test-button" id="timeTest">Show Current Time</button>
+        <button class="test-button" id="domTest">DOM Manipulation Test</button>
+        
+        <div id="result" class="result"></div>
+        
+        <h2>Technical Details</h2>
+        <p>This document contains inline JavaScript that should execute only if the nonce system is working correctly. Without proper CSP nonces, the scripts would be blocked.</p>
+    </div>
+    
+    <script>
+        // Test 1: Basic event listener
+        document.getElementById('basicTest').addEventListener('click', function() {
+            const result = document.getElementById('result');
+            result.className = 'result success';
+            result.style.display = 'block';
+            result.innerHTML = '<strong>✓ Success!</strong> Basic JavaScript event handling works correctly. Timestamp: ' + new Date().toLocaleTimeString();
+        });
+        
+        // Test 2: Time display
+        document.getElementById('timeTest').addEventListener('click', function() {
+            const result = document.getElementById('result');
+            result.className = 'result info';
+            result.style.display = 'block';
+            const now = new Date();
+            result.innerHTML = '<strong>⏰ Current Time:</strong> ' + now.toLocaleString() + '<br><small>Timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '</small>';
+        });
+        
+        // Test 3: DOM manipulation
+        document.getElementById('domTest').addEventListener('click', function() {
+            const result = document.getElementById('result');
+            result.className = 'result info';
+            result.style.display = 'block';
+            
+            // Create dynamic content
+            const testDiv = document.createElement('div');
+            testDiv.innerHTML = '<strong>🔧 DOM Test:</strong> Created new element dynamically';
+            testDiv.style.marginTop = '10px';
+            testDiv.style.padding = '10px';
+            testDiv.style.background = '#fff3cd';
+            testDiv.style.border = '1px solid #ffeaa7';
+            testDiv.style.borderRadius = '4px';
+            
+            result.innerHTML = '';
+            result.appendChild(testDiv);
+        });
+        
+        // Auto-initialize - log successful load
+        console.log('✓ Nonce test document JavaScript loaded successfully at', new Date().toISOString());
+        
+        // Additional test: Verify document is interactive
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✓ DOM content loaded, document is fully interactive');
+        });
+    </script>
+</body>
+</html>""",
+                "user_id": users["John Smith"],
+                "subject_id": subjects["Computer Science"],
+                "status": "published",
+                "version": 1,
+                "license": "cc-by-4.0",
             },
         ]
 
         for scroll_data in scrolls_data:
+            # Generate content-addressable hash
+            content_hash = hashlib.sha256(scroll_data["html_content"].encode()).hexdigest()
+            url_hash = content_hash[:12]  # Use first 12 characters for URL
+
             db_scroll = Scroll(
                 title=scroll_data["title"],
                 authors=scroll_data["authors"],
                 abstract=scroll_data["abstract"],
                 keywords=scroll_data["keywords"],
                 html_content=scroll_data["html_content"],
+                content_hash=content_hash,
+                url_hash=url_hash,
                 license=scroll_data.get("license", "cc-by-4.0"),  # Default to CC BY 4.0
                 user_id=scroll_data["user_id"],
                 subject_id=scroll_data["subject_id"],
                 status=scroll_data["status"],
-                preview_id=scroll_data["preview_id"],
                 version=scroll_data["version"],
             )
             session.add(db_scroll)
