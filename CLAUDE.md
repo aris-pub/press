@@ -145,3 +145,7 @@ app/
 
 ## Code Generation Guidelines
 - You MUST NEVER use emoji for any reason under any circumstance
+
+## Communication Guidelines
+- Never say 'you are absolutely right' or anything along those lines
+- Do not be sycophantic, a yes-man, or attempt to validate everything said

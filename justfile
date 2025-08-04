@@ -8,7 +8,7 @@ install:
 dev MODE="detached":
     #!/usr/bin/env bash
     set -a && source .env && set +a
-    PORT=${PORT:-8000}
+    PORT=${PORT:-7999}
     
     # Check mode parameter
     if [[ "{{MODE}}" == "attach" ]]; then
@@ -34,7 +34,7 @@ dev MODE="detached":
 stop:
     #!/usr/bin/env bash
     set -a && source .env && set +a
-    PORT=${PORT:-8000}
+    PORT=${PORT:-7999}
     
     if lsof -i :$PORT > /dev/null 2>&1; then
         echo "Stopping server on port $PORT..."
