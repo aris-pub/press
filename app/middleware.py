@@ -9,6 +9,7 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.logging_config import get_logger
+from app.security.nonce import get_nonce_from_request
 
 # Rate limiting constants
 DEFAULT_REQUESTS_PER_MINUTE = 60
@@ -101,15 +102,43 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
-        # Add CSP header for basic protection
-        csp = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://unpkg.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "img-src 'self' data:; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "connect-src 'self';"
+        # Add CSP header with context-aware script protection
+        is_scroll_page = request.url.path.startswith("/scroll/") and not request.url.path.endswith(
+            "/raw"
         )
+
+        if is_scroll_page:
+            # Strict CSP with strict-dynamic for scroll pages (user content)
+            nonce = get_nonce_from_request(request)
+            if nonce:
+                csp = (
+                    "default-src 'self'; "
+                    f"script-src 'self' 'strict-dynamic' 'nonce-{nonce}' 'unsafe-inline'; "
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    "img-src 'self' data:; "
+                    "font-src 'self' https://fonts.gstatic.com; "
+                    "connect-src 'self';"
+                )
+            else:
+                # Fallback for scroll pages without nonce (shouldn't happen)
+                csp = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline'; "
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    "img-src 'self' data:; "
+                    "font-src 'self' https://fonts.gstatic.com; "
+                    "connect-src 'self';"
+                )
+        else:
+            # Standard CSP for static pages (homepage, auth, etc) - no nonces needed
+            csp = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "img-src 'self' data:; "
+                "font-src 'self' https://fonts.gstatic.com; "
+                "connect-src 'self';"
+            )
         response.headers["Content-Security-Policy"] = csp
 
         return response

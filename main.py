@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from app.logging_config import get_logger
 from app.middleware import LoggingMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
 from app.routes import auth, main, scrolls
+from app.security.nonce_middleware import NonceMiddleware
 
 
 @asynccontextmanager
@@ -44,6 +45,8 @@ app = FastAPI(
 # Add middleware (order matters - last added runs first)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(LoggingMiddleware)
+# Nonce middleware must run before SecurityHeadersMiddleware to generate nonces
+app.add_middleware(NonceMiddleware)
 
 # Disable rate limiting during tests
 is_testing = os.getenv("TESTING", "").lower() in ("true", "1", "yes")
