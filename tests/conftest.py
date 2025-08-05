@@ -184,3 +184,16 @@ async def authenticated_client(client, test_user):
 
 # Configure pytest-asyncio
 pytest_plugins = ("pytest_asyncio",)
+
+
+def pytest_configure(config):
+    """Configure pytest with environment-specific settings."""
+    # Set different event loop scopes based on environment
+    # CI needs function scope to avoid event loop conflicts with PostgreSQL
+    # Local can use session scope for better performance with SQLite
+    if os.getenv("CI") and os.getenv("DATABASE_URL"):
+        # CI environment - use function scope to avoid event loop conflicts
+        config._inicache["asyncio_default_test_loop_scope"] = "function"
+    else:
+        # Local environment - use session scope for better performance
+        config._inicache["asyncio_default_test_loop_scope"] = "session"
