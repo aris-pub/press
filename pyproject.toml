@@ -37,6 +37,7 @@ pythonpath = ["."]
 markers = [
     "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
     "e2e: marks tests as end-to-end (deselect with '-m \"not e2e\"')",
+    "desktop: marks tests as desktop-only (deselect with '-m \"not desktop\"')",
     "mobile: marks tests as mobile-only (deselect with '-m \"not mobile\"')"
 ]
 filterwarnings = [

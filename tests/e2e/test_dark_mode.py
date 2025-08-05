@@ -143,8 +143,9 @@ async def test_theme_persistence_across_navigation(test_server):
             await browser.close()
 
 
+@pytest.mark.desktop
 async def test_toggle_functionality_and_css_changes(test_server):
-    """Test that dark mode toggle works and CSS variables actually change."""
+    """Test that dark mode toggle works and CSS variables actually change on desktop."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()

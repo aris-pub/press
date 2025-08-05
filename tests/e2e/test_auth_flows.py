@@ -1,5 +1,7 @@
 """Comprehensive e2e tests for authentication flows."""
 
+import time
+
 from playwright.async_api import async_playwright, expect
 import pytest
 
@@ -29,7 +31,8 @@ async def test_complete_registration_flow(test_server):
             # Browser should prevent submission due to required fields
 
             # Fill in form with valid data
-            await page.fill('input[name="email"]', "testuser@example.com")
+            timestamp = int(time.time())
+            await page.fill('input[name="email"]', f"testuser-{timestamp}@example.com")
             await page.fill('input[name="display_name"]', "Test User")
             await page.fill('input[name="password"]', "testpassword123")
             await page.fill('input[name="confirm_password"]', "testpassword123")
@@ -38,25 +41,12 @@ async def test_complete_registration_flow(test_server):
             # Submit form
             await page.click('button[type="submit"]')
 
-            # Wait for HTMX response and any subsequent redirects
-            await page.wait_for_timeout(1500)  # Wait for form submission and any HTMX redirects
+            # Wait for HTMX form submission and success message
+            await expect(page.locator(".success-message")).to_be_visible()
 
-            # Check if successfully registered - look for success indicators
-            page_content = await page.content()
-            current_url = page.url
-
-            # Look for success indicators (either content or URL change)
-            success_found = (
-                "Welcome" in page_content
-                or "success" in page_content
-                or "dashboard" in current_url
-                or "/dashboard" in page_content
-                or "Redirecting" in page_content
-                or current_url == test_server + "/"  # Redirected to homepage
-                or current_url == test_server + "/dashboard"  # Redirected to dashboard
-            )
-
-            assert success_found, f"Registration appears to have failed. URL: {current_url}"
+            # Should see welcome message
+            await expect(page.locator('h2:has-text("Account Created!")')).to_be_visible()
+            await expect(page.locator("text=Welcome to Press")).to_be_visible()
 
         finally:
             await browser.close()
@@ -72,7 +62,8 @@ async def test_registration_password_mismatch_validation(test_server):
             await page.goto(f"{test_server}/register")
 
             # Fill form with mismatched passwords
-            await page.fill('input[name="email"]', "testuser2@example.com")
+            timestamp = int(time.time())
+            await page.fill('input[name="email"]', f"testuser2-{timestamp}@example.com")
             await page.fill('input[name="display_name"]', "Test User 2")
             await page.fill('input[name="password"]', "password123")
             await page.fill('input[name="confirm_password"]', "differentpassword")
@@ -98,7 +89,8 @@ async def test_registration_display_name_validation(test_server):
             await page.goto(f"{test_server}/register")
 
             # Test with whitespace-only display name
-            await page.fill('input[name="email"]', "testuser3@example.com")
+            timestamp = int(time.time())
+            await page.fill('input[name="email"]', f"testuser3-{timestamp}@example.com")
             await page.fill('input[name="display_name"]', "   ")
             await page.fill('input[name="password"]', "password123")
             await page.fill('input[name="confirm_password"]', "password123")
@@ -116,8 +108,9 @@ async def test_registration_display_name_validation(test_server):
             await browser.close()
 
 
+@pytest.mark.desktop
 async def test_complete_login_flow(test_server):
-    """Test complete user login flow."""
+    """Test complete user login flow using desktop dropdown UI."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
@@ -126,7 +119,9 @@ async def test_complete_login_flow(test_server):
             # First register a user to login with
             await page.goto(f"{test_server}/register")
 
-            await page.fill('input[name="email"]', "logintest@example.com")
+            timestamp = int(time.time())
+            test_email = f"logintest-{timestamp}@example.com"
+            await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="display_name"]', "Login Test User")
             await page.fill('input[name="password"]', "loginpassword")
             await page.fill('input[name="confirm_password"]', "loginpassword")
@@ -201,7 +196,7 @@ async def test_complete_login_flow(test_server):
             await expect(page.locator('input[name="password"]')).to_be_visible()
 
             # Fill and submit login form
-            await page.fill('input[name="email"]', "logintest@example.com")
+            await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="password"]', "loginpassword")
             await page.click('button[type="submit"]')
 
@@ -235,7 +230,8 @@ async def test_login_invalid_credentials(test_server):
             await page.goto(f"{test_server}/login")
 
             # Fill form with invalid credentials
-            await page.fill('input[name="email"]', "nonexistent@example.com")
+            timestamp = int(time.time())
+            await page.fill('input[name="email"]', f"nonexistent-{timestamp}@example.com")
             await page.fill('input[name="password"]', "wrongpassword")
             await page.click('button[type="submit"]')
 
@@ -268,8 +264,9 @@ async def test_login_empty_fields(test_server):
             await browser.close()
 
 
+@pytest.mark.desktop
 async def test_registration_duplicate_email(test_server):
-    """Test registration with already registered email."""
+    """Test registration with already registered email using desktop logout."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
@@ -278,7 +275,9 @@ async def test_registration_duplicate_email(test_server):
             # Register first user
             await page.goto(f"{test_server}/register")
 
-            await page.fill('input[name="email"]', "duplicate@example.com")
+            timestamp = int(time.time())
+            test_email = f"duplicate-{timestamp}@example.com"
+            await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="display_name"]', "First User")
             await page.fill('input[name="password"]', "password123")
             await page.fill('input[name="confirm_password"]', "password123")
@@ -314,7 +313,7 @@ async def test_registration_duplicate_email(test_server):
             # Try to register second user with same email
             await page.goto(f"{test_server}/register")
 
-            await page.fill('input[name="email"]', "duplicate@example.com")
+            await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="display_name"]', "Second User")
             await page.fill('input[name="password"]', "password456")
             await page.fill('input[name="confirm_password"]', "password456")

@@ -44,10 +44,24 @@ stop:
         echo "No server running on port $PORT"
     fi
 
-# Run all tests (unit + e2e)
+# Run tests (adapts to local vs CI environment)
 test:
+    #!/usr/bin/env bash
+    # Run unit tests
     uv run pytest -n auto -m "not e2e"
-    uv run pytest tests/e2e/ -v
+    
+    # Run E2E tests based on environment
+    if [ -n "$CI" ]; then
+        # CI: Run all test types separately for cross-browser testing
+        echo "CI detected - running full cross-browser test suite"
+        uv run pytest -m "e2e and not desktop and not mobile" -v
+        uv run pytest -m "e2e and desktop" -v  
+        uv run pytest -m "e2e and mobile" -v
+    else
+        # Local: Run universal tests only (faster)
+        echo "Local environment - running universal E2E tests"
+        uv run pytest -m "e2e and not desktop and not mobile" -v
+    fi
 
 # Format and lint code
 lint:
