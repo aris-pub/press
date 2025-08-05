@@ -94,10 +94,14 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
         Returns:
             Redirect response to HTTPS or normal response
         """
-        # Skip HTTPS redirect during E2E testing
+        # Skip HTTPS redirect for health checks and E2E testing
         import os
 
         if os.getenv("E2E_TESTING", "").lower() in ("true", "1", "yes"):
+            return await call_next(request)
+            
+        # Skip HTTPS redirect for internal health checks
+        if request.url.path == "/health":
             return await call_next(request)
 
         # Check if request is HTTP (not HTTPS)
