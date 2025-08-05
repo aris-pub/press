@@ -11,6 +11,11 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.exception_handlers import (
+    internal_server_error_handler,
+    not_found_handler,
+    rate_limit_handler,
+)
 from app.logging_config import get_logger
 from app.middleware import LoggingMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
 from app.routes import auth, main, scrolls
@@ -55,6 +60,12 @@ app.add_middleware(RateLimitMiddleware, enabled=rate_limit_enabled)
 
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Exception handlers
+app.add_exception_handler(404, not_found_handler)
+app.add_exception_handler(429, rate_limit_handler)
+app.add_exception_handler(500, internal_server_error_handler)
+app.add_exception_handler(Exception, internal_server_error_handler)
 
 
 # Health check endpoint for monitoring

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Rate Limited - Scroll Press{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-content">
+        <h1>429</h1>
+        <h2>Too Many Requests</h2>
+        <p>You're making requests too quickly. Please wait a moment and try again.</p>
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">Go Home</a>
+            <button onclick="window.location.reload()" class="btn btn-secondary">Try Again</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+.error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+}
+
+.error-content h1 {
+    font-size: 4rem;
+    font-weight: normal;
+    color: var(--red);
+    margin-bottom: 1rem;
+    font-family: var(--font-serif);
+}
+
+.error-content h2 {
+    font-size: 1.5rem;
+    font-weight: normal;
+    color: var(--gray-dark);
+    margin-bottom: 1rem;
+    font-family: var(--font-serif);
+}
+
+.error-content p {
+    color: var(--gray);
+    margin-bottom: 2rem;
+    font-size: 1rem;
+    font-family: var(--font-serif);
+    font-style: italic;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+{% endblock %}
