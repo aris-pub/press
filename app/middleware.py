@@ -81,6 +81,47 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             raise e
 
 
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    """Middleware to redirect HTTP requests to HTTPS."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Redirect HTTP to HTTPS.
+
+        Args:
+            request: The incoming HTTP request
+            call_next: The next middleware/route handler
+
+        Returns:
+            Redirect response to HTTPS or normal response
+        """
+        # Skip HTTPS redirect during E2E testing
+        import os
+
+        if os.getenv("E2E_TESTING", "").lower() in ("true", "1", "yes"):
+            return await call_next(request)
+
+        # Check if request is HTTP (not HTTPS)
+        if (
+            request.url.scheme == "http"
+            and not request.headers.get("x-forwarded-proto") == "https"
+        ):
+            # Build HTTPS URL
+            https_url = request.url.replace(scheme="https")
+            # Add basic security headers to redirect response
+            headers = {
+                "location": str(https_url),
+                "X-Content-Type-Options": "nosniff",
+                "X-Frame-Options": "DENY",
+                "X-XSS-Protection": "1; mode=block",
+            }
+            return Response(status_code=301, headers=headers)
+
+        # If this is an HTTPS request (via proxy), let it continue to SecurityHeadersMiddleware
+        # which will add HSTS header
+
+        return await call_next(request)
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
@@ -101,6 +142,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        # Add HSTS header only for HTTPS responses
+        if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         # Add CSP header with context-aware script protection
         is_scroll_page = request.url.path.startswith("/scroll/") and not request.url.path.endswith(

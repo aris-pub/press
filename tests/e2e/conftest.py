@@ -51,6 +51,7 @@ def test_server():
     # Set up test environment
     os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
     os.environ["TESTING"] = "1"
+    os.environ["E2E_TESTING"] = "1"  # Disable HTTPS redirect for E2E tests
 
     # Override the database connection in the app
     TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
