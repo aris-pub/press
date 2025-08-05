@@ -34,6 +34,21 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Scroll Press application")
 
     # Skip database operations during startup to avoid Supabase pgbouncer prepared statement issues
+    # But ensure database connectivity in CI/testing environments
+    if os.getenv("TESTING") == "1":
+        from app.database import engine, Base
+        # Import all models to ensure they're registered with Base.metadata
+        from app.models.scroll import Scroll, Subject  # noqa: F401
+        from app.models.user import User  # noqa: F401
+        
+        # Verify database connectivity and tables exist
+        try:
+            async with engine.begin() as conn:
+                # Check if tables exist, create if they don't
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database tables verified/created successfully")
+        except Exception as e:
+            logger.error(f"Database setup failed: {e}")
 
     yield
     # Shutdown (if needed)
