@@ -6,10 +6,10 @@ import pytest
 pytestmark = pytest.mark.e2e
 
 
-async def test_app_setup(test_app, seeded_database):
+async def test_app_setup(test_server, seeded_database):
     """Test that our test app setup works."""
     # Just verify fixtures are working
-    assert test_app is not None
+    assert test_server is not None
     assert seeded_database is not None
     assert len(seeded_database["subjects"]) == 4
     assert len(seeded_database["users"]) == 2
@@ -19,8 +19,8 @@ async def test_app_setup(test_app, seeded_database):
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
-        await page.goto("https://example.com")
+        await page.goto(test_server)
         title = await page.title()
-        assert "Example Domain" in title
+        assert "Scroll Press" in title
 
         await browser.close()

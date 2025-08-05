@@ -500,28 +500,6 @@ class E2EHelpers:
         scroll_link = await page.locator('a:has-text("View Scroll")').get_attribute("href")
         return f"{server_url}{scroll_link}" if scroll_link else None
 
-    @staticmethod
-    async def delete_user_account(page: Page, server_url: str):
-        """Delete user account via dashboard."""
-        await page.goto(f"{server_url}/dashboard")
-
-        # Click delete account button
-        await page.click("#delete-account-btn")
-
-        # Wait for modal
-        await page.wait_for_selector("#delete-modal", state="visible")
-
-        # Type confirmation text
-        await page.fill("#confirm-delete-input", "DELETE MY ACCOUNT")
-
-        # Click confirm delete
-        await page.click("#confirm-delete-btn")
-
-        # Wait for redirect to home with success message
-        await page.wait_for_load_state("networkidle")
-
-        return page.url == f"{server_url}/"
-
 
 @pytest_asyncio.fixture
 async def e2e_helpers():
