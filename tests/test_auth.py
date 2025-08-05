@@ -55,6 +55,7 @@ async def test_register_form_valid_data(client: AsyncClient):
     register_data = {
         "email": "newuser@example.com",
         "password": "newpassword",
+        "confirm_password": "newpassword",
         "display_name": "New User",
         "agree_terms": "true",
     }
@@ -70,6 +71,7 @@ async def test_register_form_duplicate_email(client: AsyncClient, test_user):
     register_data = {
         "email": test_user.email,
         "password": "newpassword",
+        "confirm_password": "newpassword",
         "display_name": "New User",
         "agree_terms": "true",
     }
@@ -84,6 +86,7 @@ async def test_register_form_missing_checkbox(client: AsyncClient):
     register_data = {
         "email": "newuser@example.com",
         "password": "newpassword",
+        "confirm_password": "newpassword",
         "display_name": "New User",
         # Missing agree_terms checkbox
     }
@@ -159,3 +162,109 @@ async def test_delete_account_authenticated(authenticated_client: AsyncClient, t
     assert response.status_code == 200
     assert response.json()["success"] is True
     assert "Account deleted successfully" in response.json()["message"]
+
+
+async def test_register_form_passwords_dont_match(client: AsyncClient):
+    """Test POST /register-form with mismatched passwords."""
+    register_data = {
+        "email": "newuser@example.com",
+        "password": "password123",
+        "confirm_password": "differentpassword",
+        "display_name": "New User",
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Passwords do not match" in response.text
+
+
+async def test_register_form_missing_confirm_password(client: AsyncClient):
+    """Test POST /register-form with missing confirm_password field."""
+    register_data = {
+        "email": "newuser@example.com",
+        "password": "password123",
+        "display_name": "New User",
+        "agree_terms": "true",
+        # Missing confirm_password
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Password confirmation is required" in response.text
+
+
+async def test_register_form_display_name_too_long(client: AsyncClient):
+    """Test POST /register-form with display name over 200 characters."""
+    long_name = "A" * 201  # 201 characters
+    register_data = {
+        "email": "newuser@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": long_name,
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Display name must be less than 200 characters" in response.text
+
+
+async def test_register_form_display_name_whitespace_only(client: AsyncClient):
+    """Test POST /register-form with display name that is only whitespace."""
+    register_data = {
+        "email": "newuser@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": "   \t\n   ",  # Only whitespace
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Display name cannot be empty" in response.text
+
+
+async def test_register_form_display_name_empty_string(client: AsyncClient):
+    """Test POST /register-form with empty display name."""
+    register_data = {
+        "email": "newuser@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": "",
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Display name is required" in response.text
+
+
+async def test_register_form_display_name_valid_edge_cases(client: AsyncClient):
+    """Test POST /register-form with valid edge case display names."""
+    # Test minimum length (1 character)
+    register_data = {
+        "email": "user1@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": "A",
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 200
+    assert "session_id" in response.cookies
+
+    # Test maximum length (200 characters)
+    long_name = "A" * 200  # Exactly 200 characters
+    register_data = {
+        "email": "user2@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": long_name,
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 200
+    assert "session_id" in response.cookies

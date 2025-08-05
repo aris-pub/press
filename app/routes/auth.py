@@ -167,6 +167,7 @@ async def register_form(
     email: str = Form(...),
     display_name: str = Form(...),
     password: str = Form(...),
+    confirm_password: str = Form(None),
     agree_terms: str = Form(None),
     db: AsyncSession = Depends(get_db),
 ):
@@ -197,10 +198,25 @@ async def register_form(
         # Validate input
         if not email or not email.strip():
             raise ValueError("Email is required")
-        if not display_name or not display_name.strip():
+
+        # Display name validation
+        if not display_name:
             raise ValueError("Display name is required")
+        display_name_stripped = display_name.strip()
+        if len(display_name_stripped) == 0:
+            raise ValueError("Display name cannot be empty")
+        if len(display_name_stripped) > 200:
+            raise ValueError("Display name must be less than 200 characters")
+        display_name = display_name_stripped
+
+        # Password validation
         if not password or len(password) < 1:
             raise ValueError("Password is required")
+        if not confirm_password:
+            raise ValueError("Password confirmation is required")
+        if password != confirm_password:
+            raise ValueError("Passwords do not match")
+
         if not agree_terms or agree_terms.lower() != "true":
             raise ValueError("You must agree to the Terms of Service and Privacy Policy")
 
@@ -223,6 +239,7 @@ async def register_form(
                     "form_data": {
                         "email": email,
                         "display_name": display_name,
+                        "confirm_password": confirm_password,
                         "agree_terms": agree_terms,
                     },
                 },
@@ -275,6 +292,7 @@ async def register_form(
                 "form_data": {
                     "email": email,
                     "display_name": display_name,
+                    "confirm_password": confirm_password,
                     "agree_terms": agree_terms,
                 },
             },
