@@ -29,7 +29,9 @@
   </div>
   <div class="subject-grid">
     {% for subject in subjects %}
+    {% if subject.scroll_count > 0 %}
     {{ subject_card(subject.name, subject.scroll_count) }}
+    {% endif %}
     {% endfor %}
   </div>
 </div>
@@ -80,18 +82,70 @@ document.addEventListener('DOMContentLoaded', function() {
         window.history.pushState({}, '', url);
     }
 
-    // Filter scrolls by subject
-    function filterPreviews(subjectName) {
-        previewCards.forEach(card => {
-            const cardSubject = card.dataset.subject;
-            if (!subjectName || cardSubject === subjectName) {
-                card.style.display = 'block';
-                card.classList.remove('filtered-out');
-            } else {
-                card.style.display = 'none';
-                card.classList.add('filtered-out');
+    // Filter scrolls by subject (fetch new data)
+    async function filterPreviews(subjectName) {
+        const scrollsGrid = document.querySelector('.scrolls-grid');
+        
+        try {
+            // Build API URL
+            let apiUrl = '/api/scrolls';
+            if (subjectName) {
+                apiUrl += `?subject=${encodeURIComponent(subjectName)}`;
+                console.log('Subject name being sent to API:', subjectName);
             }
-        });
+            
+            // Fetch filtered scrolls
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            
+            // Clear existing scrolls
+            scrollsGrid.innerHTML = '';
+            
+            // Add new scrolls
+            data.scrolls.forEach(scroll => {
+                const scrollCard = createScrollCard(scroll);
+                scrollsGrid.appendChild(scrollCard);
+            });
+            
+            // Debug: Show number of cards created
+            if (data.scrolls.length === 0) {
+                scrollsGrid.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">No scrolls found for this subject.</p>';
+            }
+            
+            // Update preview cards reference
+            window.previewCards = document.querySelectorAll('.preview');
+            
+        } catch (error) {
+            console.error('Error fetching scrolls:', error);
+        }
+    }
+    
+    // Create scroll card HTML element
+    function createScrollCard(scroll) {
+        const div = document.createElement('div');
+        div.className = 'scroll preview';
+        div.setAttribute('data-subject', scroll.subject_name.toLowerCase().replace(' ', '-'));
+        
+        const tagsHtml = scroll.keywords.map(tag => `<span class="tag">${tag}</span>`).join('');
+        const timeAgo = 'recently'; // You might want to calculate this properly
+        
+        div.innerHTML = `
+            <a href="/scroll/${scroll.url_hash}" class="scroll-link">
+                <div class="scroll-title">${scroll.title}</div>
+            </a>
+            <div class="scroll-authors">${scroll.authors}</div>
+            <div class="scroll-abstract">${scroll.abstract}</div>
+            <div class="scroll-footer">
+                <div class="scroll-tags">${tagsHtml}</div>
+                <div class="scroll-meta">
+                    <span class="preview-subject-link" data-subject-name="${scroll.subject_name.toLowerCase().replace(' ', '-')}" data-subject-display="${scroll.subject_name}" style="color: var(--red); cursor: pointer;">${scroll.subject_name}</span> | 
+                    Submitted ${timeAgo} | 
+                    <span style="color: var(--red);">v${scroll.version}</span>
+                </div>
+            </div>
+        `;
+        
+        return div;
     }
 
     // Update heading text
@@ -121,12 +175,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Select subject
-    function selectSubject(subjectName, subjectDisplay, card) {
+    async function selectSubject(subjectName, subjectDisplay, card) {
         if (currentSubject === subjectName) {
             // Deselect if clicking the same subject
             currentSubject = null;
             updateSelectedCard(null);
-            filterPreviews(null);
+            await filterPreviews(null);
             updateHeading(null);
             updateURL(null);
             updateShowAllButton(true);
@@ -134,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Select new subject
             currentSubject = subjectName;
             updateSelectedCard(card);
-            filterPreviews(subjectName);
+            await filterPreviews(subjectDisplay); // Use display name for API call
             updateHeading(subjectDisplay);
             updateURL(subjectName);
             updateShowAllButton(false);
@@ -142,10 +196,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Show all subjects
-    function showAll() {
+    async function showAll() {
         currentSubject = null;
         updateSelectedCard(null);
-        filterPreviews(null);
+        await filterPreviews(null);
         updateHeading(null);
         updateURL(null);
         updateShowAllButton(true);
@@ -153,23 +207,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add click handlers to subject cards
     subjectCards.forEach(card => {
-        card.addEventListener('click', function() {
+        card.addEventListener('click', async function() {
             const subjectName = this.dataset.subjectName;
             const subjectDisplay = this.dataset.subjectDisplay;
-            selectSubject(subjectName, subjectDisplay, this);
+            await selectSubject(subjectName, subjectDisplay, this);
         });
     });
 
     // Add click handler to show all button
-    showAllBtn.addEventListener('click', function() {
+    showAllBtn.addEventListener('click', async function() {
         // Only allow click if button is not in active (disabled) state
         if (!showAllBtn.classList.contains('active')) {
-            showAll();
+            await showAll();
         }
     });
 
     // Add click handlers to preview subject links
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', async function(e) {
         if (e.target.classList.contains('preview-subject-link')) {
             e.preventDefault();
             const subjectName = e.target.dataset.subjectName;
@@ -180,24 +234,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.dataset.subjectName === subjectName
             );
             
-            selectSubject(subjectName, subjectDisplay, matchingCard);
+            await selectSubject(subjectName, subjectDisplay, matchingCard);
         }
     });
 
     // Initialize from URL parameters
-    const urlSubject = getSubjectFromURL();
-    if (urlSubject) {
-        const matchingCard = Array.from(subjectCards).find(card => 
-            card.dataset.subjectName === urlSubject
-        );
-        if (matchingCard) {
-            const subjectDisplay = matchingCard.dataset.subjectDisplay;
-            selectSubject(urlSubject, subjectDisplay, matchingCard);
+    (async function() {
+        const urlSubject = getSubjectFromURL();
+        if (urlSubject) {
+            const matchingCard = Array.from(subjectCards).find(card => 
+                card.dataset.subjectName === urlSubject
+            );
+            if (matchingCard) {
+                const subjectDisplay = matchingCard.dataset.subjectDisplay;
+                await selectSubject(urlSubject, subjectDisplay, matchingCard);
+            }
+        } else {
+            // Initialize with "Show All" active
+            updateShowAllButton(true);
         }
-    } else {
-        // Initialize with "Show All" active
-        updateShowAllButton(true);
-    }
+    })();
 });
 </script>
 {% endblock %}

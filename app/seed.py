@@ -319,9 +319,9 @@ async def seed_scrolls():
         ]
 
         for scroll_data in scrolls_data:
-            # Generate content-addressable hash
-            content_hash = hashlib.sha256(scroll_data["html_content"].encode()).hexdigest()
-            url_hash = content_hash[:12]  # Use first 12 characters for URL
+            # Generate content-addressable storage fields using proper function
+            from app.storage.content_processing import generate_permanent_url
+            url_hash, content_hash, tar_data = await generate_permanent_url(scroll_data["html_content"])
 
             db_scroll = Scroll(
                 title=scroll_data["title"],

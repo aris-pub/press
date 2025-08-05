@@ -12,8 +12,8 @@ from app.logging_config import get_logger
 from app.security.nonce import get_nonce_from_request
 
 # Rate limiting constants
-DEFAULT_REQUESTS_PER_MINUTE = 60
-DEFAULT_BURST_REQUESTS = 10
+DEFAULT_REQUESTS_PER_MINUTE = 300
+DEFAULT_BURST_REQUESTS = 50
 RATE_LIMIT_WINDOW_SECONDS = 60
 BURST_WINDOW_SECONDS = 10
 CLEANUP_INTERVAL_SECONDS = 300

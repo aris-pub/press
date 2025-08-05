@@ -37,10 +37,10 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
     if current_user:
         log_request(request, user_id=str(current_user.id))
 
-    # Get subjects with scroll counts
+    # Get subjects with scroll counts (all published scrolls per subject)
     subjects_result = await db.execute(
-        select(Subject.name, func.count(Subject.id).label("scroll_count"))
-        .outerjoin(Subject.scrolls)
+        select(Subject.name, func.count(Scroll.id).label("scroll_count"))
+        .outerjoin(Subject.scrolls.and_(Scroll.status == "published"))
         .group_by(Subject.id, Subject.name)
         .order_by(Subject.name)
     )
@@ -61,6 +61,49 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
         "index.html",
         {"current_user": current_user, "subjects": subjects, "scrolls": scrolls},
     )
+
+
+@router.get("/api/scrolls")
+async def get_scrolls(
+    request: Request,
+    subject: str = None,
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
+    """API endpoint to get scrolls, optionally filtered by subject."""
+    log_request(request)
+    
+    query = (
+        select(Scroll, Subject.name.label("subject_name"))
+        .join(Subject)
+        .where(Scroll.status == "published")
+    )
+    
+    if subject:
+        query = query.where(Subject.name == subject)
+    
+    query = query.order_by(Scroll.created_at.desc()).limit(limit)
+    
+    scrolls_result = await db.execute(query)
+    scrolls = scrolls_result.all()
+    
+    # Convert to JSON-serializable format
+    scrolls_data = []
+    for scroll_row in scrolls:
+        scroll = scroll_row[0]
+        subject_name = scroll_row[1]
+        scrolls_data.append({
+            "title": scroll.title,
+            "authors": scroll.authors,
+            "abstract": scroll.abstract,
+            "keywords": scroll.keywords,
+            "subject_name": subject_name,
+            "version": scroll.version,
+            "url_hash": scroll.url_hash,
+            "created_at": scroll.created_at.isoformat()
+        })
+    
+    return {"scrolls": scrolls_data}
 
 
 @router.get("/health")

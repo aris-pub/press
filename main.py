@@ -73,8 +73,13 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(LoggingMiddleware)
 # Nonce middleware must run before SecurityHeadersMiddleware to generate nonces
 app.add_middleware(NonceMiddleware)
-# HTTPS redirect should be one of the first to run (added last)
-app.add_middleware(HTTPSRedirectMiddleware)
+
+# Only add HTTPS redirect in production (when DATABASE_URL contains a remote host)
+database_url = os.getenv("DATABASE_URL", "")
+is_production = "supabase.com" in database_url or "amazonaws.com" in database_url
+if is_production:
+    # HTTPS redirect should be one of the first to run (added last)
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 # Disable rate limiting during tests
 is_testing = os.getenv("TESTING", "").lower() in ("true", "1", "yes")

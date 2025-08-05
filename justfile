@@ -4,11 +4,17 @@
 install:
     uv sync
 
-# Run development server (detached by default, add 'attach' to run in foreground)
+# Run development server (HTTPS-only, detached by default, add 'attach' to run in foreground)
 dev MODE="detached":
     #!/usr/bin/env bash
     set -a && source .env && set +a
     PORT=${PORT:-7999}
+    
+    # Auto-generate certificates if they don't exist
+    if [[ ! -f "certs/cert.pem" || ! -f "certs/key.pem" ]]; then
+        echo "SSL certificates not found. Generating..."
+        just gen-certs > /dev/null 2>&1
+    fi
     
     # Check mode parameter
     if [[ "{{MODE}}" == "attach" ]]; then
@@ -21,12 +27,13 @@ dev MODE="detached":
         echo "Server already running on port $PORT"
     else
         if [[ "$ATTACH_MODE" == "true" ]]; then
-            echo "Starting server on port $PORT (attached mode)"
-            uv run uvicorn main:app --reload --port $PORT
+            echo "Starting HTTPS server on port $PORT (attached mode)"
+            uv run uvicorn main:app --reload --port $PORT --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem
         else
-            nohup uv run uvicorn main:app --reload --port $PORT > server.log 2>&1 &
+            nohup uv run uvicorn main:app --reload --port $PORT --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem > server.log 2>&1 &
             sleep 2
-            echo "Server started on port $PORT (detached mode - use 'just dev attach' for attached mode)"
+            echo "HTTPS server started on port $PORT (detached mode - use 'just dev attach' for attached mode)"
+            echo "Visit: https://localhost:$PORT"
         fi
     fi
 
@@ -85,6 +92,19 @@ reset-db: migrate seed
 
 # Run all checks
 check: lint test
+
+# Generate self-signed SSL certificates for HTTPS development
+gen-certs:
+    #!/usr/bin/env bash
+    mkdir -p certs
+    if [[ -f "certs/cert.pem" && -f "certs/key.pem" ]]; then
+        echo "SSL certificates already exist in certs/"
+    else
+        echo "Generating self-signed SSL certificates..."
+        openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+        echo "SSL certificates generated in certs/"
+        echo "Use 'just dev-https' to start HTTPS server"
+    fi
 
 # Setup project from scratch
 init: install migrate seed
