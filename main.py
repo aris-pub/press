@@ -17,7 +17,12 @@ from app.exception_handlers import (
     rate_limit_handler,
 )
 from app.logging_config import get_logger
-from app.middleware import LoggingMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
+from app.middleware import (
+    HTTPSRedirectMiddleware,
+    LoggingMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.routes import auth, main, scrolls
 from app.security.nonce_middleware import NonceMiddleware
 
@@ -68,6 +73,8 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(LoggingMiddleware)
 # Nonce middleware must run before SecurityHeadersMiddleware to generate nonces
 app.add_middleware(NonceMiddleware)
+# HTTPS redirect should be one of the first to run (added last)
+app.add_middleware(HTTPSRedirectMiddleware)
 
 # Disable rate limiting during tests
 is_testing = os.getenv("TESTING", "").lower() in ("true", "1", "yes")
