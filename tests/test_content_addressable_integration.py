@@ -300,7 +300,7 @@ class TestContentAddressableIntegration:
 class TestContentDeterminism:
     """Test deterministic content processing."""
 
-    async def test_deterministic_hash_generation(self):
+    async def test_deterministic_hash_generation(self, test_db):
         """Test that identical content always produces identical hashes."""
         content = """<!DOCTYPE html>
 <html>
@@ -323,7 +323,7 @@ class TestContentDeterminism:
             assert result[1] == first_result[1]  # content_hash
             assert result[2] == first_result[2]  # tar_data
 
-    async def test_content_with_whitespace_variations(self):
+    async def test_content_with_whitespace_variations(self, test_db):
         """Test that content with different whitespace produces different hashes."""
         base_content = "<html><body><h1>Test</h1></body></html>"
         content_with_spaces = "<html><body><h1>Test</h1>   </body></html>"
