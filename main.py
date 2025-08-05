@@ -36,11 +36,12 @@ async def lifespan(app: FastAPI):
     # Skip database operations during startup to avoid Supabase pgbouncer prepared statement issues
     # But ensure database connectivity in CI/testing environments
     if os.getenv("TESTING") == "1":
-        from app.database import engine, Base
+        from app.database import Base, engine
+
         # Import all models to ensure they're registered with Base.metadata
         from app.models.scroll import Scroll, Subject  # noqa: F401
         from app.models.user import User  # noqa: F401
-        
+
         # Verify database connectivity and tables exist
         try:
             async with engine.begin() as conn:

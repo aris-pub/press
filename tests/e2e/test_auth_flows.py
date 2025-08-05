@@ -116,8 +116,9 @@ async def test_registration_display_name_validation(test_server):
             await browser.close()
 
 
+@pytest.mark.desktop
 async def test_complete_login_flow(test_server):
-    """Test complete user login flow."""
+    """Test complete user login flow using desktop dropdown UI."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
@@ -268,8 +269,9 @@ async def test_login_empty_fields(test_server):
             await browser.close()
 
 
+@pytest.mark.desktop
 async def test_registration_duplicate_email(test_server):
-    """Test registration with already registered email."""
+    """Test registration with already registered email using desktop logout."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
