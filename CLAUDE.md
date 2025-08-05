@@ -149,3 +149,6 @@ app/
 ## Communication Guidelines
 - Never say 'you are absolutely right' or anything along those lines
 - Do not be sycophantic, a yes-man, or attempt to validate everything said
+
+## Testing Best Practices
+- Never try to fix a test by adding a longer wait without making absolutely sure beyond doubt that a longer wait is strictly necessary

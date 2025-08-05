@@ -1,5 +1,7 @@
 """Mobile-specific e2e tests for authentication flows."""
 
+import time
+
 from playwright.async_api import async_playwright, expect
 import pytest
 
@@ -21,7 +23,9 @@ async def test_complete_login_flow_mobile(test_server):
             # First register a user to login with
             await page.goto(f"{test_server}/register")
 
-            await page.fill('input[name="email"]', "mobile-logintest@example.com")
+            timestamp = int(time.time())
+            test_email = f"mobile-logintest-{timestamp}@example.com"
+            await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="display_name"]', "Login Test User")
             await page.fill('input[name="password"]', "loginpassword")
             await page.fill('input[name="confirm_password"]', "loginpassword")
@@ -71,7 +75,7 @@ async def test_complete_login_flow_mobile(test_server):
             await expect(page.locator('input[name="password"]')).to_be_visible()
 
             # Fill and submit login form
-            await page.fill('input[name="email"]', "mobile-logintest@example.com")
+            await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="password"]', "loginpassword")
             await page.click('button[type="submit"]')
 
@@ -107,7 +111,9 @@ async def test_registration_duplicate_email_mobile(test_server):
             # Register first user
             await page.goto(f"{test_server}/register")
 
-            await page.fill('input[name="email"]', "mobile-duplicate@example.com")
+            timestamp = int(time.time())
+            test_email = f"mobile-duplicate-{timestamp}@example.com"
+            await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="display_name"]', "First User")
             await page.fill('input[name="password"]', "password123")
             await page.fill('input[name="confirm_password"]', "password123")
@@ -134,7 +140,7 @@ async def test_registration_duplicate_email_mobile(test_server):
             # Try to register second user with same email
             await page.goto(f"{test_server}/register")
 
-            await page.fill('input[name="email"]', "mobile-duplicate@example.com")
+            await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="display_name"]', "Second User")
             await page.fill('input[name="password"]', "password456")
             await page.fill('input[name="confirm_password"]', "password456")
