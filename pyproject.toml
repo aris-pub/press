@@ -40,6 +40,10 @@ markers = [
     "e2e: marks tests as end-to-end (deselect with '-m \"not e2e\"')",
     "mobile: marks tests as mobile-only (deselect with '-m \"not mobile\"')"
 ]
+filterwarnings = [
+    "ignore::DeprecationWarning:websockets.legacy",
+    "ignore::DeprecationWarning:uvicorn.protocols.websockets.websockets_impl"
+]
 
 [tool.ruff]
 fix = true  # Automatically fix issues when possible
