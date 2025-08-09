@@ -5,6 +5,7 @@ from collections import defaultdict
 import time
 from typing import Callable
 
+import sentry_sdk
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -48,6 +49,15 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         # Log the incoming request
         logger.info(f"Incoming request: {request.method} {request.url.path}")
 
+        # Set Sentry context for request tracking
+        sentry_sdk.set_tag("http.method", request.method)
+        sentry_sdk.set_tag("http.path", request.url.path)
+        sentry_sdk.set_context("request", {
+            "url": str(request.url),
+            "user_agent": request.headers.get("user-agent"),
+            "referer": request.headers.get("referer")
+        })
+
         try:
             # Process the request
             response = await call_next(request)
@@ -63,6 +73,13 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
             # Add response time header
             response.headers["X-Process-Time"] = str(process_time)
+            
+            # Set Sentry response context
+            sentry_sdk.set_tag("http.status_code", response.status_code)
+            sentry_sdk.set_context("response", {
+                "status_code": response.status_code,
+                "process_time": process_time
+            })
 
             return response
 
@@ -250,6 +267,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if self._is_rate_limited(client_ip, current_time):
             logger = get_logger()
             logger.warning(f"Rate limit exceeded for IP: {client_ip}")
+            
+            # Track rate limiting in Sentry
+            sentry_sdk.set_tag("rate_limited", True)
+            sentry_sdk.set_context("rate_limit", {
+                "client_ip": client_ip,
+                "path": request.url.path,
+                "method": request.method
+            })
 
             # Add rate limit headers
             response = Response(

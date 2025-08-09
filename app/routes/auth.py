@@ -1,5 +1,6 @@
 """Authentication routes for registration, login, and logout."""
 
+import sentry_sdk
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import delete, select
@@ -93,6 +94,8 @@ async def delete_account(request: Request, db: AsyncSession = Depends(get_db)):
     user_email = current_user.email
 
     try:
+        sentry_sdk.set_tag("operation", "account_deletion")
+        sentry_sdk.set_user({"id": str(user_id), "email": user_email})
         log_auth_event("delete_account", user_email, True, request, user_id=str(user_id))
 
         # Delete all user sessions first (including current session)
@@ -193,6 +196,8 @@ async def register_form(
         Exception: For database or unexpected errors during registration
     """
     try:
+        sentry_sdk.set_tag("operation", "user_registration")
+        sentry_sdk.set_context("registration", {"email": email, "display_name": display_name})
         log_request(request, extra_data={"email": email, "display_name": display_name})
 
         # Validate input
@@ -328,6 +333,8 @@ async def login_form(
         Exception: For database or unexpected errors during authentication
     """
     try:
+        sentry_sdk.set_tag("operation", "user_login")
+        sentry_sdk.set_context("login", {"email": email})
         log_request(request, extra_data={"email": email})
 
         # Validate input

@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import uuid as uuid_module
 
+import sentry_sdk
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import select
@@ -30,6 +31,8 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
 
     Only published scrolls are accessible to the public.
     """
+    sentry_sdk.set_tag("operation", "scroll_view")
+    sentry_sdk.set_context("scroll", {"identifier": identifier})
     log_request(request, extra_data={"identifier": identifier})
 
     # Find scroll by content-addressable hash only (no legacy preview_id support)
@@ -239,6 +242,9 @@ async def upload_form(
     )
 
     try:
+        sentry_sdk.set_tag("operation", "scroll_upload")
+        sentry_sdk.set_user({"id": str(current_user.id)})
+        sentry_sdk.set_context("upload", {"title": title, "subject_id": subject_id, "license": license})
         # Validate required fields
         if not title or not title.strip():
             raise ValueError("Title is required")

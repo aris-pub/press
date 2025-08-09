@@ -8,6 +8,10 @@ server for academic research documents written in web-native formats.
 from contextlib import asynccontextmanager
 import os
 
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
@@ -25,6 +29,27 @@ from app.middleware import (
 )
 from app.routes import auth, main, scrolls
 from app.security.nonce_middleware import NonceMiddleware
+
+
+# Initialize Sentry for error tracking and performance monitoring
+sentry_dsn = os.getenv("SENTRY_DSN")
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[
+            FastApiIntegration(),
+            SqlalchemyIntegration(),
+            AsyncioIntegration(),
+        ],
+        traces_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.1,
+        profiles_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.1,
+        environment=os.getenv("ENVIRONMENT", "development"),
+        release=os.getenv("GIT_COMMIT", "dev"),
+        attach_stacktrace=True,
+        send_default_pii=False,
+        max_breadcrumbs=50,
+        before_send=lambda event, hint: event if os.getenv("ENVIRONMENT") != "testing" else None,
+    )
 
 
 @asynccontextmanager
