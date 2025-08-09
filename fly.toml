@@ -14,7 +14,14 @@ primary_region = "fra"
   auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 1
+  max_machines_running = 5
   processes = ["app"]
+  
+  # Autoscaling configuration for 100 concurrent users
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 75
+    hard_limit = 100
 
 [[vm]]
   cpu_kind = "shared"
