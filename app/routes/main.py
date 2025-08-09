@@ -65,44 +65,43 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/api/scrolls")
 async def get_scrolls(
-    request: Request,
-    subject: str = None,
-    limit: int = 10,
-    db: AsyncSession = Depends(get_db)
+    request: Request, subject: str = None, limit: int = 10, db: AsyncSession = Depends(get_db)
 ):
     """API endpoint to get scrolls, optionally filtered by subject."""
     log_request(request)
-    
+
     query = (
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
         .where(Scroll.status == "published")
     )
-    
+
     if subject:
         query = query.where(Subject.name == subject)
-    
+
     query = query.order_by(Scroll.created_at.desc()).limit(limit)
-    
+
     scrolls_result = await db.execute(query)
     scrolls = scrolls_result.all()
-    
+
     # Convert to JSON-serializable format
     scrolls_data = []
     for scroll_row in scrolls:
         scroll = scroll_row[0]
         subject_name = scroll_row[1]
-        scrolls_data.append({
-            "title": scroll.title,
-            "authors": scroll.authors,
-            "abstract": scroll.abstract,
-            "keywords": scroll.keywords,
-            "subject_name": subject_name,
-            "version": scroll.version,
-            "url_hash": scroll.url_hash,
-            "created_at": scroll.created_at.isoformat()
-        })
-    
+        scrolls_data.append(
+            {
+                "title": scroll.title,
+                "authors": scroll.authors,
+                "abstract": scroll.abstract,
+                "keywords": scroll.keywords,
+                "subject_name": subject_name,
+                "version": scroll.version,
+                "url_hash": scroll.url_hash,
+                "created_at": scroll.created_at.isoformat(),
+            }
+        )
+
     return {"scrolls": scrolls_data}
 
 
@@ -352,12 +351,12 @@ async def search_results(
                     -- Calculate relevance scores
                     CASE WHEN (
                         to_tsvector('english', p.title) @@ plainto_tsquery('english', :query)
-                        OR to_tsvector('english', p.authors) @@ plainto_tsquery('english', :query)  
+                        OR to_tsvector('english', p.authors) @@ plainto_tsquery('english', :query)
                         OR to_tsvector('english', p.abstract) @@ plainto_tsquery('english', :query)
                         OR to_tsvector('english', COALESCE(p.html_content, '')) @@ plainto_tsquery('english', :query)
-                    ) THEN 
+                    ) THEN
                         ts_rank(to_tsvector('english', p.title || ' ' || p.authors || ' ' || p.abstract), plainto_tsquery('english', :query))
-                    ELSE 0.1 
+                    ELSE 0.1
                     END as fts_rank
                 FROM scrolls p
                 JOIN subjects s ON p.subject_id = s.id
@@ -365,7 +364,7 @@ async def search_results(
                 AND (
                     -- Full-text search (higher priority)
                     to_tsvector('english', p.title) @@ plainto_tsquery('english', :query)
-                    OR to_tsvector('english', p.authors) @@ plainto_tsquery('english', :query)  
+                    OR to_tsvector('english', p.authors) @@ plainto_tsquery('english', :query)
                     OR to_tsvector('english', p.abstract) @@ plainto_tsquery('english', :query)
                     OR to_tsvector('english', COALESCE(p.html_content, '')) @@ plainto_tsquery('english', :query)
                     -- Partial matching (fallback for partial words)
