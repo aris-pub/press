@@ -77,10 +77,18 @@ ruff check . && ruff format .
 - HTMX for form submissions and dynamic interactions
 
 ### Database Configuration
-- **Production/Development**: PostgreSQL with asyncpg
-- **Testing**: SQLite in-memory with automatic cleanup
+
+#### Environment-Specific Databases
+- **Local Development**: PostgreSQL (`postgresql+asyncpg://leo.torres@localhost:5432/press`)
+- **Local Testing**: SQLite in-memory (`sqlite+aiosqlite:///:memory:`) with automatic cleanup
+- **CI Testing**: PostgreSQL (`postgresql+asyncpg://postgres:password@localhost:5432/press`)
+- **Production**: Supabase PostgreSQL (`postgresql+asyncpg://postgres.peaxwmgmmjxtvffpzyrn:...@aws-0-eu-central-1.pooler.supabase.com:6543/postgres`)
+
+#### Database Settings
 - **ORM**: SQLAlchemy 2.0 async throughout codebase
 - **Migrations**: Alembic for schema changes
+- **Connection Pooling**: NullPool for Supabase compatibility (avoids pgbouncer prepared statement issues)
+- **Time Zone**: All dates/times stored in UTC, frontend handles user timezone conversion
 
 ### Frontend Patterns
 - HTMX-first approach for dynamic interactions
@@ -152,3 +160,25 @@ app/
 
 ## Testing Best Practices
 - Never try to fix a test by adding a longer wait without making absolutely sure beyond doubt that a longer wait is strictly necessary
+
+## Database Backup Strategy
+
+### Production Backups
+- **Current**: GitHub Actions automated backups (daily at 2 AM UTC)
+- **Storage**: GitHub Actions artifacts (30-day retention, last 7 backups kept)
+- **Security**: Private artifacts, only repository collaborators can access
+- **Cost**: Free using GitHub Actions minutes
+- **Future**: Upgrade to Supabase Pro Plan ($25/month) for official backups when user base grows
+
+### Backup Configuration
+- **Workflow**: `.github/workflows/database-backup.yml`
+- **Setup**: Repository secrets required (see `BACKUP_SETUP.md`)
+- **Verification**: Each backup is compressed and integrity-tested
+- **Cleanup**: Automatic removal of old backups to manage storage
+- **Manual Trigger**: Backups can be triggered manually from GitHub Actions
+
+### Restore Process
+1. Download backup artifact from GitHub Actions
+2. Extract compressed SQL file (`gunzip backup.sql.gz`)
+3. Restore to target database (`psql target_db < backup.sql`)
+4. Update environment configuration if switching databases

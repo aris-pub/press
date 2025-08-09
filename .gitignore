@@ -51,6 +51,9 @@ Thumbs.db
 *.jpeg
 plan.md
 
+# SSL certificates (auto-generated)
+certs/
+
 # Pytest
 .pytest_cache/
 .coverage

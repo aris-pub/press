@@ -46,7 +46,7 @@ written in web-native formats (HTML/CSS/JS).
    just dev
    ```
 
-Visit `http://localhost:8000` to access Scroll Press.
+Visit `https://localhost:7999` to access Scroll Press (HTTPS with self-signed certificate).
 
 ## Development
 
@@ -73,7 +73,67 @@ tests/                 # Comprehensive test suite
 - **Database**: PostgreSQL with SQLAlchemy 2.0 async
 - **Authentication**: Session-based with in-memory storage
 - **Frontend**: Jinja2 templates with HTMX for dynamic interactions
+- **Security**: HTTPS-only development with self-signed certificates
 - **Testing**: pytest with asyncio support, parallel execution, and Playwright e2e tests
+
+## Database Setup
+
+Scroll Press uses different databases for each environment:
+
+| Environment | Database | Purpose |
+|-------------|----------|---------|
+| **Local Development** | PostgreSQL (localhost) | Development work with persistent data |
+| **Local Testing** | SQLite (in-memory) | Fast, isolated test execution |
+| **CI Testing** | PostgreSQL (CI container) | Production-like testing environment |
+| **Production** | Supabase PostgreSQL | Hosted production database |
+
+### Environment Configuration
+
+Set your `DATABASE_URL` in `.env`:
+
+```bash
+# Local development (adjust username as needed)
+DATABASE_URL=postgresql+asyncpg://leo.torres@localhost:5432/press
+
+# Production (Supabase)
+DATABASE_URL=postgresql+asyncpg://postgres.xyz:password@aws-0-region.pooler.supabase.com:6543/postgres
+```
+
+### Database Migrations
+
+```bash
+# Apply migrations
+just migrate
+# or: uv run alembic upgrade head
+
+# Create new migration
+just migration "description"
+# or: uv run alembic revision --autogenerate -m "description"
+
+# Reset database with fresh seed data
+just reset-db
+```
+
+## Backup Strategy
+
+### Current Setup (Bootstrap Phase)
+- **Method**: Automated GitHub Actions backups
+- **Schedule**: Daily at 2 AM UTC
+- **Retention**: 30 days (last 7 backups kept)
+- **Cost**: Free using GitHub Actions
+- **Security**: Private artifacts, repository collaborators only
+
+### Setup Instructions
+1. Add required secrets to GitHub repository (see `BACKUP_SETUP.md`)
+2. Backups run automatically via `.github/workflows/database-backup.yml`
+3. Manual backups can be triggered from GitHub Actions tab
+
+### Future Migration
+Plan to upgrade to **Supabase Pro Plan** ($25/month) for official backups once user base grows:
+- 14-day automated backups
+- Point-in-time recovery
+- Professional support
+- Integrated dashboard management
 
 ## Database Models
 

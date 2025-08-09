@@ -1,0 +1,146 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC (adjust timezone as needed)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      backup_name:
+        description: 'Custom backup name (optional)'
+        required: false
+        default: ''
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create database backup
+        env:
+          PGPASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DB_HOST: ${{ secrets.DATABASE_HOST }}
+          DB_PORT: ${{ secrets.DATABASE_PORT }}
+          DB_NAME: ${{ secrets.DATABASE_NAME }}
+          DB_USER: ${{ secrets.DATABASE_USER }}
+        run: |
+          # Create timestamp for backup file
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+          # Use custom name if provided, otherwise use timestamp
+          if [ -n "${{ github.event.inputs.backup_name }}" ]; then
+            BACKUP_NAME="${{ github.event.inputs.backup_name }}_${TIMESTAMP}"
+          else
+            BACKUP_NAME="press_backup_${TIMESTAMP}"
+          fi
+
+          BACKUP_FILE="${BACKUP_NAME}.sql"
+
+          echo "Creating backup: $BACKUP_FILE"
+
+          # Create backup with connection pooling compatible settings
+          pg_dump \
+            --host="$DB_HOST" \
+            --port="$DB_PORT" \
+            --username="$DB_USER" \
+            --dbname="$DB_NAME" \
+            --no-password \
+            --no-owner \
+            --no-privileges \
+            --verbose \
+            --format=plain \
+            --file="$BACKUP_FILE"
+
+          # Verify backup was created and has content
+          if [ ! -s "$BACKUP_FILE" ]; then
+            echo "❌ Backup file is empty or doesn't exist!"
+            exit 1
+          fi
+
+          # Get backup size
+          BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+          echo "✅ Backup created successfully: $BACKUP_FILE ($BACKUP_SIZE)"
+
+          # Compress backup
+          gzip "$BACKUP_FILE"
+          COMPRESSED_SIZE=$(du -h "${BACKUP_FILE}.gz" | cut -f1)
+          echo "✅ Backup compressed: ${BACKUP_FILE}.gz ($COMPRESSED_SIZE)"
+
+          # Save backup info for next step
+          echo "BACKUP_FILE=${BACKUP_FILE}.gz" >> $GITHUB_ENV
+          echo "BACKUP_SIZE=$COMPRESSED_SIZE" >> $GITHUB_ENV
+          echo "BACKUP_NAME=$BACKUP_NAME" >> $GITHUB_ENV
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 30 # Keep backups for 30 days
+          compression-level: 0 # Already compressed
+
+      - name: Backup verification
+        env:
+          PGPASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DB_HOST: ${{ secrets.DATABASE_HOST }}
+          DB_PORT: ${{ secrets.DATABASE_PORT }}
+          DB_NAME: ${{ secrets.DATABASE_NAME }}
+          DB_USER: ${{ secrets.DATABASE_USER }}
+        run: |
+          echo "🔍 Verifying backup integrity..."
+
+          # Test that backup file can be read
+          gunzip -t "${{ env.BACKUP_FILE }}"
+          echo "✅ Backup file integrity verified"
+
+          # Quick verification: check that backup contains expected tables
+          gunzip -c "${{ env.BACKUP_FILE }}" | grep -q "CREATE TABLE.*users"
+          gunzip -c "${{ env.BACKUP_FILE }}" | grep -q "CREATE TABLE.*scrolls"
+          gunzip -c "${{ env.BACKUP_FILE }}" | grep -q "CREATE TABLE.*subjects"
+          echo "✅ Backup contains expected database schema"
+
+  cleanup-old-backups:
+    runs-on: ubuntu-latest
+    needs: backup
+    if: success()
+
+    steps:
+      - name: Cleanup old backup artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Keep only the last 7 backup artifacts to save storage
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+
+            const backupArtifacts = artifacts.data.artifacts
+              .filter(artifact => artifact.name.startsWith('press_backup_'))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            console.log(`Found ${backupArtifacts.length} backup artifacts`);
+
+            // Delete all but the newest 7 backups
+            const toDelete = backupArtifacts.slice(7);
+
+            for (const artifact of toDelete) {
+              console.log(`Deleting old backup: ${artifact.name} (${artifact.created_at})`);
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id
+              });
+            }
+
+            console.log(`Cleaned up ${toDelete.length} old backup artifacts`);
