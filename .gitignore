@@ -54,6 +54,9 @@ plan.md
 # SSL certificates (auto-generated)
 certs/
 
+# Backup setup documentation (contains sensitive connection strings)
+BACKUP_SETUP.md
+
 # Pytest
 .pytest_cache/
 .coverage
