@@ -1,5 +1,4 @@
 import asyncio
-import hashlib
 
 from sqlalchemy import text
 
@@ -321,7 +320,10 @@ async def seed_scrolls():
         for scroll_data in scrolls_data:
             # Generate content-addressable storage fields using proper function
             from app.storage.content_processing import generate_permanent_url
-            url_hash, content_hash, tar_data = await generate_permanent_url(scroll_data["html_content"])
+
+            url_hash, content_hash, tar_data = await generate_permanent_url(
+                scroll_data["html_content"]
+            )
 
             db_scroll = Scroll(
                 title=scroll_data["title"],

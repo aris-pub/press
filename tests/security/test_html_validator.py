@@ -80,7 +80,6 @@ class TestHTMLValidator:
     def test_dangerous_css_rejected(self):
         """Test that dangerous CSS is rejected."""
         test_cases = [
-            '<div style="position: fixed; top: 0;">Overlay</div>',
             '<div style="behavior: url(evil.htc);">IE hack</div>',
             "<div style=\"expression(alert('xss'));\">Expression</div>",
             "<style>body { -moz-binding: url(evil.xml); }</style>",
@@ -164,14 +163,16 @@ class TestHTMLValidator:
     def test_safe_css_allowed(self):
         """Test that safe CSS properties are allowed."""
         safe_html = """
-        <div style="color: red; margin: 10px; font-size: 14px;">
-            Safe styling
+        <div style="color: red; margin: 10px; font-size: 14px; position: relative;">
+            Safe styling including position
         </div>
         <style>
             .safe { 
                 background-color: blue; 
                 padding: 5px;
                 border-radius: 3px;
+                position: absolute;
+                top: 10px;
             }
         </style>
         """

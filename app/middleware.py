@@ -5,8 +5,8 @@ from collections import defaultdict
 import time
 from typing import Callable
 
-import sentry_sdk
 from fastapi import Request, Response
+import sentry_sdk
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.logging_config import get_logger
@@ -52,11 +52,14 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         # Set Sentry context for request tracking
         sentry_sdk.set_tag("http.method", request.method)
         sentry_sdk.set_tag("http.path", request.url.path)
-        sentry_sdk.set_context("request", {
-            "url": str(request.url),
-            "user_agent": request.headers.get("user-agent"),
-            "referer": request.headers.get("referer")
-        })
+        sentry_sdk.set_context(
+            "request",
+            {
+                "url": str(request.url),
+                "user_agent": request.headers.get("user-agent"),
+                "referer": request.headers.get("referer"),
+            },
+        )
 
         try:
             # Process the request
@@ -73,13 +76,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
             # Add response time header
             response.headers["X-Process-Time"] = str(process_time)
-            
+
             # Set Sentry response context
             sentry_sdk.set_tag("http.status_code", response.status_code)
-            sentry_sdk.set_context("response", {
-                "status_code": response.status_code,
-                "process_time": process_time
-            })
+            sentry_sdk.set_context(
+                "response", {"status_code": response.status_code, "process_time": process_time}
+            )
 
             return response
 
@@ -116,7 +118,7 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 
         if os.getenv("E2E_TESTING", "").lower() in ("true", "1", "yes"):
             return await call_next(request)
-            
+
         # Skip HTTPS redirect for internal health checks
         if request.url.path == "/health":
             return await call_next(request)
@@ -180,9 +182,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 csp = (
                     "default-src 'self'; "
                     f"script-src 'self' 'strict-dynamic' 'nonce-{nonce}' 'unsafe-inline'; "
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    "style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; "
                     "img-src 'self' data:; "
-                    "font-src 'self' https://fonts.gstatic.com; "
+                    "font-src 'self' data: https://fonts.gstatic.com; "
                     "connect-src 'self';"
                 )
             else:
@@ -190,9 +192,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 csp = (
                     "default-src 'self'; "
                     "script-src 'self' 'unsafe-inline'; "
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    "style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; "
                     "img-src 'self' data:; "
-                    "font-src 'self' https://fonts.gstatic.com; "
+                    "font-src 'self' data: https://fonts.gstatic.com; "
                     "connect-src 'self';"
                 )
         else:
@@ -267,14 +269,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if self._is_rate_limited(client_ip, current_time):
             logger = get_logger()
             logger.warning(f"Rate limit exceeded for IP: {client_ip}")
-            
+
             # Track rate limiting in Sentry
             sentry_sdk.set_tag("rate_limited", True)
-            sentry_sdk.set_context("rate_limit", {
-                "client_ip": client_ip,
-                "path": request.url.path,
-                "method": request.method
-            })
+            sentry_sdk.set_context(
+                "rate_limit",
+                {"client_ip": client_ip, "path": request.url.path, "method": request.method},
+            )
 
             # Add rate limit headers
             response = Response(

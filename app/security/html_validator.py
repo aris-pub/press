@@ -90,14 +90,13 @@ class HTMLValidator:
 
     # CSS properties that are forbidden
     FORBIDDEN_CSS_PROPERTIES = [
-        "position",
-        "behavior",
-        "-moz-binding",
-        "expression",
-        "javascript",
-        "vbscript",
-        "livescript",
-        "mocha",
+        "behavior",  # IE-specific, can execute code
+        "-moz-binding",  # Firefox-specific, can execute code
+        "expression",  # IE-specific CSS expressions (XSS vector)
+        "javascript",  # Direct JavaScript in CSS
+        "vbscript",  # VBScript in CSS
+        "livescript",  # LiveScript in CSS
+        "mocha",  # Mocha script in CSS
     ]
 
     def __init__(self):
@@ -233,7 +232,9 @@ class HTMLValidator:
 
     def _validate_css_content(self, css_content: str, line_num: int, context: str):
         """Validate CSS content for dangerous properties."""
-        for prop in self.FORBIDDEN_CSS_PROPERTIES:
+        # Check for dangerous CSS properties (excluding 'expression' which is handled separately)
+        dangerous_props = [prop for prop in self.FORBIDDEN_CSS_PROPERTIES if prop != "expression"]
+        for prop in dangerous_props:
             if prop.lower() in css_content.lower():
                 self.errors.append(
                     HTMLValidationError(
@@ -246,12 +247,12 @@ class HTMLValidator:
                     )
                 )
 
-        # Check for CSS expressions
+        # Check for CSS expression() function calls specifically (not just the word "expression")
         if re.search(r"expression\s*\(", css_content, re.IGNORECASE):
             self.errors.append(
                 HTMLValidationError(
                     error_type="css_expression",
-                    message=f"CSS expression() found in {context} - not allowed",
+                    message=f"CSS expression() function found in {context} - not allowed",
                     line_number=line_num,
                     element=css_content[:100] + "..." if len(css_content) > 100 else css_content,
                 )

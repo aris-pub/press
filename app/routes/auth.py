@@ -1,8 +1,8 @@
 """Authentication routes for registration, login, and logout."""
 
-import sentry_sdk
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+import sentry_sdk
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

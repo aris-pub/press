@@ -4,9 +4,9 @@ from pathlib import Path
 import re
 import uuid as uuid_module
 
-import sentry_sdk
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+import sentry_sdk
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -244,7 +244,9 @@ async def upload_form(
     try:
         sentry_sdk.set_tag("operation", "scroll_upload")
         sentry_sdk.set_user({"id": str(current_user.id)})
-        sentry_sdk.set_context("upload", {"title": title, "subject_id": subject_id, "license": license})
+        sentry_sdk.set_context(
+            "upload", {"title": title, "subject_id": subject_id, "license": license}
+        )
         # Validate required fields
         if not title or not title.strip():
             raise ValueError("Title is required")
@@ -281,13 +283,13 @@ async def upload_form(
         is_html_safe, html_errors = html_validator.validate(html_content.strip())
 
         if not is_html_safe:
-            # Format errors for user display
+            # Format errors for user display as bulleted list
             error_messages = []
             for error in html_errors:
                 if error.get("line_number"):
-                    error_messages.append(f"Line {error['line_number']}: {error['message']}")
+                    error_messages.append(f"• Line {error['line_number']}: {error['message']}")
                 else:
-                    error_messages.append(error["message"])
+                    error_messages.append(f"• {error['message']}")
 
             error_summary = (
                 "Your HTML contains content that is not allowed for security reasons:\n\n"
