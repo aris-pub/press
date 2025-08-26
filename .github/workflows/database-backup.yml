@@ -13,7 +13,7 @@ on:
 
 # Grant necessary permissions for artifact operations
 permissions:
-  contents: read      # Allow reading repository contents  
+  contents: read      # Allow reading repository contents
   actions: write      # Allow deleting artifacts in cleanup job
   metadata: read      # Required for API operations
 
@@ -132,34 +132,34 @@ jobs:
           # Get list of artifacts and find backup artifacts
           echo "🔍 Fetching artifact list..."
           ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/artifacts --paginate --jq '.artifacts[] | select(.name | startswith("press_backup_")) | {id: .id, name: .name, created_at: .created_at}')
-          
+
           # Sort by creation date (newest first) and get artifact IDs to delete
           SORTED_ARTIFACTS=$(echo "$ARTIFACTS" | jq -s 'sort_by(.created_at) | reverse')
           TOTAL_COUNT=$(echo "$SORTED_ARTIFACTS" | jq 'length')
-          
+
           echo "📦 Found $TOTAL_COUNT backup artifacts"
-          
+
           if [ "$TOTAL_COUNT" -le 7 ]; then
             echo "✅ Only $TOTAL_COUNT backups found, no cleanup needed"
             exit 0
           fi
-          
+
           # Get artifacts to delete (all except the newest 7)
           TO_DELETE=$(echo "$SORTED_ARTIFACTS" | jq '.[7:]')
           DELETE_COUNT=$(echo "$TO_DELETE" | jq 'length')
-          
+
           echo "🗑️  Will delete $DELETE_COUNT old backup artifacts"
-          
+
           # Delete each old artifact
           echo "$TO_DELETE" | jq -r '.[].id' | while read -r artifact_id; do
             artifact_name=$(echo "$TO_DELETE" | jq -r ".[] | select(.id == $artifact_id) | .name")
             echo "Deleting artifact: $artifact_name (ID: $artifact_id)"
-            
+
             if gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id; then
               echo "✅ Deleted $artifact_name"
             else
               echo "❌ Failed to delete $artifact_name"
             fi
           done
-          
+
           echo "✅ Cleanup completed - keeping 7 most recent backups"
