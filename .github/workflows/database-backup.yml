@@ -15,7 +15,6 @@ on:
 permissions:
   contents: read      # Allow reading repository contents
   actions: write      # Allow deleting artifacts in cleanup job
-  metadata: read      # Required for API operations
 
 jobs:
   backup:
