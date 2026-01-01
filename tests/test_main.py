@@ -21,13 +21,41 @@ async def test_homepage_authenticated_user(authenticated_client: AsyncClient):
     assert "Scroll Press" in response.text
 
 
-async def test_homepage_shows_subjects(client: AsyncClient, test_db):
+async def test_homepage_shows_subjects(client: AsyncClient, test_db, test_user):
     """Test homepage displays subjects with counts."""
     # Create test subjects
     subject1 = Subject(name="Computer Science", description="CS research")
     subject2 = Subject(name="Physics", description="Physics research")
     test_db.add(subject1)
     test_db.add(subject2)
+    await test_db.commit()
+    await test_db.refresh(subject1)
+    await test_db.refresh(subject2)
+
+    # Create scrolls for these subjects so they appear (subjects with 0 scrolls are hidden)
+    scroll1 = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject1,
+        title="CS Paper",
+        authors="CS Author",
+        abstract="CS abstract",
+        html_content="<h1>CS Content</h1>",
+        license="cc-by-4.0",
+    )
+    scroll1.publish()
+
+    scroll2 = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject2,
+        title="Physics Paper",
+        authors="Physics Author",
+        abstract="Physics abstract",
+        html_content="<h1>Physics Content</h1>",
+        license="cc-by-4.0",
+    )
+    scroll2.publish()
     await test_db.commit()
 
     response = await client.get("/")

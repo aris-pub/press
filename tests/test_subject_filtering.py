@@ -65,13 +65,28 @@ async def test_homepage_subject_filtering_data_attributes(client: AsyncClient, t
 
 
 @pytest.mark.asyncio
-async def test_subject_card_data_attributes(client: AsyncClient, test_db):
+async def test_subject_card_data_attributes(client: AsyncClient, test_db, test_user):
     """Test that subject cards have the correct data attributes for JavaScript filtering."""
     # Create test subject to ensure subject cards are rendered
     from app.models.scroll import Subject
 
     physics_subject = Subject(name="Physics", description="Physics research")
     test_db.add(physics_subject)
+    await test_db.commit()
+    await test_db.refresh(physics_subject)
+
+    # Create a scroll for this subject so it appears (subjects with 0 scrolls are hidden)
+    scroll = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        physics_subject,
+        title="Physics Paper",
+        authors="Physics Author",
+        abstract="Physics abstract",
+        html_content="<h1>Physics Content</h1>",
+        license="cc-by-4.0",
+    )
+    scroll.publish()
     await test_db.commit()
 
     response = await client.get("/")

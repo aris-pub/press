@@ -1,5 +1,7 @@
 """Authentication routes for registration, login, and logout."""
 
+import os
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 import sentry_sdk
@@ -15,6 +17,8 @@ from app.models.user import User
 from app.templates_config import templates
 
 router = APIRouter()
+
+IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -281,7 +285,9 @@ async def register_form(
         )
 
         # Set session cookie
-        response.set_cookie("session_id", session_id, httponly=True, secure=False, samesite="lax")
+        response.set_cookie(
+            "session_id", session_id, httponly=True, secure=IS_PRODUCTION, samesite="lax"
+        )
 
         return response
 
@@ -380,7 +386,9 @@ async def login_form(
         )
 
         # Set session cookie
-        response.set_cookie("session_id", session_id, httponly=True, secure=False, samesite="lax")
+        response.set_cookie(
+            "session_id", session_id, httponly=True, secure=IS_PRODUCTION, samesite="lax"
+        )
 
         return response
 
