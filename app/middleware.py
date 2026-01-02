@@ -457,3 +457,91 @@ class EmailVerificationMiddleware(BaseHTTPMiddleware):
                 pass
 
         return await call_next(request)
+
+
+class CSRFMiddleware(BaseHTTPMiddleware):
+    """Middleware to validate CSRF tokens on state-changing requests."""
+
+    # HTTP methods that require CSRF protection
+    PROTECTED_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+    # Routes exempt from CSRF protection
+    # Includes unauthenticated forms (login, register) which use other protections (rate limiting)
+    EXEMPT_PATHS = {
+        "/health",
+        "/login-form",
+        "/register-form",
+        "/forgot-password-form",
+        "/reset-password-form",
+    }
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Validate CSRF token for protected methods."""
+        from app.auth.csrf import validate_csrf_token
+        from starlette.datastructures import Headers
+        import io
+
+        # Skip CSRF check for safe methods
+        if request.method not in self.PROTECTED_METHODS:
+            return await call_next(request)
+
+        # Skip CSRF check for exempt paths
+        if request.url.path in self.EXEMPT_PATHS:
+            return await call_next(request)
+
+        # Get session ID from cookie
+        session_id = request.cookies.get("session_id")
+
+        # Get CSRF token from form data or headers
+        csrf_token = None
+        if request.method in {"POST", "PUT", "PATCH"}:
+            # For form submissions, we need to read the body to check the CSRF token
+            # But we must preserve it for the route handler to re-read
+            try:
+                # Read the raw body bytes
+                body = await request.body()
+
+                # Parse form data to get CSRF token
+                from starlette.formparsers import FormParser, MultiPartParser
+                content_type_header = request.headers.get("Content-Type", "")
+
+                if "multipart/form-data" in content_type_header:
+                    # For multipart forms, we can't easily re-parse
+                    # So we'll just check headers for now
+                    csrf_token = request.headers.get("X-CSRF-Token")
+                elif "application/x-www-form-urlencoded" in content_type_header:
+                    # Parse URL-encoded form to extract CSRF token
+                    from urllib.parse import parse_qs
+                    form_data = parse_qs(body.decode())
+                    csrf_token = form_data.get("csrf_token", [None])[0]
+
+                    # Make body readable again by wrapping it in BytesIO
+                    request._body = body
+                else:
+                    # Not a form, check headers
+                    csrf_token = request.headers.get("X-CSRF-Token")
+
+            except Exception as e:
+                get_logger().warning(f"Error reading form for CSRF validation: {e}")
+                # Not a form submission, check headers
+                csrf_token = request.headers.get("X-CSRF-Token")
+        elif request.method == "DELETE":
+            # For DELETE requests, check headers
+            csrf_token = request.headers.get("X-CSRF-Token")
+
+        # Validate CSRF token
+        is_valid = await validate_csrf_token(session_id, csrf_token)
+
+        if not is_valid:
+            get_logger().warning(
+                f"CSRF validation failed for {request.method} {request.url.path} "
+                f"from {request.client.host}"
+            )
+            return Response(
+                content="CSRF validation failed. Please refresh the page and try again.",
+                status_code=403,
+                media_type="text/plain",
+            )
+
+        # CSRF token is valid, continue with request
+        return await call_next(request)

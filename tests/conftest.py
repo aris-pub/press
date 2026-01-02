@@ -71,18 +71,71 @@ async def test_db():
         await engine.dispose()
 
 
+class CSRFClient(AsyncClient):
+    """AsyncClient that automatically injects CSRF tokens into form submissions."""
+
+    async def post(self, url, **kwargs):
+        """Override post to automatically inject CSRF token if data/form present."""
+        return await self._add_csrf_and_send("POST", url, **kwargs)
+
+    async def put(self, url, **kwargs):
+        """Override put to automatically inject CSRF token if data/form present."""
+        return await self._add_csrf_and_send("PUT", url, **kwargs)
+
+    async def patch(self, url, **kwargs):
+        """Override patch to automatically inject CSRF token if data/form present."""
+        return await self._add_csrf_and_send("PATCH", url, **kwargs)
+
+    async def delete(self, url, **kwargs):
+        """Override delete to automatically inject CSRF token header."""
+        return await self._add_csrf_and_send("DELETE", url, **kwargs)
+
+    async def _add_csrf_and_send(self, method, url, **kwargs):
+        """Add CSRF token to request and send."""
+        from app.auth.csrf import get_csrf_token
+
+        # Get session ID from cookies (handle multiple cookies with same name)
+        session_id = None
+        try:
+            session_id = self.cookies.get("session_id")
+        except Exception:
+            # If multiple cookies with same name, get the most recent one
+            for cookie in self.cookies.jar:
+                if cookie.name == "session_id":
+                    session_id = cookie.value
+                    break
+
+        if session_id:
+            # Get CSRF token for this session
+            csrf_token = await get_csrf_token(session_id)
+
+            if method in {"POST", "PUT", "PATCH"}:
+                # Add to form data if present
+                if "data" in kwargs:
+                    if isinstance(kwargs["data"], dict):
+                        kwargs["data"] = {**kwargs["data"], "csrf_token": csrf_token}
+                    # If data is already form-encoded, user must handle csrf_token manually
+            elif method == "DELETE":
+                # Add to headers for DELETE
+                if "headers" not in kwargs:
+                    kwargs["headers"] = {}
+                kwargs["headers"]["X-CSRF-Token"] = csrf_token
+
+        # Call parent method
+        return await super().request(method, url, **kwargs)
+
+
 @pytest_asyncio.fixture
 async def client(test_db):
-    """Create a test client with dependency override."""
+    """Create a test client with dependency override and automatic CSRF injection."""
 
     def override_get_db():
         yield test_db
 
     app.dependency_overrides[get_db] = override_get_db
 
-    # Use httpx AsyncClient with the app's ASGI callable
-    # IMPORTANT: cookies argument enables cookie persistence between requests
-    async with AsyncClient(
+    # Use CSRFClient which automatically injects CSRF tokens
+    async with CSRFClient(
         transport=httpx.ASGITransport(app=app),
         base_url="https://test",
         cookies=httpx.Cookies(),  # Enable cookie jar for session persistence
@@ -172,9 +225,23 @@ async def test_user(test_db):
 
 
 @pytest_asyncio.fixture
-async def authenticated_client(client, test_user):
+async def authenticated_client(client, test_user, test_db):
     """Get an authenticated client with session cookies."""
-    login_data = {"email": test_user.email, "password": "testpassword"}
+    from app.auth.csrf import get_csrf_token
+    from app.auth.session import create_session
+
+    # Create a session to get a CSRF token
+    session_id = await create_session(test_db, test_user.id)
+    client.cookies.set("session_id", session_id)
+
+    # Get CSRF token for the session
+    csrf_token = await get_csrf_token(session_id)
+
+    login_data = {
+        "email": test_user.email,
+        "password": "testpassword",
+        "csrf_token": csrf_token,
+    }
 
     # Login via form submission - should set session cookie
     response = await client.post("/login-form", data=login_data)
