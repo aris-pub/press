@@ -39,7 +39,22 @@ just migrate
 just seed
 ```
 
-## Phase 2: Application Deployment (Fly.io)
+## Phase 2: Email Service Setup (Resend)
+
+### 1. Create Resend Account
+
+1. Go to [resend.com](https://resend.com) and sign up
+2. Verify your domain or use Resend's testing domain
+3. Generate an API key from the dashboard
+
+### 2. Configure Email Settings
+
+For production, you'll need:
+- `RESEND_API_KEY`: Your Resend API key
+- `FROM_EMAIL`: Verified sender email (e.g., noreply@yourdomain.com)
+- `BASE_URL`: Your production URL (e.g., https://scroll-press.fly.dev)
+
+## Phase 3: Application Deployment (Fly.io)
 
 ### 1. Initialize Fly.io App
 
@@ -61,6 +76,11 @@ This will create a `fly.toml` file. The one in this repo is already configured.
 ```bash
 # Set your Supabase database URL
 fly secrets set DATABASE_URL="postgresql+asyncpg://postgres:[PASSWORD]@[HOST]:5432/postgres"
+
+# Set email service credentials
+fly secrets set RESEND_API_KEY="re_your_api_key_here"
+fly secrets set FROM_EMAIL="noreply@yourdomain.com"
+fly secrets set BASE_URL="https://scroll-press.fly.dev"
 
 # Set application limits
 fly secrets set HTML_UPLOAD_MAX_SIZE="52428800"
@@ -89,9 +109,10 @@ Test these endpoints:
 - `/health` - Health check
 - `/` - Homepage loads
 - `/register` - User registration works
-- `/upload` - File upload (after registration)
+- Email verification - Check that verification emails are sent and links work
+- `/upload` - File upload (after email verification)
 
-## Phase 3: Custom Domain (Optional)
+## Phase 4: Custom Domain (Optional)
 
 ### 1. Add Custom Domain
 

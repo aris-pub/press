@@ -36,15 +36,45 @@ uv run playwright install chromium firefox
 
 ### Current Tests
 
-1. **`test_live_server.py`** - Tests against running dev server
-   - Homepage loading and navigation
-   - User registration flow
-   - Basic UI interaction
+1. **`test_app_simple.py`** - Basic application setup tests
+   - Server health and configuration
+   - Basic page loading
 
-2. **`test_critical_persistence.py`** - Critical scroll persistence tests
-   - Registration → Upload → Public Access
-   - Registration → Upload → Account Deletion → Public Access
-   - Cross-browser compatibility
+2. **`test_auth_flows.py`** - Authentication flow tests
+   - User registration with validation
+   - Login with invalid credentials
+   - Password mismatch handling
+   - Display name validation
+
+3. **`test_email_flows.py`** - Email verification and password reset tests
+   - Registration shows verification message
+   - Unverified users blocked from upload
+   - Email verification with valid token
+   - Forgot password page and submission
+   - Password reset with invalid token
+   - Email verification with invalid token
+
+4. **`test_complete_flows.py`** - End-to-end user journeys
+   - Basic upload flow (registration → verification → upload)
+   - Homepage and registration page loading
+
+5. **`test_dark_mode.py`** - Dark mode functionality
+   - System preference detection
+   - Manual override and persistence
+   - Theme sync across navigation
+
+6. **`test_security.py`** - Security header validation
+   - Security headers present
+   - HSTS headers on HTTPS
+   - No HSTS on HTTP
+
+7. **`test_subject_filtering_e2e.py`** - Subject filtering
+   - Subject filtering works in browser
+   - Show all button functionality
+
+8. **`test_html_validation.py`** - HTML structure validation
+   - Upload page requires authentication
+   - Register page has form elements
 
 ### Browser Support
 
@@ -55,19 +85,23 @@ uv run playwright install chromium firefox
 ## Test Categories
 
 ### High Priority (Critical Flows)
-- [ ] Registration → Upload → Public Access
-- [ ] Registration → Upload → Account Deletion → Public Access
+- [x] Registration → Email Verification → Upload
+- [x] Email verification with valid/invalid tokens
+- [x] Password reset flow
+- [x] Unverified user access control
 
 ### Medium Priority (Core Features)
-- [ ] Upload form license selection
-- [ ] Scroll viewing with modal interaction
-- [ ] Search and discovery workflow
-- [ ] Subject browsing and filtering
+- [x] Subject browsing and filtering
+- [x] Dark mode toggle functionality
+- [x] Security header validation
+- [x] Authentication flows with validation
 
-### Low Priority (Enhanced Features)
-- [ ] Mobile responsive upload flow
-- [ ] Dark mode toggle functionality
-- [ ] Data export functionality
+### Completed
+- [x] Basic upload flow
+- [x] Registration with validation
+- [x] Login with invalid credentials
+- [x] Mobile responsive authentication
+- [x] HTML structure validation
 
 ## Test Data
 

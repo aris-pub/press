@@ -7,7 +7,8 @@ written in web-native formats (HTML/CSS/JS).
 ## Features
 
 - **HTML-native publishing**: Upload complete HTML documents with embedded CSS and JavaScript
-- **Session-based authentication**: Secure user registration and login system
+- **Session-based authentication**: Secure user registration and login system with email verification
+- **Email verification**: Token-based email verification with password reset functionality
 - **Subject categorization**: Organize research by academic disciplines
 - **Draft and publish workflow**: Save drafts and publish when ready
 - **Scroll cards**: Browse recent submissions with rich metadata
@@ -33,8 +34,15 @@ written in web-native formats (HTML/CSS/JS).
 2. **Set up environment**
    ```bash
    cp .env.example .env
-   # Edit .env with your database URL and port
+   # Edit .env with your database URL, port, and email service credentials
    ```
+
+   Required environment variables:
+   - `DATABASE_URL`: PostgreSQL connection string
+   - `PORT`: Server port (default: 7999)
+   - `RESEND_API_KEY`: API key for Resend email service (for email verification)
+   - `FROM_EMAIL`: Email address to send from (default: noreply@updates.aris.pub)
+   - `BASE_URL`: Base URL for email links (defaults to https://127.0.0.1:{PORT})
 
 3. **Install dependencies and setup**
    ```bash
@@ -54,10 +62,20 @@ Visit `https://localhost:7999` to access Scroll Press (HTTPS with self-signed ce
 
 ```
 app/
-├── auth/               # Session-based authentication
+├── auth/               # Session-based authentication and token management
+│   ├── session.py      # Session handling
+│   └── tokens.py       # Email verification and password reset tokens
+├── email/              # Email service integration
+│   ├── service.py      # Resend email service
+│   └── templates.py    # Email HTML templates
 ├── models/             # SQLAlchemy database models
+│   ├── user.py         # User model with email verification
+│   ├── token.py        # Token model for verification/reset
+│   ├── scroll.py       # Research manuscript model
+│   └── subject.py      # Academic subject categorization
 ├── routes/             # FastAPI route handlers
 ├── templates/          # Jinja2 templates with component macros
+│   └── auth/           # Authentication templates (login, register, verify, reset)
 └── database.py         # Async database configuration
 
 static/
@@ -71,7 +89,8 @@ tests/                 # Comprehensive test suite
 
 - **Backend**: FastAPI with async/await patterns
 - **Database**: PostgreSQL with SQLAlchemy 2.0 async
-- **Authentication**: Session-based with in-memory storage
+- **Authentication**: Session-based with in-memory storage and token-based email verification
+- **Email Service**: Resend API for transactional emails (verification, password reset)
 - **Frontend**: Jinja2 templates with HTMX for dynamic interactions
 - **Security**: HTTPS-only development with self-signed certificates
 - **Testing**: pytest with asyncio support, parallel execution, and Playwright e2e tests
@@ -139,8 +158,14 @@ Plan to upgrade to **Supabase Pro Plan** ($25/month) for official backups once u
 
 ### User
 - UUID primary keys
-- Email verification and password hashing
+- Email verification status and password hashing
 - Display names and timestamps
+
+### Token
+- Email verification and password reset tokens
+- Hashed token storage for security
+- Expiration timestamps (1 hour for password reset, 24 hours for email verification)
+- One active token per user per type
 
 ### Scroll
 - Academic manuscript storage with HTML content
@@ -151,6 +176,13 @@ Plan to upgrade to **Supabase Pro Plan** ($25/month) for official backups once u
 ### Subject
 - Academic discipline categorization
 - Hierarchical organization for research areas
+
+## Email Verification Flow
+
+1. **Registration**: User registers and receives verification email via Resend
+2. **Verification**: User clicks email link with time-limited token
+3. **Access Control**: Unverified users can view dashboard but cannot upload or export data
+4. **Password Reset**: Secure token-based password reset with 1-hour expiration
 
 ## Testing
 
