@@ -12,7 +12,7 @@ from app.models.user import User
 @pytest.fixture(autouse=True)
 def mock_resend_emails():
     """Automatically mock Resend email sending for all tests in this module."""
-    with patch("app.email.service.resend.Emails.send") as mock_send:
+    with patch("app.emails.service.resend.Emails.send") as mock_send:
         yield mock_send
 
 
@@ -70,7 +70,7 @@ async def test_register_creates_verification_token(client, test_db):
 
 
 @pytest.mark.asyncio
-@patch("app.email.service.resend.Emails.send")
+@patch("app.emails.service.resend.Emails.send")
 async def test_register_sends_verification_email(mock_send, client, test_db):
     """Test that registration sends verification email."""
     with patch.dict(
@@ -222,7 +222,7 @@ async def test_verify_email_with_used_token(client, test_db, test_user):
 
 
 @pytest.mark.asyncio
-@patch("app.email.service.resend.Emails.send")
+@patch("app.emails.service.resend.Emails.send")
 async def test_resend_verification_creates_new_token(mock_send, client, test_db, test_user):
     """Test that resending verification creates a new token."""
     # Mark user as unverified and log in
@@ -260,7 +260,7 @@ async def test_resend_verification_creates_new_token(mock_send, client, test_db,
 
 
 @pytest.mark.asyncio
-@patch("app.email.service.resend.Emails.send")
+@patch("app.emails.service.resend.Emails.send")
 async def test_resend_verification_invalidates_old_token(mock_send, client, test_db, test_user):
     """Test that resending verification invalidates old tokens."""
     # Mark user as unverified and log in
@@ -290,7 +290,7 @@ async def test_resend_verification_invalidates_old_token(mock_send, client, test
 
 
 @pytest.mark.asyncio
-@patch("app.email.service.resend.Emails.send")
+@patch("app.emails.service.resend.Emails.send")
 async def test_resend_verification_sends_email(mock_send, client, test_db, test_user):
     """Test that resending verification sends an email."""
     # Mark user as unverified and log in

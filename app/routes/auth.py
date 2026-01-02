@@ -18,7 +18,7 @@ from app.auth.tokens import (
 )
 from app.auth.utils import get_password_hash, verify_password
 from app.database import get_db
-from app.email.service import get_email_service
+from app.emails.service import get_email_service
 from app.logging_config import get_logger, log_auth_event, log_error, log_request
 from app.models.session import Session
 from app.models.token import Token

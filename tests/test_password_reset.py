@@ -11,7 +11,7 @@ from app.models.token import Token
 @pytest.fixture(autouse=True)
 def mock_resend_emails():
     """Automatically mock Resend email sending for all tests in this module."""
-    with patch("app.email.service.resend.Emails.send") as mock_send:
+    with patch("app.emails.service.resend.Emails.send") as mock_send:
         yield mock_send
 
 

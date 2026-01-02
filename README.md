@@ -65,7 +65,7 @@ app/
 ├── auth/               # Session-based authentication and token management
 │   ├── session.py      # Session handling
 │   └── tokens.py       # Email verification and password reset tokens
-├── email/              # Email service integration
+├── emails/             # Email service integration
 │   ├── service.py      # Resend email service
 │   └── templates.py    # Email HTML templates
 ├── models/             # SQLAlchemy database models

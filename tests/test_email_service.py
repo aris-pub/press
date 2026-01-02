@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.email.service import EmailConfig, EmailService, get_email_service
+from app.emails.service import EmailConfig, EmailService, get_email_service
 
 
 def test_email_service_initialization():
