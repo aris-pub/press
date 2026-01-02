@@ -7,12 +7,12 @@ Usage:
 
 {% macro form_input(label, name, type="text", value="", required=false, error="", placeholder="", help_text="") %}
 <div class="form-group">
-  
+
   {% if label %}
   <label for="{{ name }}" class="form-label">{{ label }}{% if required %} <span style="color: #ef4444;">*</span>{% endif %}</label>
   {% endif %}
-  
-  <input 
+
+  <input
     class="form-input{% if error %} error{% endif %}"
     {{ {
       "type": type,
@@ -20,17 +20,19 @@ Usage:
       "name": name,
       "value": value if value else none,
       "placeholder": placeholder if placeholder else none,
-      "required": "required" if required else none
+      "required": "required" if required else none,
+      "aria-invalid": "true" if error else none,
+      "aria-describedby": (name ~ "-error") if error else none
     } | xmlattr }}
   >
-  
+
   {% if error %}
-  <div class="field-error">{{ error }}</div>
+  <div class="field-error" id="{{ name }}-error" role="alert">{{ error }}</div>
   {% endif %}
-  
+
   {% if help_text %}
   <div class="help-text">{{ help_text }}</div>
   {% endif %}
-  
+
 </div>
 {% endmacro %}

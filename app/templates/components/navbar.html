@@ -15,7 +15,7 @@ Navbar Component
     </a>
   </div>
   
-  <nav>
+  <nav aria-label="Main navigation">
     {{ nav_link("Browse", "/#browse") }}
     {{ nav_link("Recent", "/#recent") }}
     {{ nav_link("About", "/about") }}
@@ -61,7 +61,7 @@ Navbar Component
   </div>
 
   <!-- Mobile navigation menu -->
-  <div class="mobile-nav">
+  <nav class="mobile-nav" aria-label="Mobile navigation">
     <div class="mobile-nav-links">
       <a href="/#browse">Browse</a>
       <a href="/#recent">Recent</a>

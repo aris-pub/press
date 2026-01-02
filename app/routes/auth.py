@@ -236,6 +236,10 @@ async def register_form(
         # Password validation
         if not password or len(password) < 1:
             raise ValueError("Password is required")
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(char.isdigit() for char in password):
+            raise ValueError("Password must contain at least one number")
         if not confirm_password:
             raise ValueError("Password confirmation is required")
         if password != confirm_password:
@@ -471,6 +475,33 @@ async def verify_email(
 
         get_logger().info(f"Email verified for user {user.id}")
 
+        # Rotate session for security (privilege escalation from unverified to verified)
+        old_session_id = request.cookies.get("session_id")
+        if old_session_id:
+            from app.auth.session import rotate_session
+
+            new_session_id = await rotate_session(db, old_session_id)
+
+            # Return response with new session cookie
+            response = templates.TemplateResponse(
+                request,
+                "auth/verify_email.html",
+                {
+                    "success": True,
+                    "message": "Email verified successfully! You can now access all features.",
+                    "current_user": user,
+                },
+            )
+            response.set_cookie(
+                key="session_id",
+                value=new_session_id,
+                httponly=True,
+                secure=True,
+                samesite="lax",
+                max_age=86400,  # 24 hours
+            )
+            return response
+
         return templates.TemplateResponse(
             request,
             "auth/verify_email.html",
@@ -703,9 +734,13 @@ async def reset_password_form(
             get_logger().warning("Invalid or expired password reset token")
             raise HTTPException(status_code=400, detail="Invalid or expired reset link")
 
-        # Validate password length
+        # Validate password strength
         if len(password) < 8:
             raise HTTPException(status_code=422, detail="Password must be at least 8 characters")
+        if not any(char.isdigit() for char in password):
+            raise HTTPException(
+                status_code=422, detail="Password must contain at least one number"
+            )
 
         # Validate passwords match
         if password != confirm_password:

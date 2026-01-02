@@ -13,13 +13,22 @@ from app.models.user import User
 
 
 async def create_session(db: AsyncSession, user_id: uuid.UUID) -> str:
-    """Create a new session and return session ID."""
+    """Create a new session and return session ID.
+
+    Automatically generates a CSRF token for the session.
+    """
     session_id = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
     db_session = Session(session_id=session_id, user_id=user_id, expires_at=expires_at)
     db.add(db_session)
     await db.commit()
+
+    # Auto-generate CSRF token for this session
+    from app.auth.csrf import rotate_csrf_token
+
+    await rotate_csrf_token(session_id)
+
     return session_id
 
 
@@ -45,6 +54,49 @@ async def _get_user_id_from_session_id(db: AsyncSession, session_id: str) -> uui
         return None
 
 
+async def rotate_session(db: AsyncSession, old_session_id: str) -> str:
+    """Rotate (regenerate) a session ID for security.
+
+    Creates a new session with a new ID for the same user, then deletes the old session.
+    Should be called after authentication state changes (login, password reset, email verification).
+
+    Args:
+        db: Database session
+        old_session_id: The current session ID to rotate
+
+    Returns:
+        The new session ID, or the old one if rotation fails
+    """
+    if not old_session_id:
+        return old_session_id
+
+    try:
+        # Get the current session
+        result = await db.execute(select(Session).where(Session.session_id == old_session_id))
+        old_session = result.scalar_one_or_none()
+
+        if not old_session:
+            return old_session_id
+
+        # Create new session with same user
+        new_session_id = await create_session(db, old_session.user_id)
+
+        # Delete old session
+        await db.execute(delete(Session).where(Session.session_id == old_session_id))
+        await db.commit()
+
+        # Rotate CSRF token as well
+        from app.auth.csrf import delete_csrf_token, rotate_csrf_token
+
+        await delete_csrf_token(old_session_id)
+        await rotate_csrf_token(new_session_id)
+
+        return new_session_id
+    except Exception:
+        # If rotation fails, return old session ID
+        return old_session_id
+
+
 async def delete_session(db: AsyncSession, session_id: str):
     """Delete a session."""
     if not session_id:
@@ -53,6 +105,11 @@ async def delete_session(db: AsyncSession, session_id: str):
     try:
         await db.execute(delete(Session).where(Session.session_id == session_id))
         await db.commit()
+
+        # Clean up CSRF token too
+        from app.auth.csrf import delete_csrf_token
+
+        await delete_csrf_token(session_id)
     except Exception:
         pass  # Ignore errors when deleting sessions
 
