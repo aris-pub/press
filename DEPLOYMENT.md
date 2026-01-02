@@ -106,11 +106,29 @@ fly open
 ### 4. Verify Deployment
 
 Test these endpoints:
-- `/health` - Health check
+- `/health` - Health check (should return `{"status": "ok", "service": "scroll-press"}`)
 - `/` - Homepage loads
 - `/register` - User registration works
 - Email verification - Check that verification emails are sent and links work
 - `/upload` - File upload (after email verification)
+- `/robots.txt` - SEO crawlers can access site map
+- `/sitemap.xml` - Dynamic sitemap generates correctly
+- `/user/export-data` - Data export works (requires authentication)
+
+**Check static file caching**:
+```bash
+# Verify cache headers are present
+curl -I https://your-domain.com/static/css/main.css
+# Should include: Cache-Control: public, max-age=31536000, immutable
+```
+
+**Verify Sentry release tracking**:
+```bash
+# SSH into production and check GIT_COMMIT
+fly ssh console
+env | grep GIT_COMMIT
+# Should show actual git commit hash, not "dev"
+```
 
 ## Phase 4: Custom Domain (Optional)
 
@@ -149,12 +167,37 @@ fly logs -f
 - Review query performance regularly
 
 ### Scaling
-```bash
-# Scale up for traffic
-fly scale count 2
 
-# Scale machine resources
+**⚠️ IMPORTANT - Current Scaling Limitation**
+
+The application is currently limited to **1 machine maximum** due to in-memory storage for CSRF tokens and rate limiting:
+
+```toml
+# fly.toml
+max_machines_running = 1  # Limited to 1 until CSRF/rate limiting moved to database
+```
+
+**Why this limitation exists**:
+- CSRF tokens are stored in-memory (module-level dictionary in `app/auth/csrf.py`)
+- Rate limiting uses in-memory counters (module-level dictionary in `app/middleware.py`)
+- With multiple machines, each would have its own separate storage
+- This would cause CSRF validation failures and ineffective rate limiting
+
+**To scale beyond 1 machine**, you must first:
+1. Migrate CSRF token storage to database or Redis
+2. Migrate rate limiting to database or Redis
+3. Update `fly.toml` to allow `max_machines_running = 5`
+
+**Current capacity with 1 machine**:
+- Configured for 100 concurrent requests (hard limit)
+- 75 concurrent requests (soft limit)
+- Sufficient for initial launch and small-to-medium user base
+
+**Vertical scaling** (increasing resources on single machine):
+```bash
+# Scale machine resources (works within current limitation)
 fly scale memory 2048
+fly scale cpu 2
 ```
 
 ### Backups
@@ -214,6 +257,10 @@ fly ssh console
 - HTTPS enforced via `force_https = true`
 - Application runs as non-root user in container
 - Regular dependency updates via `uv sync`
+- GDPR-compliant data export via `/user/export-data` endpoint
+- Static files cached with immutable headers (1-year TTL)
+- Sentry release tracking enabled for error debugging
+- CSRF and rate limiting use in-memory storage (single-machine only)
 
 ## Cost Monitoring
 

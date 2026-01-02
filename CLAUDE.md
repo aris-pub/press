@@ -151,6 +151,39 @@ app/
   ```
 - This pattern avoids event loop conflicts and ensures tests don't hang
 
+## API Endpoints
+
+### GDPR Data Export
+- **Endpoint**: `GET /user/export-data`
+- **Purpose**: GDPR Article 20 compliance (right to data portability)
+- **Auth**: Requires session authentication
+- **Response**: JSON with user profile, scrolls, and sessions
+- **Implementation**: `app/routes/auth.py:810-881`
+- **Tests**: `tests/test_data_export.py`
+
+## Performance & Caching
+
+### Static File Caching
+- Static files cached for 1 year with `immutable` flag
+- SEO files (robots.txt, sitemap.xml) cached for 1 day
+- Implemented via `StaticFilesCacheMiddleware` in `app/middleware.py`
+- Middleware must be added first in stack (runs last) to set headers after response
+
+### Scaling Limitation
+- **CRITICAL**: Application limited to 1 machine in `fly.toml`
+- CSRF tokens (`app/auth/csrf.py`) use in-memory module-level dictionary
+- Rate limiting (`app/middleware.py`) uses in-memory module-level counters
+- Must migrate to database/Redis before scaling horizontally
+- Current capacity: 100 concurrent requests per machine (hard limit)
+
+## Monitoring & Error Tracking
+
+### Sentry Configuration
+- Release tracking via `GIT_COMMIT` build arg in `fly.toml`
+- Configured in `Dockerfile` with ARG/ENV pattern
+- Fly.io replaces "auto" with actual git commit hash during build
+- See `SENTRY_SETUP.md` for complete configuration and alert setup
+
 ## Code Generation Guidelines
 - You MUST NEVER use emoji for any reason under any circumstance
 

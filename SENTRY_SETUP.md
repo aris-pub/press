@@ -6,31 +6,29 @@ Your Sentry integration is configured and ready. The DSN is already set in Fly.i
 
 ## Recommended Configuration Steps
 
-### 1. Set Release Tracking (CRITICAL for debugging)
+### 1. Set Release Tracking ✅ CONFIGURED
 
-Currently `release` is set to `GIT_COMMIT` env var, but it's not being passed to Fly.io.
+Release tracking is now configured via `GIT_COMMIT` build argument:
 
-**Fix**: Update `fly.toml` to pass git commit hash:
+**Configuration** (already implemented):
+- `fly.toml` passes `GIT_COMMIT = "auto"` as build arg
+- `Dockerfile` accepts and sets `GIT_COMMIT` environment variable
+- Sentry reads `GIT_COMMIT` on startup to track releases
 
-```toml
-[env]
-  PORT = "8000"
-  PYTHONPATH = "."
-  ENVIRONMENT = "production"
-  GIT_COMMIT = "{{GIT_SHA}}"  # Add this line
-```
-
-**Alternative**: Set it during deploy:
-```bash
-# In your deploy script or manually
-fly deploy --build-arg GIT_COMMIT=$(git rev-parse --short HEAD)
-```
-
-Then update `Dockerfile` to accept build arg:
+**How it works**:
 ```dockerfile
-ARG GIT_COMMIT=unknown
+# Dockerfile
+ARG GIT_COMMIT=dev
 ENV GIT_COMMIT=$GIT_COMMIT
 ```
+
+```toml
+# fly.toml
+[build.args]
+  GIT_COMMIT = "auto"
+```
+
+Fly.io automatically replaces "auto" with the current git commit hash during deployment.
 
 ### 2. Verify Production Alerts are Working
 
@@ -183,14 +181,14 @@ env | grep SENTRY_DSN  # Should show your DSN
 # Check environment is set correctly
 env | grep ENVIRONMENT  # Should show "production"
 
-# Check Git commit tracking
-env | grep GIT_COMMIT  # Should show commit hash (currently "dev")
+# Check Git commit tracking (should show actual commit hash)
+env | grep GIT_COMMIT
 ```
 
 ## Next Steps (Priority Order)
 
 1. ✅ **DONE**: Sentry DSN configured in Fly.io secrets
-2. **TODO**: Set up GIT_COMMIT environment variable for release tracking
+2. ✅ **DONE**: GIT_COMMIT environment variable configured for release tracking
 3. **TODO**: Trigger test error to verify alerts work
 4. **TODO**: Configure email alerts in Sentry dashboard
 5. **OPTIONAL**: Set up Sentry CLI for release tracking

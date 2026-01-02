@@ -9,10 +9,12 @@ written in web-native formats (HTML/CSS/JS).
 - **HTML-native publishing**: Upload complete HTML documents with embedded CSS and JavaScript
 - **Session-based authentication**: Secure user registration and login system with email verification
 - **Email verification**: Token-based email verification with password reset functionality
+- **GDPR compliance**: Data export endpoint for user data portability (Article 20)
 - **Subject categorization**: Organize research by academic disciplines
 - **Draft and publish workflow**: Save drafts and publish when ready
 - **Scroll cards**: Browse recent submissions with rich metadata
 - **Responsive design**: Clean, academic-focused UI with HTMX interactions
+- **Performance optimized**: Static file caching with CDN-ready headers
 
 ## Quick Start
 
@@ -183,6 +185,28 @@ Plan to upgrade to **Supabase Pro Plan** ($25/month) for official backups once u
 2. **Verification**: User clicks email link with time-limited token
 3. **Access Control**: Unverified users can view dashboard but cannot upload or export data
 4. **Password Reset**: Secure token-based password reset with 1-hour expiration
+
+## GDPR Compliance
+
+### Data Export (Article 20 - Right to Data Portability)
+
+Users can export all their data in JSON format via the `/user/export-data` endpoint:
+
+```bash
+# Requires authentication (session cookie)
+curl -X GET https://scroll.press/user/export-data \
+  -H "Cookie: session_id=YOUR_SESSION_ID"
+```
+
+**Exported data includes**:
+- User profile (email, display name, verification status, timestamps)
+- All scrolls (published and drafts) with complete metadata
+- Active sessions with expiration times
+
+**Security**:
+- Requires authentication (401 if not logged in)
+- Users can only export their own data
+- Returns structured JSON for portability
 
 ## Testing
 

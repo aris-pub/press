@@ -549,3 +549,30 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # CSRF token is valid, continue with request
         return await call_next(request)
+
+
+class StaticFilesCacheMiddleware(BaseHTTPMiddleware):
+    """Middleware to add caching headers for static files."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Add Cache-Control headers to static file responses.
+
+        Args:
+            request: The incoming HTTP request
+            call_next: The next middleware/route handler
+
+        Returns:
+            The HTTP response with caching headers added for static files
+        """
+        response = await call_next(request)
+
+        # Add caching headers for static files
+        if request.url.path.startswith("/static"):
+            # Cache static files for 1 year (immutable assets should use versioned filenames)
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            response.headers["Vary"] = "Accept-Encoding"
+        elif request.url.path == "/robots.txt" or request.url.path == "/sitemap.xml":
+            # Cache SEO files for 1 day
+            response.headers["Cache-Control"] = "public, max-age=86400"
+
+        return response

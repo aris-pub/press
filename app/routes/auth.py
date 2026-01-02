@@ -807,6 +807,80 @@ async def reset_password_form(
         raise HTTPException(status_code=500, detail="An error occurred during password reset")
 
 
+@router.get("/user/export-data")
+async def export_user_data(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Export all user data in JSON format (GDPR Article 20 compliance).
+
+    Returns all personal data associated with the authenticated user:
+    - User profile information
+    - All scrolls (published and drafts)
+    - Active sessions
+
+    Returns:
+        JSONResponse with user data in structured format
+    """
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Get user data
+    user_data = {
+        "email": current_user.email,
+        "display_name": current_user.display_name,
+        "email_verified": current_user.email_verified,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+    }
+
+    # Get all user's scrolls
+    from app.models.scroll import Scroll
+
+    result = await db.execute(select(Scroll).where(Scroll.user_id == current_user.id))
+    scrolls = result.scalars().all()
+
+    scrolls_data = []
+    for scroll in scrolls:
+        scrolls_data.append({
+            "title": scroll.title,
+            "authors": scroll.authors,
+            "abstract": scroll.abstract,
+            "keywords": scroll.keywords,
+            "license": scroll.license,
+            "status": scroll.status,
+            "url_hash": scroll.url_hash,
+            "content_hash": scroll.content_hash,
+            "created_at": scroll.created_at.isoformat() if scroll.created_at else None,
+            "updated_at": scroll.updated_at.isoformat() if scroll.updated_at else None,
+            "published_at": scroll.published_at.isoformat() if scroll.published_at else None,
+        })
+
+    # Get active sessions
+    result = await db.execute(
+        select(Session).where(
+            Session.user_id == current_user.id,
+            Session.expires_at > datetime.now(UTC),
+        )
+    )
+    sessions = result.scalars().all()
+
+    sessions_data = []
+    for session in sessions:
+        sessions_data.append({
+            "session_id": session.session_id,
+            "created_at": session.created_at.isoformat() if session.created_at else None,
+            "expires_at": session.expires_at.isoformat() if session.expires_at else None,
+        })
+
+    return JSONResponse({
+        "user": user_data,
+        "scrolls": scrolls_data,
+        "sessions": sessions_data,
+    })
+
+
 # Test-only endpoint for E2E tests
 @router.post("/test-verify-user")
 async def test_verify_user(

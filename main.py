@@ -28,6 +28,7 @@ from app.middleware import (
     LoggingMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
+    StaticFilesCacheMiddleware,
 )
 from app.routes import auth, main, scrolls
 from app.security.nonce_middleware import NonceMiddleware
@@ -104,6 +105,7 @@ app = FastAPI(
 )
 
 # Add middleware (order matters - last added runs first)
+app.add_middleware(StaticFilesCacheMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(CSRFMiddleware)
