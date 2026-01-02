@@ -33,12 +33,15 @@
     {% block extra_head %}{% endblock %}
   </head>
   <body>
+    <!-- Skip link for keyboard navigation -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
     {% include "components/navbar.html" %}
 
     <!-- Mobile menu backdrop for content area only -->
     <div class="mobile-nav-backdrop"></div>
 
-    <main class="container">
+    <main id="main-content" class="container">
       {% block content %}{% endblock %}
     </main>
 

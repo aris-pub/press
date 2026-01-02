@@ -13,13 +13,22 @@ from app.models.user import User
 
 
 async def create_session(db: AsyncSession, user_id: uuid.UUID) -> str:
-    """Create a new session and return session ID."""
+    """Create a new session and return session ID.
+
+    Automatically generates a CSRF token for the session.
+    """
     session_id = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
     db_session = Session(session_id=session_id, user_id=user_id, expires_at=expires_at)
     db.add(db_session)
     await db.commit()
+
+    # Auto-generate CSRF token for this session
+    from app.auth.csrf import rotate_csrf_token
+
+    await rotate_csrf_token(session_id)
+
     return session_id
 
 
@@ -63,9 +72,7 @@ async def rotate_session(db: AsyncSession, old_session_id: str) -> str:
 
     try:
         # Get the current session
-        result = await db.execute(
-            select(Session).where(Session.session_id == old_session_id)
-        )
+        result = await db.execute(select(Session).where(Session.session_id == old_session_id))
         old_session = result.scalar_one_or_none()
 
         if not old_session:

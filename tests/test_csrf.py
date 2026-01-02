@@ -1,7 +1,7 @@
 """Tests for CSRF protection."""
 
-import pytest
 from httpx import AsyncClient
+import pytest
 
 from app.auth.session import create_session
 
@@ -21,8 +21,9 @@ async def test_csrf_token_generated_on_session_creation(test_db, test_user):
 @pytest.mark.asyncio
 async def test_csrf_token_is_unique_per_session(test_db, test_user):
     """Test that each session gets a unique CSRF token."""
-    from app.auth.csrf import get_csrf_token
     import uuid
+
+    from app.auth.csrf import get_csrf_token
 
     session_id_1 = await create_session(test_db, test_user.id)
     session_id_2 = await create_session(test_db, uuid.uuid4())
@@ -59,8 +60,9 @@ async def test_csrf_token_rejects_invalid_token(test_db, test_user):
 @pytest.mark.asyncio
 async def test_csrf_token_rejects_token_from_different_session(test_db, test_user):
     """Test that CSRF token from one session doesn't work for another."""
-    from app.auth.csrf import get_csrf_token, validate_csrf_token
     import uuid
+
+    from app.auth.csrf import get_csrf_token, validate_csrf_token
 
     session_id_1 = await create_session(test_db, test_user.id)
     session_id_2 = await create_session(test_db, uuid.uuid4())
@@ -156,29 +158,51 @@ async def test_login_with_valid_csrf_token(client: AsyncClient, test_user, test_
 
 
 @pytest.mark.asyncio
-async def test_upload_form_requires_csrf_token(authenticated_client: AsyncClient, test_user, test_db):
+async def test_upload_form_requires_csrf_token(test_user, test_db):
     """Test that upload form requires CSRF token."""
+    from httpx import ASGITransport, AsyncClient
+
+    from main import app
+
     # Mark user as verified
     test_user.email_verified = True
     await test_db.commit()
 
-    response = await authenticated_client.post(
-        "/upload-form",
-        data={
-            "title": "Test Scroll",
-            "authors": "Test Author",
-            "abstract": "Test abstract",
-            # Missing CSRF token
-        },
-    )
+    # Create a regular AsyncClient (not CSRFClient) to test without auto-injection
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        # Create session manually
+        session_id = await create_session(test_db, test_user.id)
+        client.cookies.set("session_id", session_id)
 
-    assert response.status_code == 403
+        # POST request without CSRF token should fail
+        response = await client.post(
+            "/upload-form",
+            data={
+                "title": "Test Scroll",
+                "authors": "Test Author",
+                "abstract": "Test abstract",
+                # Missing CSRF token
+            },
+        )
+
+        assert response.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_delete_account_requires_csrf_token(authenticated_client: AsyncClient):
+async def test_delete_account_requires_csrf_token(test_user, test_db):
     """Test that account deletion requires CSRF token."""
-    # DELETE request without X-CSRF-Token header should fail
-    response = await authenticated_client.delete("/account")
+    from httpx import ASGITransport, AsyncClient
 
-    assert response.status_code == 403
+    from app.auth.session import create_session
+    from main import app
+
+    # Create a regular AsyncClient (not CSRFClient) to test without auto-injection
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        # Create session manually
+        session_id = await create_session(test_db, test_user.id)
+        client.cookies.set("session_id", session_id)
+
+        # DELETE request without X-CSRF-Token header should fail
+        response = await client.delete("/account")
+
+        assert response.status_code == 403

@@ -477,9 +477,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Validate CSRF token for protected methods."""
+
         from app.auth.csrf import validate_csrf_token
-        from starlette.datastructures import Headers
-        import io
 
         # Skip CSRF check for safe methods
         if request.method not in self.PROTECTED_METHODS:
@@ -492,6 +491,11 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         # Get session ID from cookie
         session_id = request.cookies.get("session_id")
 
+        # Skip CSRF validation for unauthenticated requests (no session)
+        # CSRF protection only applies to authenticated users
+        if not session_id:
+            return await call_next(request)
+
         # Get CSRF token from form data or headers
         csrf_token = None
         if request.method in {"POST", "PUT", "PATCH"}:
@@ -502,7 +506,6 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 body = await request.body()
 
                 # Parse form data to get CSRF token
-                from starlette.formparsers import FormParser, MultiPartParser
                 content_type_header = request.headers.get("Content-Type", "")
 
                 if "multipart/form-data" in content_type_header:
@@ -512,6 +515,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 elif "application/x-www-form-urlencoded" in content_type_header:
                     # Parse URL-encoded form to extract CSRF token
                     from urllib.parse import parse_qs
+
                     form_data = parse_qs(body.decode())
                     csrf_token = form_data.get("csrf_token", [None])[0]
 

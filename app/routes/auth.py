@@ -236,6 +236,10 @@ async def register_form(
         # Password validation
         if not password or len(password) < 1:
             raise ValueError("Password is required")
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(char.isdigit() for char in password):
+            raise ValueError("Password must contain at least one number")
         if not confirm_password:
             raise ValueError("Password confirmation is required")
         if password != confirm_password:
@@ -730,9 +734,13 @@ async def reset_password_form(
             get_logger().warning("Invalid or expired password reset token")
             raise HTTPException(status_code=400, detail="Invalid or expired reset link")
 
-        # Validate password length
+        # Validate password strength
         if len(password) < 8:
             raise HTTPException(status_code=422, detail="Password must be at least 8 characters")
+        if not any(char.isdigit() for char in password):
+            raise HTTPException(
+                status_code=422, detail="Password must contain at least one number"
+            )
 
         # Validate passwords match
         if password != confirm_password:

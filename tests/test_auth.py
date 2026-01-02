@@ -54,8 +54,8 @@ async def test_register_form_valid_data(client: AsyncClient):
     """Test POST /register-form with valid data."""
     register_data = {
         "email": "newuser@example.com",
-        "password": "newpassword",
-        "confirm_password": "newpassword",
+        "password": "newpassword1",
+        "confirm_password": "newpassword1",
         "display_name": "New User",
         "agree_terms": "true",
     }
@@ -70,8 +70,8 @@ async def test_register_form_duplicate_email(client: AsyncClient, test_user):
     """Test POST /register-form with existing email."""
     register_data = {
         "email": test_user.email,
-        "password": "newpassword",
-        "confirm_password": "newpassword",
+        "password": "newpassword1",
+        "confirm_password": "newpassword1",
         "display_name": "New User",
         "agree_terms": "true",
     }
@@ -85,8 +85,8 @@ async def test_register_form_missing_checkbox(client: AsyncClient):
     """Test POST /register-form validates checkbox is required."""
     register_data = {
         "email": "newuser@example.com",
-        "password": "newpassword",
-        "confirm_password": "newpassword",
+        "password": "newpassword1",
+        "confirm_password": "newpassword1",
         "display_name": "New User",
         # Missing agree_terms checkbox
     }

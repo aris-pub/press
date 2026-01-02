@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+from unittest.mock import patch
 
 import httpx
 from httpx import AsyncClient
@@ -110,11 +111,18 @@ class CSRFClient(AsyncClient):
             csrf_token = await get_csrf_token(session_id)
 
             if method in {"POST", "PUT", "PATCH"}:
-                # Add to form data if present
+                # Add CSRF token to data or create minimal form
                 if "data" in kwargs:
                     if isinstance(kwargs["data"], dict):
                         kwargs["data"] = {**kwargs["data"], "csrf_token": csrf_token}
                     # If data is already form-encoded, user must handle csrf_token manually
+                elif "files" in kwargs:
+                    # File upload - add CSRF token as regular form field
+                    # Create data dict with just the token (files are separate)
+                    kwargs["data"] = {"csrf_token": csrf_token}
+                else:
+                    # No data or files, create minimal form with just CSRF token
+                    kwargs["data"] = {"csrf_token": csrf_token}
             elif method == "DELETE":
                 # Add to headers for DELETE
                 if "headers" not in kwargs:
@@ -226,36 +234,37 @@ async def test_user(test_db):
 
 @pytest_asyncio.fixture
 async def authenticated_client(client, test_user, test_db):
-    """Get an authenticated client with session cookies."""
-    from app.auth.csrf import get_csrf_token
+    """Get an authenticated client with session cookies.
+
+    Creates a session directly instead of going through login flow.
+    CSRF token is automatically generated when session is created.
+    """
     from app.auth.session import create_session
 
-    # Create a session to get a CSRF token
+    # Create a session directly (CSRF token auto-generated)
     session_id = await create_session(test_db, test_user.id)
     client.cookies.set("session_id", session_id)
 
-    # Get CSRF token for the session
-    csrf_token = await get_csrf_token(session_id)
-
-    login_data = {
-        "email": test_user.email,
-        "password": "testpassword",
-        "csrf_token": csrf_token,
-    }
-
-    # Login via form submission - should set session cookie
-    response = await client.post("/login-form", data=login_data)
-
-    # Verify login worked
-    assert response.status_code == 200
-    assert "session_id" in response.cookies
-
-    # Return the client which now has session cookies
+    # Return the client with session cookie
+    # CSRFClient will automatically inject tokens for POST/PUT/PATCH/DELETE
     return client
 
 
 # Configure pytest-asyncio
 pytest_plugins = ("pytest_asyncio",)
+
+
+@pytest.fixture(autouse=True, scope="function")
+def mock_resend_globally():
+    """CRITICAL: Mock Resend email sending for ALL tests to prevent sending real emails.
+
+    This fixture automatically applies to every test function to prevent accidentally
+    burning through Resend quota during test runs.
+    """
+    with patch("app.emails.service.resend.Emails.send") as mock_send:
+        # Make the mock return a successful response
+        mock_send.return_value = {"id": "test-email-id"}
+        yield mock_send
 
 
 def pytest_configure(config):

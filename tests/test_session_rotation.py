@@ -1,9 +1,7 @@
 """Tests for session rotation on authentication state changes."""
 
-import pytest
 from httpx import AsyncClient
-
-from app.auth.session import create_session
+import pytest
 
 
 @pytest.mark.asyncio
@@ -31,7 +29,9 @@ async def test_login_rotates_session_id(client: AsyncClient, test_user):
 
 
 @pytest.mark.asyncio
-async def test_password_change_rotates_session(authenticated_client: AsyncClient, test_user, test_db):
+async def test_password_change_rotates_session(
+    authenticated_client: AsyncClient, test_user, test_db
+):
     """Test that session ID changes after password change."""
     # Get initial session (handle multiple cookies)
     initial_session = None
