@@ -21,12 +21,23 @@ async def test_csrf_token_generated_on_session_creation(test_db, test_user):
 @pytest.mark.asyncio
 async def test_csrf_token_is_unique_per_session(test_db, test_user):
     """Test that each session gets a unique CSRF token."""
-    import uuid
-
     from app.auth.csrf import get_csrf_token
+    from app.auth.utils import get_password_hash
+    from app.models.user import User
+
+    # Create a second user
+    user2 = User(
+        email="user2@example.com",
+        password_hash=get_password_hash("testpassword"),
+        display_name="User 2",
+        email_verified=True,
+    )
+    test_db.add(user2)
+    await test_db.commit()
+    await test_db.refresh(user2)
 
     session_id_1 = await create_session(test_db, test_user.id)
-    session_id_2 = await create_session(test_db, uuid.uuid4())
+    session_id_2 = await create_session(test_db, user2.id)
 
     token_1 = await get_csrf_token(session_id_1)
     token_2 = await get_csrf_token(session_id_2)
@@ -60,12 +71,23 @@ async def test_csrf_token_rejects_invalid_token(test_db, test_user):
 @pytest.mark.asyncio
 async def test_csrf_token_rejects_token_from_different_session(test_db, test_user):
     """Test that CSRF token from one session doesn't work for another."""
-    import uuid
-
     from app.auth.csrf import get_csrf_token, validate_csrf_token
+    from app.auth.utils import get_password_hash
+    from app.models.user import User
+
+    # Create a second user
+    user2 = User(
+        email="user2@example.com",
+        password_hash=get_password_hash("testpassword"),
+        display_name="User 2",
+        email_verified=True,
+    )
+    test_db.add(user2)
+    await test_db.commit()
+    await test_db.refresh(user2)
 
     session_id_1 = await create_session(test_db, test_user.id)
-    session_id_2 = await create_session(test_db, uuid.uuid4())
+    session_id_2 = await create_session(test_db, user2.id)
 
     token_1 = await get_csrf_token(session_id_1)
 
