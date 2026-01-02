@@ -5,6 +5,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ scroll.title }} - Scroll Press</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="{{ scroll.abstract[:200] }}...">
+
+  <!-- OpenGraph Meta Tags for Social Media -->
+  <meta property="og:title" content="{{ scroll.title }}">
+  <meta property="og:description" content="{{ scroll.abstract[:200] }}...">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://scroll.press/scroll/{{ scroll.url_hash }}">
+  <meta property="og:site_name" content="Scroll Press">
+  <meta property="article:author" content="{{ scroll.authors }}">
+
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{ scroll.title }}">
+  <meta name="twitter:description" content="{{ scroll.abstract[:200] }}...">
+
   <link rel="icon" type="image/svg+xml" href="/static/images/press-logo-64.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

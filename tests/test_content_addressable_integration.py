@@ -277,8 +277,12 @@ class TestContentAddressableIntegration:
 
     async def test_oversized_content_rejected(self, client: AsyncClient, test_subject):
         """Test that oversized content is rejected."""
-        # Create content larger than 5MB
-        large_content = "<!DOCTYPE html><html><body>" + "x" * (6 * 1024 * 1024) + "</body></html>"
+        import os
+
+        # Get the configured limit (defaults to 50MB)
+        max_size = int(os.getenv("HTML_UPLOAD_MAX_SIZE", 52428800))
+        # Create content larger than the limit
+        large_content = "<!DOCTYPE html><html><body>" + "x" * (max_size + 1024) + "</body></html>"
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:
             f.write(large_content)
@@ -290,7 +294,9 @@ class TestContentAddressableIntegration:
                 response = await client.post("/upload", files=files)
 
             assert response.status_code == 422
-            assert "cannot exceed 5MB" in response.json()["detail"]
+            # Check for the dynamic size limit in the error message
+            max_mb = max_size / 1024 / 1024
+            assert f"cannot exceed {max_mb:.0f}MB" in response.json()["detail"]
 
         finally:
             Path(temp_file_path).unlink()

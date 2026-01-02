@@ -35,6 +35,8 @@ from app.security.nonce_middleware import NonceMiddleware
 # Initialize Sentry for error tracking and performance monitoring
 sentry_dsn = os.getenv("SENTRY_DSN")
 if sentry_dsn:
+    environment = os.getenv("ENVIRONMENT", "development")
+
     sentry_sdk.init(
         dsn=sentry_dsn,
         integrations=[
@@ -42,14 +44,21 @@ if sentry_dsn:
             SqlalchemyIntegration(),
             AsyncioIntegration(),
         ],
-        traces_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.1,
-        profiles_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.1,
-        environment=os.getenv("ENVIRONMENT", "development"),
+        # Performance monitoring - sample rates by environment
+        traces_sample_rate=1.0 if environment == "development" else 0.1,  # 10% in production
+        profiles_sample_rate=1.0 if environment == "development" else 0.1,  # 10% in production
+
+        # Environment and release tracking
+        environment=environment,
         release=os.getenv("GIT_COMMIT", "dev"),
+
+        # Error handling configuration
         attach_stacktrace=True,
-        send_default_pii=False,
+        send_default_pii=False,  # GDPR compliance - no user emails/IPs in errors
         max_breadcrumbs=50,
-        before_send=lambda event, hint: event if os.getenv("ENVIRONMENT") != "testing" else None,
+
+        # Filter out test events
+        before_send=lambda event, hint: event if environment != "testing" else None,
     )
 
 

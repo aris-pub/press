@@ -4,6 +4,9 @@ primary_region = "fra"
 [build]
   dockerfile = "Dockerfile"
 
+  [build.args]
+    GIT_COMMIT = "auto"
+
 [env]
   PORT = "8000"
   PYTHONPATH = "."
@@ -17,7 +20,7 @@ primary_region = "fra"
   min_machines_running = 1
   max_machines_running = 5
   processes = ["app"]
-  
+
   # Autoscaling configuration for 100 concurrent users
   [http_service.concurrency]
     type = "requests"

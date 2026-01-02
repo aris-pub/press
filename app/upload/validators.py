@@ -50,8 +50,8 @@ DANGEROUS_EXTENSIONS = [
     ".webloc",
 ]
 
-# Maximum file sizes
-MAX_SINGLE_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+# Maximum file size from environment variable (defaults to 50MB)
+MAX_SINGLE_FILE_SIZE = int(os.getenv("HTML_UPLOAD_MAX_SIZE", 52428800))
 
 
 class FileValidator:

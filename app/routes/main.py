@@ -166,6 +166,75 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
         }
 
 
+@router.get("/robots.txt", response_class=Response)
+def robots_txt():
+    """Serve robots.txt for search engine crawlers."""
+    content = """User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+
+Sitemap: https://scroll.press/sitemap.xml
+"""
+    return Response(content=content, media_type="text/plain")
+
+
+@router.get("/sitemap.xml", response_class=Response)
+async def sitemap_xml(db: AsyncSession = Depends(get_db)):
+    """Generate dynamic sitemap.xml from published scrolls."""
+    # Get all published scrolls
+    result = await db.execute(
+        select(Scroll.url_hash, Scroll.updated_at)
+        .where(Scroll.status == "published")
+        .order_by(Scroll.updated_at.desc())
+    )
+    scrolls = result.all()
+
+    # Build XML
+    xml_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+
+    # Add static pages
+    static_pages = [
+        ("https://scroll.press/", "1.0", "daily"),
+        ("https://scroll.press/about", "0.8", "monthly"),
+        ("https://scroll.press/how-it-works", "0.8", "monthly"),
+        ("https://scroll.press/contact", "0.6", "monthly"),
+        ("https://scroll.press/terms", "0.4", "yearly"),
+        ("https://scroll.press/privacy", "0.4", "yearly"),
+        ("https://scroll.press/legal", "0.4", "yearly"),
+        ("https://scroll.press/roadmap", "0.6", "monthly"),
+    ]
+
+    for url, priority, changefreq in static_pages:
+        xml_lines.append("  <url>")
+        xml_lines.append(f"    <loc>{url}</loc>")
+        xml_lines.append(f"    <priority>{priority}</priority>")
+        xml_lines.append(f"    <changefreq>{changefreq}</changefreq>")
+        xml_lines.append("  </url>")
+
+    # Add published scrolls
+    for url_hash, updated_at in scrolls:
+        # Format date as YYYY-MM-DD
+        lastmod = (
+            updated_at.strftime("%Y-%m-%d")
+            if updated_at
+            else datetime.utcnow().strftime("%Y-%m-%d")
+        )
+        xml_lines.append("  <url>")
+        xml_lines.append(f"    <loc>https://scroll.press/scroll/{url_hash}</loc>")
+        xml_lines.append(f"    <lastmod>{lastmod}</lastmod>")
+        xml_lines.append("    <priority>0.9</priority>")
+        xml_lines.append("    <changefreq>monthly</changefreq>")
+        xml_lines.append("  </url>")
+
+    xml_lines.append("</urlset>")
+
+    return Response(content="\n".join(xml_lines), media_type="application/xml")
+
+
 @router.get("/about", response_class=HTMLResponse)
 async def about_page(request: Request, db: AsyncSession = Depends(get_db)):
     """Display the About page.

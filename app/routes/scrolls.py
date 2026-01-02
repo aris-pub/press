@@ -1,5 +1,6 @@
 """Scroll upload and management routes."""
 
+import os
 from pathlib import Path
 import re
 import uuid as uuid_module
@@ -614,10 +615,12 @@ async def upload_content_addressable(
         if not validate_utf8_content(content_bytes):
             raise HTTPException(status_code=422, detail="File content must be UTF-8 encoded")
 
-        # Convert to string and validate size (5MB limit)
+        # Convert to string and validate size
         content_str = content_bytes.decode("utf-8")
-        if len(content_bytes) > 5 * 1024 * 1024:  # 5MB
-            raise HTTPException(status_code=422, detail="File size cannot exceed 5MB")
+        max_size = int(os.getenv("HTML_UPLOAD_MAX_SIZE", 52428800))  # 50MB default
+        if len(content_bytes) > max_size:
+            max_mb = max_size / 1024 / 1024
+            raise HTTPException(status_code=422, detail=f"File size cannot exceed {max_mb:.0f}MB")
 
         # Validate content is not empty
         if not content_str.strip():
