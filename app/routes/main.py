@@ -23,7 +23,11 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
+async def landing_page(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    verification_required: Optional[str] = None,
+):
     """Display the application landing page.
 
     Shows the main homepage of Scroll Press with different content and navigation
@@ -59,7 +63,12 @@ async def landing_page(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"current_user": current_user, "subjects": subjects, "scrolls": scrolls},
+        {
+            "current_user": current_user,
+            "subjects": subjects,
+            "scrolls": scrolls,
+            "show_verification_notice": verification_required == "1",
+        },
     )
 
 

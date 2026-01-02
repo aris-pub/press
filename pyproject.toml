@@ -26,6 +26,7 @@ dependencies = [
     "playwright>=1.40.0",
     "pytest-playwright>=0.4.3",
     "sentry-sdk[fastapi]>=1.40.0",
+    "resend>=2.4.0",
 ]
 
 [tool.pytest.ini_options]

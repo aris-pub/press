@@ -62,6 +62,7 @@ class User(Base):
     # Relationships
     scrolls = relationship("Scroll", back_populates="user")
     sessions = relationship("Session", back_populates="user")
+    tokens = relationship("Token", back_populates="user")
 
     def __repr__(self):
         return f"<User(email='{self.email}', display_name='{self.display_name}')>"

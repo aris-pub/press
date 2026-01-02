@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="verify-page">
+    <div class="verify-wrapper">
+        {% if success %}
+            <div class="success-message">
+                <svg class="success-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h1>Email Verified!</h1>
+                <p>{{ message }}</p>
+                <div class="action-buttons">
+                    <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+                </div>
+            </div>
+        {% else %}
+            <div class="error-message">
+                <svg class="error-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <h1>Verification Failed</h1>
+                <p>{{ message }}</p>
+                <div class="action-buttons">
+                    <a href="/" class="btn btn-secondary">Back to Home</a>
+                    {% if current_user %}
+                    <form hx-post="/resend-verification" hx-target="#message-container" style="display: inline;">
+                        <button type="submit" class="btn btn-primary">Resend Verification Email</button>
+                    </form>
+                    {% endif %}
+                </div>
+                <div id="message-container"></div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.verify-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 2rem 1rem;
+}
+
+.verify-wrapper {
+    max-width: 500px;
+    width: 100%;
+}
+
+.success-message, .error-message {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--gray-bg-light);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.success-icon, .error-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.5rem;
+}
+
+.success-icon {
+    color: #10b981;
+}
+
+.error-icon {
+    color: var(--red);
+}
+
+.success-message h1 {
+    color: #10b981;
+    margin-bottom: 1rem;
+    font-size: 2rem;
+}
+
+.error-message h1 {
+    color: var(--red);
+    margin-bottom: 1rem;
+    font-size: 2rem;
+}
+
+.success-message p, .error-message p {
+    color: var(--gray-medium);
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: var(--red);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--red-dark);
+}
+
+.btn-secondary {
+    background: var(--gray-bg-light);
+    color: var(--gray-dark);
+    border: 1px solid var(--border-light);
+}
+
+.btn-secondary:hover {
+    background: var(--border-light);
+}
+
+#message-container {
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}

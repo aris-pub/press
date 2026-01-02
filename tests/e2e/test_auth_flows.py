@@ -46,7 +46,10 @@ async def test_complete_registration_flow(test_server):
 
             # Should see welcome message
             await expect(page.locator('h2:has-text("Account Created!")')).to_be_visible()
-            await expect(page.locator("text=Welcome to Press")).to_be_visible()
+            await expect(page.locator("text=Welcome to Scroll Press")).to_be_visible()
+
+            # Should see email verification notice
+            await expect(page.locator("text=check your email to verify")).to_be_visible()
 
         finally:
             await browser.close()

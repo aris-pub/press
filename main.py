@@ -22,6 +22,7 @@ from app.exception_handlers import (
 )
 from app.logging_config import get_logger
 from app.middleware import (
+    EmailVerificationMiddleware,
     HTTPSRedirectMiddleware,
     LoggingMiddleware,
     RateLimitMiddleware,
@@ -95,6 +96,7 @@ app = FastAPI(
 # Add middleware (order matters - last added runs first)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(EmailVerificationMiddleware)
 # Nonce middleware must run before SecurityHeadersMiddleware to generate nonces
 app.add_middleware(NonceMiddleware)
 

@@ -32,22 +32,30 @@ async def test_complete_login_flow_mobile(test_server):
             await page.check('input[name="agree_terms"]')
             await page.click('button[type="submit"]')
 
-            # Wait for registration to complete - user should be auto-logged in
-            await page.wait_for_timeout(2500)  # Wait longer for HTMX redirect
+            # Wait for HTMX form submission to complete
+            await page.wait_for_load_state("networkidle")
+            await page.wait_for_timeout(1000)
 
-            # Check that user is successfully logged in after registration
-            page_content = (await page.content()).lower()
-            current_url = page.url
+            # Registration should succeed - user is now logged in but unverified
+            # Check that we're logged in by checking for session (cookies should be set)
+            cookies = await page.context.cookies()
+            has_session = any(cookie["name"] == "session_id" for cookie in cookies)
+            assert has_session, "Registration should set session cookie"
 
-            # Should be logged in (redirected to homepage or dashboard)
-            logged_in = (
-                current_url == f"{test_server}/"
-                or current_url == f"{test_server}/dashboard"
-                or "logout" in page_content
-                or "dashboard" in page_content
-            )
+            # For E2E testing, manually verify user by making HTTP request to a test endpoint
+            # In production, user would click link in verification email
+            import httpx
 
-            assert logged_in, f"User was not logged in after registration. URL: {current_url}"
+            async with httpx.AsyncClient() as http_client:
+                # Use httpx to update user verification status
+                # This is a workaround for E2E tests - in production users verify via email link
+                await http_client.post(
+                    f"{test_server}/test-verify-user", json={"email": test_email}
+                )
+
+            # Navigate to homepage to get logged in experience
+            await page.goto(f"{test_server}/")
+            await page.wait_for_timeout(500)
 
             # Now test logout using mobile navigation
             # Open mobile menu first
@@ -121,6 +129,21 @@ async def test_registration_duplicate_email_mobile(test_server):
             await page.click('button[type="submit"]')
 
             await page.wait_for_load_state("networkidle")
+
+            # User should see success message
+            await expect(page.locator("text=Welcome to Scroll Press")).to_be_visible()
+
+            # For E2E testing, manually verify user via test endpoint
+            import httpx
+
+            async with httpx.AsyncClient() as http_client:
+                await http_client.post(
+                    f"{test_server}/test-verify-user", json={"email": test_email}
+                )
+
+            # Navigate to homepage to get logged in experience
+            await page.goto(f"{test_server}/")
+            await page.wait_for_timeout(500)
 
             # Logout the first user using mobile navigation
             # Open mobile menu

@@ -54,15 +54,16 @@ stop:
 # Run tests (adapts to local vs CI environment)
 test:
     #!/usr/bin/env bash
+    set -e
     # Run unit tests
     uv run pytest -n auto -m "not e2e"
-    
+
     # Run E2E tests based on environment
     if [ -n "$CI" ]; then
         # CI: Run all test types separately for cross-browser testing
         echo "CI detected - running full cross-browser test suite"
         uv run pytest -m "e2e and not desktop and not mobile" -v
-        uv run pytest -m "e2e and desktop" -v  
+        uv run pytest -m "e2e and desktop" -v
         uv run pytest -m "e2e and mobile" -v
     else
         # Local: Run universal tests only (faster)

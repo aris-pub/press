@@ -81,7 +81,12 @@ async def client(test_db):
     app.dependency_overrides[get_db] = override_get_db
 
     # Use httpx AsyncClient with the app's ASGI callable
-    async with AsyncClient(transport=httpx.ASGITransport(app=app), base_url="https://test") as ac:
+    # IMPORTANT: cookies argument enables cookie persistence between requests
+    async with AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="https://test",
+        cookies=httpx.Cookies(),  # Enable cookie jar for session persistence
+    ) as ac:
         yield ac
 
     # Clean up

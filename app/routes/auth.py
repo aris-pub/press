@@ -1,24 +1,34 @@
 """Authentication routes for registration, login, and logout."""
 
+from datetime import UTC, datetime
 import os
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 import sentry_sdk
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.session import create_session, delete_session, get_current_user_from_session
+from app.auth.tokens import (
+    create_password_reset_token,
+    create_verification_token,
+    invalidate_user_tokens,
+    validate_token,
+)
 from app.auth.utils import get_password_hash, verify_password
 from app.database import get_db
+from app.email.service import get_email_service
 from app.logging_config import get_logger, log_auth_event, log_error, log_request
 from app.models.session import Session
+from app.models.token import Token
 from app.models.user import User
 from app.templates_config import templates
 
 router = APIRouter()
 
 IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
+IS_E2E_TESTING = os.getenv("E2E_TESTING", "").lower() in ("true", "1", "yes")
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -104,6 +114,11 @@ async def delete_account(request: Request, db: AsyncSession = Depends(get_db)):
 
         # Delete all user sessions first (including current session)
         await db.execute(delete(Session).where(Session.user_id == user_id))
+
+        # Delete all user tokens (verification and password reset)
+        from app.models.token import Token
+
+        await db.execute(delete(Token).where(Token.user_id == user_id))
 
         # Delete the user account (scrolls will remain due to ON DELETE SET NULL or similar)
         # Note: The scrolls table should have a foreign key constraint that either:
@@ -267,6 +282,17 @@ async def register_form(
         await db.commit()
         await db.refresh(db_user)
 
+        # Create email verification token
+        verification_token = await create_verification_token(db, db_user.id)
+
+        # Send verification email if email service is configured
+        email_service = get_email_service()
+        if email_service:
+            await email_service.send_verification_email(
+                to_email=normalized_email, name=db_user.display_name, token=verification_token
+            )
+            get_logger().info(f"Sent verification email to {normalized_email}")
+
         # Create session and auto-login user
         session_id = await create_session(db, db_user.id)
 
@@ -278,8 +304,8 @@ async def register_form(
             "auth/partials/success.html",
             {
                 "title": "Account Created!",
-                "message": f"Welcome to Press, {db_user.display_name}!",
-                "action_text": "Go to Dashboard",
+                "message": f"Welcome to Scroll Press, {db_user.display_name}! Please check your email to verify your account.",
+                "action_text": "Go to Home",
                 "action_url": "/",
             },
         )
@@ -402,3 +428,383 @@ async def login_form(
             {"errors": [error_message], "form_data": {"email": email}},
             status_code=422,
         )
+
+
+@router.get("/verify-email", response_class=HTMLResponse)
+async def verify_email(
+    request: Request,
+    token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Verify user's email address using token from email."""
+    log_request(request)
+
+    try:
+        # Validate token
+        user = await validate_token(db, token, "email_verification")
+
+        if not user:
+            get_logger().warning("Invalid or expired verification token")
+            return templates.TemplateResponse(
+                request,
+                "auth/verify_email.html",
+                {
+                    "success": False,
+                    "message": "Invalid or expired verification link. Please request a new one.",
+                    "current_user": None,
+                },
+            )
+
+        # Mark email as verified
+        user.email_verified = True
+        await db.commit()
+
+        # Mark token as used
+        await db.execute(
+            update(Token)
+            .where(Token.user_id == user.id)
+            .where(Token.token_type == "email_verification")
+            .where(Token.used_at.is_(None))
+            .values(used_at=datetime.now(UTC))
+        )
+        await db.commit()
+
+        get_logger().info(f"Email verified for user {user.id}")
+
+        return templates.TemplateResponse(
+            request,
+            "auth/verify_email.html",
+            {
+                "success": True,
+                "message": "Email verified successfully! You can now access all features.",
+                "current_user": user,
+            },
+        )
+
+    except Exception as e:
+        log_error(e, request, context="email_verification")
+        return templates.TemplateResponse(
+            request,
+            "auth/verify_email.html",
+            {
+                "success": False,
+                "message": "An error occurred during verification. Please try again.",
+                "current_user": None,
+            },
+        )
+
+
+@router.get("/resend-verification", response_class=HTMLResponse)
+async def resend_verification_page(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Show resend verification page."""
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    if current_user.email_verified:
+        return RedirectResponse(url="/dashboard", status_code=302)
+
+    return templates.TemplateResponse(
+        request, "auth/resend_verification.html", {"current_user": current_user}
+    )
+
+
+@router.post("/resend-verification", response_class=HTMLResponse)
+async def resend_verification(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Resend email verification to the current user."""
+    log_request(request)
+
+    try:
+        current_user = await get_current_user_from_session(request, db)
+
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        if current_user.email_verified:
+            return templates.TemplateResponse(
+                request,
+                "auth/partials/success.html",
+                {
+                    "title": "Already Verified",
+                    "message": "Your email is already verified!",
+                    "action_text": "Go to Dashboard",
+                    "action_url": "/dashboard",
+                },
+            )
+
+        # Invalidate old verification tokens
+        await invalidate_user_tokens(db, current_user.id, "email_verification")
+
+        # Create new verification token
+        verification_token = await create_verification_token(db, current_user.id)
+
+        # Send verification email
+        email_service = get_email_service()
+        if email_service:
+            await email_service.send_verification_email(
+                to_email=current_user.email,
+                name=current_user.display_name,
+                token=verification_token,
+            )
+            get_logger().info(f"Resent verification email to {current_user.email}")
+
+        return templates.TemplateResponse(
+            request,
+            "auth/partials/success.html",
+            {
+                "title": "Email Sent",
+                "message": "Verification email sent! Please check your inbox.",
+                "action_text": "Back to Home",
+                "action_url": "/",
+            },
+        )
+
+    except Exception as e:
+        log_error(e, request, context="resend_verification")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to resend verification email"},
+        )
+
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_page(request: Request):
+    """Display the forgot password request form."""
+    log_request(request)
+    return templates.TemplateResponse(request, "auth/forgot_password.html", {})
+
+
+@router.post("/forgot-password-form", response_class=HTMLResponse)
+async def forgot_password_form(
+    request: Request,
+    email: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Process forgot password request and send reset email."""
+    log_request(request, {"email": email})
+
+    try:
+        # Normalize email
+        normalized_email = email.strip().lower()
+
+        # Look up user by email
+        result = await db.execute(select(User).where(User.email == normalized_email))
+        user = result.scalar_one_or_none()
+
+        # Always return success to avoid revealing if email exists (security best practice)
+        # But only send email if user exists
+        if user:
+            # Invalidate old password reset tokens
+            await invalidate_user_tokens(db, user.id, "password_reset")
+
+            # Create new password reset token (expires in 1 hour)
+            reset_token = await create_password_reset_token(db, user.id)
+
+            # Send password reset email
+            email_service = get_email_service()
+            if email_service:
+                await email_service.send_password_reset_email(
+                    to_email=normalized_email, name=user.display_name, token=reset_token
+                )
+                get_logger().info(f"Password reset email sent to {normalized_email}")
+
+        # Always show success message (even if email doesn't exist)
+        return templates.TemplateResponse(
+            request,
+            "auth/forgot_password.html",
+            {
+                "success": True,
+                "message": "If an account exists with that email, you will receive password reset instructions shortly.",
+            },
+        )
+
+    except Exception as e:
+        log_error(e, request, context="forgot_password")
+        return templates.TemplateResponse(
+            request,
+            "auth/forgot_password.html",
+            {
+                "error": "An error occurred. Please try again.",
+            },
+        )
+
+
+@router.get("/reset-password", response_class=HTMLResponse)
+async def reset_password_page(
+    request: Request,
+    token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Display the password reset form if token is valid."""
+    log_request(request)
+
+    try:
+        # Validate token
+        user = await validate_token(db, token, "password_reset")
+
+        if not user:
+            get_logger().warning("Invalid or expired password reset token")
+            return templates.TemplateResponse(
+                request,
+                "auth/reset_password.html",
+                {
+                    "error": True,
+                    "message": "Invalid or expired reset link. Please request a new one.",
+                    "token": None,
+                },
+            )
+
+        # Token is valid, show reset form
+        return templates.TemplateResponse(
+            request,
+            "auth/reset_password.html",
+            {
+                "token": token,
+                "error": False,
+            },
+        )
+
+    except Exception as e:
+        log_error(e, request, context="reset_password_page")
+        return templates.TemplateResponse(
+            request,
+            "auth/reset_password.html",
+            {
+                "error": True,
+                "message": "An error occurred. Please try again.",
+                "token": None,
+            },
+        )
+
+
+@router.post("/reset-password-form", response_class=HTMLResponse)
+async def reset_password_form(
+    request: Request,
+    token: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Process password reset form submission."""
+    log_request(request)
+
+    try:
+        # Validate token
+        user = await validate_token(db, token, "password_reset")
+
+        if not user:
+            get_logger().warning("Invalid or expired password reset token")
+            raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+        # Validate password length
+        if len(password) < 8:
+            raise HTTPException(status_code=422, detail="Password must be at least 8 characters")
+
+        # Validate passwords match
+        if password != confirm_password:
+            raise HTTPException(status_code=422, detail="Passwords do not match")
+
+        # Update password
+        user.password_hash = get_password_hash(password)
+        await db.commit()
+
+        # Mark token as used
+        await db.execute(
+            update(Token)
+            .where(Token.user_id == user.id)
+            .where(Token.token_type == "password_reset")
+            .where(Token.used_at.is_(None))
+            .values(used_at=datetime.now(UTC))
+        )
+        await db.commit()
+
+        get_logger().info(f"Password reset successful for user {user.id}")
+        log_auth_event(
+            "password_reset",
+            user.email,
+            True,
+            request,
+            user_id=str(user.id),
+        )
+
+        # Auto-login user after successful password reset
+        session_id = await create_session(db, user.id)
+
+        response = templates.TemplateResponse(
+            request,
+            "auth/reset_password.html",
+            {
+                "success": True,
+                "message": "Password reset successful! You are now logged in.",
+            },
+        )
+
+        # Set session cookie
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            httponly=True,
+            secure=IS_PRODUCTION,
+            samesite="lax",
+            max_age=86400,  # 24 hours
+        )
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error(e, request, context="reset_password")
+        log_auth_event(
+            "password_reset",
+            "unknown",
+            False,
+            request,
+            error_message=str(e),
+        )
+        raise HTTPException(status_code=500, detail="An error occurred during password reset")
+
+
+# Test-only endpoint for E2E tests
+@router.post("/test-verify-user")
+async def test_verify_user(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Test-only endpoint to verify users during E2E testing.
+
+    WARNING: This endpoint is only available during E2E testing and should
+    never be exposed in production.
+    """
+    # Check at runtime, not import time
+    if os.getenv("E2E_TESTING", "").lower() not in ("true", "1", "yes"):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    try:
+        body = await request.json()
+        email = body.get("email")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email required")
+
+        # Find and verify user
+        result = await db.execute(select(User).where(User.email == email.strip().lower()))
+        user = result.scalar_one_or_none()
+
+        if user:
+            user.email_verified = True
+            await db.commit()
+            return {"success": True, "message": "User verified"}
+        else:
+            return {"success": False, "message": "User not found"}
+
+    except Exception as e:
+        get_logger().error(f"Error in test-verify-user: {e}")
+        raise HTTPException(status_code=500, detail="Internal error")

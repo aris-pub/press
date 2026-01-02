@@ -164,6 +164,41 @@ async def test_delete_account_authenticated(authenticated_client: AsyncClient, t
     assert "Account deleted successfully" in response.json()["message"]
 
 
+async def test_delete_account_with_tokens(authenticated_client: AsyncClient, test_user, test_db):
+    """Test DELETE /account deletes user and their tokens successfully.
+
+    Regression test for bug where account deletion failed with ForeignKeyViolationError
+    when user had verification or password reset tokens.
+    """
+    from sqlalchemy import select
+
+    from app.auth.tokens import create_password_reset_token, create_verification_token
+    from app.models.token import Token
+
+    # Create both types of tokens for the user
+    await create_verification_token(test_db, test_user.id)
+    await create_password_reset_token(test_db, test_user.id)
+    await test_db.commit()
+
+    # Verify tokens exist
+    result = await test_db.execute(select(Token).where(Token.user_id == test_user.id))
+    tokens = result.scalars().all()
+    assert len(tokens) == 2, "User should have 2 tokens before deletion"
+
+    # Delete the account
+    response = await authenticated_client.delete("/account")
+    assert response.status_code == 200, (
+        f"Expected 200, got {response.status_code}: {response.text}"
+    )
+    assert response.json()["success"] is True
+    assert "Account deleted successfully" in response.json()["message"]
+
+    # Verify tokens were deleted
+    result = await test_db.execute(select(Token).where(Token.user_id == test_user.id))
+    tokens_after = result.scalars().all()
+    assert len(tokens_after) == 0, "All user tokens should be deleted with account"
+
+
 async def test_register_form_passwords_dont_match(client: AsyncClient):
     """Test POST /register-form with mismatched passwords."""
     register_data = {

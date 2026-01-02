@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="resend-page">
+    <div class="resend-wrapper">
+        <div class="resend-card">
+            <h1>Resend Verification</h1>
+            <p class="subtitle">We'll send a new verification link to your email.</p>
+
+            <div class="email-display">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                </svg>
+                <span>{{ current_user.email }}</span>
+            </div>
+
+            <p class="help-text">Check your spam folder if you don't see the email.</p>
+
+            <form hx-post="/resend-verification" hx-swap="innerHTML" hx-target="body">
+                <button type="submit" class="btn btn-primary btn-full">Send Verification Email</button>
+            </form>
+
+            <div class="form-footer">
+                <a href="/">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.resend-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 2rem 1rem;
+}
+
+.resend-wrapper {
+    max-width: 450px;
+    width: 100%;
+}
+
+.resend-card {
+    background: var(--gray-bg-light);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem 2rem;
+}
+
+.resend-card h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem;
+    color: var(--gray-dark);
+}
+
+.subtitle {
+    color: var(--gray-medium);
+    margin: 0 0 1.5rem 0;
+    font-size: 0.95rem;
+}
+
+.email-display {
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.email-display svg {
+    width: 20px;
+    height: 20px;
+    color: var(--red);
+    flex-shrink: 0;
+}
+
+.email-display span {
+    color: var(--gray-dark);
+    font-size: 0.95rem;
+    font-weight: 500;
+    word-break: break-all;
+}
+
+.help-text {
+    color: var(--gray-medium);
+    font-size: 0.875rem;
+    margin: 0 0 1.5rem 0;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: var(--red);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--red-dark);
+}
+
+.btn-full {
+    width: 100%;
+}
+
+form {
+    margin-bottom: 1.5rem;
+}
+
+.form-footer {
+    text-align: center;
+}
+
+.form-footer a {
+    color: var(--gray-medium);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.form-footer a:hover {
+    color: var(--red);
+}
+</style>
+{% endblock %}

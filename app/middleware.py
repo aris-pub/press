@@ -113,10 +113,14 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
         Returns:
             Redirect response to HTTPS or normal response
         """
-        # Skip HTTPS redirect for health checks and E2E testing
+        # Skip HTTPS redirect for health checks, E2E testing, and local development
         import os
 
         if os.getenv("E2E_TESTING", "").lower() in ("true", "1", "yes"):
+            return await call_next(request)
+
+        # Skip HTTPS redirect in development
+        if os.getenv("ENVIRONMENT", "development") != "production":
             return await call_next(request)
 
         # Skip HTTPS redirect for internal health checks
@@ -369,3 +373,87 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             except Exception as e:
                 logger = get_logger()
                 logger.error(f"Rate limit cleanup error: {e}")
+
+
+class EmailVerificationMiddleware(BaseHTTPMiddleware):
+    """Middleware to block unverified users from protected routes."""
+
+    # Routes that don't require email verification
+    ALLOWED_PATHS = {
+        "/",
+        "/login",
+        "/login-form",
+        "/register",
+        "/register-form",
+        "/logout",
+        "/verify-email",
+        "/resend-verification",
+        "/forgot-password",
+        "/forgot-password-form",
+        "/reset-password",
+        "/reset-password-form",
+        "/dashboard",
+        "/static",
+        "/favicon.ico",
+        "/health",
+    }
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Check if user is verified before allowing access to protected routes."""
+        from fastapi.responses import RedirectResponse
+
+        from app.auth.session import get_current_user_from_session
+        from app.database import get_db
+
+        path = request.url.path
+
+        # Allow static files and public routes
+        # For "/" we need exact match, for others (like "/static") we use prefix match
+        is_allowed = path == "/" or any(
+            path.startswith(allowed) and allowed != "/" for allowed in self.ALLOWED_PATHS
+        )
+        if is_allowed:
+            return await call_next(request)
+
+        # For all other routes, check if user is authenticated and verified
+        # Get database session - respect test overrides
+        import inspect
+
+        from main import app as fastapi_app
+
+        if get_db in fastapi_app.dependency_overrides:
+            db_gen = fastapi_app.dependency_overrides[get_db]()
+            # Handle both sync and async generators
+            if inspect.isasyncgen(db_gen):
+                db = await anext(db_gen)
+            else:
+                db = next(db_gen)
+        else:
+            db_gen = get_db()
+            db = await anext(db_gen)
+        try:
+            user = await get_current_user_from_session(request, db)
+
+            # If user is logged in but not verified, block access
+            if user and not user.email_verified:
+                get_logger().info(f"Blocked unverified user {user.id} from {path}")
+                # Redirect with message parameter so homepage can show verification notice
+                return RedirectResponse(url="/?verification_required=1", status_code=302)
+
+        except Exception as e:
+            get_logger().error(f"Error in email verification middleware: {e}", exc_info=True)
+        finally:
+            try:
+                # Handle cleanup for both sync and async generators
+                if inspect.isasyncgen(db_gen):
+                    await db_gen.aclose()
+                else:
+                    # Close sync generator
+                    try:
+                        next(db_gen)
+                    except StopIteration:
+                        pass
+            except (StopAsyncIteration, StopIteration):
+                pass
+
+        return await call_next(request)
