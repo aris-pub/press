@@ -471,6 +471,33 @@ async def verify_email(
 
         get_logger().info(f"Email verified for user {user.id}")
 
+        # Rotate session for security (privilege escalation from unverified to verified)
+        old_session_id = request.cookies.get("session_id")
+        if old_session_id:
+            from app.auth.session import rotate_session
+
+            new_session_id = await rotate_session(db, old_session_id)
+
+            # Return response with new session cookie
+            response = templates.TemplateResponse(
+                request,
+                "auth/verify_email.html",
+                {
+                    "success": True,
+                    "message": "Email verified successfully! You can now access all features.",
+                    "current_user": user,
+                },
+            )
+            response.set_cookie(
+                key="session_id",
+                value=new_session_id,
+                httponly=True,
+                secure=True,
+                samesite="lax",
+                max_age=86400,  # 24 hours
+            )
+            return response
+
         return templates.TemplateResponse(
             request,
             "auth/verify_email.html",
