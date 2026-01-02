@@ -142,7 +142,7 @@ async def test_export_data_includes_all_scroll_fields(client: AsyncClient, test_
         title="Complete Scroll",
         authors="Author One, Author Two",
         abstract="Full abstract with details",
-        keywords="keyword1, keyword2, keyword3",
+        keywords=["keyword1", "keyword2", "keyword3"],
         html_content="<html><body>Complete</body></html>",
         license="arr",
         status="draft",
@@ -165,7 +165,7 @@ async def test_export_data_includes_all_scroll_fields(client: AsyncClient, test_
     assert scroll_data["title"] == "Complete Scroll"
     assert scroll_data["authors"] == "Author One, Author Two"
     assert scroll_data["abstract"] == "Full abstract with details"
-    assert scroll_data["keywords"] == "keyword1, keyword2, keyword3"
+    assert scroll_data["keywords"] == ["keyword1", "keyword2", "keyword3"]
     assert scroll_data["license"] == "arr"
     assert scroll_data["status"] == "draft"
     assert scroll_data["url_hash"] == url_hash
