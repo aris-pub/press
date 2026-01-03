@@ -11,7 +11,7 @@ async def test_homepage_anonymous_user(client: AsyncClient):
     response = await client.get("/")
     assert response.status_code == 200
     assert "Scroll Press" in response.text
-    assert "Open access to research preprints" in response.text
+    assert "A preprint server for interactive research papers" in response.text
 
 
 async def test_homepage_authenticated_user(authenticated_client: AsyncClient):
