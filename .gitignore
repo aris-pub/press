@@ -63,5 +63,9 @@ BACKUP_SETUP.md
 .coverage
 htmlcov/
 
+# Seed papers generated artifacts
+seed_papers/*.html
+seed_papers/*_files/
+
 # Alembic versions (keep the directory structure but not specific migrations for now)
 # alembic/versions/*.py
