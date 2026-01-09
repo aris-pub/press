@@ -1,8 +1,13 @@
 # Scroll Press
 
 A modern HTML-native preprint server for academic research documents. Built with
-FastAPI, Scroll Press allows researchers to upload and share research manuscripts
-written in web-native formats (HTML/CSS/JS).
+FastAPI, Scroll Press accepts research from any authoring tool that produces HTML—Typst,
+Quarto, MyST, Jupyter, or handwritten HTML. Format freedom, instant publication,
+permanent URLs.
+
+**Governance**: Press is fully community-owned—open source, community contributions
+accepted, roadmap driven by community needs, forever free. Supported by community
+donations and academic grants.
 
 ## Features
 
