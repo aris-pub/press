@@ -1,0 +1,45 @@
+{#
+  Google Scholar meta tags component
+
+  Renders citation_* meta tags for Google Scholar indexing.
+  Only renders if scroll is published.
+
+  Args:
+    scroll: Scroll model instance with all required fields
+    base_url: Application base URL from configuration
+
+  Edge Cases:
+    - Returns empty string if scroll.status != 'published'
+    - Handles None/empty scroll.authors gracefully
+    - Skips keywords section if None/empty
+    - Falls back to created_at if published_at is None
+    - Escapes all user content with | escape filter
+#}
+{% macro google_scholar_meta(scroll, base_url) %}
+{% if scroll.status == 'published' %}
+<!-- Google Scholar Meta Tags -->
+<meta name="citation_title" content="{{ scroll.title | escape }}">
+{% if scroll.authors %}
+{% for author in scroll.authors.split(',') if author.strip() %}
+<meta name="citation_author" content="{{ author.strip() | escape }}">
+{% endfor %}
+{% endif %}
+<meta name="citation_publication_date" content="{{ scroll.published_at.strftime('%Y/%m/%d') if scroll.published_at else scroll.created_at.strftime('%Y/%m/%d') }}">
+<meta name="citation_journal_title" content="Scroll Press">
+<meta name="citation_publisher" content="Scroll Press">
+{% if scroll.abstract %}
+<meta name="citation_abstract" content="{{ scroll.abstract | escape }}">
+{% endif %}
+{% if scroll.keywords %}
+{% for keyword in scroll.keywords if keyword %}
+<meta name="citation_keywords" content="{{ keyword | escape }}">
+{% endfor %}
+{% endif %}
+<meta name="citation_fulltext_html_url" content="{{ base_url }}/scroll/{{ scroll.url_hash }}">
+{% if scroll.subject and scroll.subject.name %}
+<meta name="citation_subject" content="{{ scroll.subject.name | escape }}">
+{% endif %}
+<meta name="citation_language" content="en">
+<meta name="citation_online_date" content="{{ scroll.published_at.strftime('%Y/%m/%d') if scroll.published_at else scroll.created_at.strftime('%Y/%m/%d') }}">
+{% endif %}
+{% endmacro %}

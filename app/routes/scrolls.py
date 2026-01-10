@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth.session import get_current_user_from_session
+from app.config import get_base_url
 from app.database import get_db
 from app.logging_config import get_logger, log_error, log_preview_event, log_request
 from app.models.scroll import Scroll, Subject
@@ -129,7 +130,9 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
         """
         scroll.html_content = wrapped_content
 
-    return templates.TemplateResponse(request, "scroll.html", {"scroll": scroll})
+    return templates.TemplateResponse(
+        request, "scroll.html", {"scroll": scroll, "base_url": get_base_url()}
+    )
 
 
 @router.get("/upload", response_class=HTMLResponse)

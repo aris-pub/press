@@ -1,4 +1,5 @@
 {% from "components/scroll_card.html" import scroll_card %}
+{% from "components/google_scholar_meta.html" import google_scholar_meta %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,6 +22,9 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="{{ scroll.title }}">
   <meta name="twitter:description" content="{{ scroll.abstract[:200] }}...">
+
+  <!-- Google Scholar Meta Tags -->
+  {{ google_scholar_meta(scroll, base_url) }}
 
   <link rel="icon" type="image/svg+xml" href="/static/images/press-logo-64.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -198,6 +202,16 @@
 .scroll-content {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* CSS isolation: undo Press's global * selector reset for user content */
+#user-content-container,
+#user-content-container * {
+  /* Undo the aggressive global reset: * { margin: 0; padding: 0; box-sizing: border-box; } */
+  /* MathJax needs its internal margins, padding, and content-box model to render correctly */
+  margin: revert !important;
+  padding: revert !important;
+  box-sizing: revert !important;
 }
 
 .scroll-attribution {
