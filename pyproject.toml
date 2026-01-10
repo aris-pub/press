@@ -99,6 +99,7 @@ max_line_length = 99
 
 [dependency-groups]
 dev = [
+    "beautifulsoup4>=4.14.3",
     "ipykernel>=7.1.0",
     "jupyter>=1.1.1",
     "myst-parser>=4.0.1",

@@ -1798,6 +1798,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "beautifulsoup4" },
     { name = "ipykernel" },
     { name = "jupyter" },
     { name = "myst-parser" },
@@ -1845,6 +1846,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "beautifulsoup4", specifier = ">=4.14.3" },
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "myst-parser", specifier = ">=4.0.1" },
