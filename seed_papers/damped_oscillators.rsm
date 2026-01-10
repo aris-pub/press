@@ -17,25 +17,25 @@
 
 The damped harmonic oscillator extends the simple harmonic oscillator by incorporating energy dissipation. This paper examines the three characteristic regimes—underdamped, critically damped, and overdamped—and demonstrates how the damping coefficient fundamentally determines system behavior. An interactive simulation enables exploration of parameter space, building intuition for this fundamental physical system.
 
-/Example paper made with RSM Studio for Scroll Press./
+*Example paper made with RSM Studio for Scroll Press.*
 
 ::
 
 ## Equation of Motion
 
-Consider a mass $m$ on a spring (constant $k$) subject to damping proportional to velocity:
+Consider a mass $m$ on a spring (constant $k$) subject to damping proportional to velocity\:
 
 $$
 m\frac{d^2x}{dt^2} = -kx - b\frac{dx}{dt}
 $$
 
-Rearranging with $\omega_0 = \sqrt{k/m}$ and $\gamma = b/(2m)$:
+Rearranging with $\omega_0 = \sqrt{k/m}$ and $\gamma = b/(2m)$\:
 
 $$
 \frac{d^2x}{dt^2} + 2\gamma\frac{dx}{dt} + \omega_0^2 x = 0
 $$
 
-The general solution depends on the discriminant $\gamma^2 - \omega_0^2$:
+The general solution depends on the discriminant $\gamma^2 - \omega_0^2$\:
 
 $$
 x(t) = A e^{-\gamma t} \cos(\omega_d t + \phi) \quad \text{(underdamped, } \gamma < \omega_0\text{)}
@@ -80,18 +80,28 @@ RLC circuits provide an electrical analog where inductance $L \leftrightarrow m$
 
 The damping coefficient $\gamma$ relative to natural frequency $\omega_0$ determines qualitative behavior. Critical damping ($\gamma = \omega_0$) provides fastest non-oscillatory return, while underdamping and overdamping represent the oscillatory and slow-decay regimes. Understanding these fundamental dynamics is essential for applications from mechanical design to signal processing.
 
-## References
+:bibliography: ::
 
-:enumerate:
-
-  :item: Landau, L. D., & Lifshitz, E. M. (1976). /Mechanics/. Butterworth-Heinemann.
-
-  :item: Taylor, J. R. (2005). /Classical Mechanics/. University Science Books.
+*Example paper made with RSM Studio for Scroll Press.*
 
 ::
 
----
+:bibtex:
 
-/Example paper made with RSM Studio for Scroll Press./
+@book{landau1976,
+  title={Mechanics},
+  author={Landau, L. D. and Lifshitz, E. M.},
+  year={1976},
+  publisher={Butterworth-Heinemann},
+  doi={10.1016/C2009-0-25569-3}
+}
+
+@book{benacquista2018,
+  title={Classical Mechanics},
+  author={Benacquista, Matthew J. and Romano, Joseph D.},
+  year={2018},
+  publisher={Springer International Publishing},
+  doi={10.1007/978-3-319-68780-3}
+}
 
 ::
