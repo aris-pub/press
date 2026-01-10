@@ -64,11 +64,12 @@ BACKUP_SETUP.md
 htmlcov/
 
 # Seed papers generated artifacts
-seed_papers/*_inlined.html
-seed_papers/damped_oscillators.html
-seed_papers/graph_traversal_myst.html
+seed_papers/*.html
+!seed_papers/damped_oscillator_widget.html
 seed_papers/*_files/
 seed_papers/myst_build/_build/
+seed_papers/static/
+seed_papers/graph_traversal_myst.md
 
 # Alembic versions (keep the directory structure but not specific migrations for now)
 # alembic/versions/*.py
