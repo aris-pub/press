@@ -11,6 +11,7 @@ format:
     toc: false
     code-fold: true
     theme: cosmo
+    embed-resources: true
 execute:
   echo: true
   warning: false

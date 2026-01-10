@@ -101,9 +101,14 @@ max_line_length = 99
 dev = [
     "ipykernel>=7.1.0",
     "jupyter>=1.1.1",
+    "myst-parser>=4.0.1",
     "nbformat>=5.10.4",
     "numpy>=2.4.0",
     "pandas>=2.3.3",
     "plotly>=6.5.0",
     "scikit-learn>=1.8.0",
+    "sphinx>=8.2.3",
+    "sphinx-book-theme>=1.1.4",
+    "sphinx-design>=0.6.1",
+    "sphinx-togglebutton>=0.3.2",
 ]

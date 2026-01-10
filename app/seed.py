@@ -124,7 +124,10 @@ async def seed_subjects():
 
 
 async def seed_scrolls():
-    """Create mock scrolls/papers."""
+    """Create seed scrolls from real HTML papers."""
+    import os
+    from pathlib import Path
+
     async with AsyncSessionLocal() as session:
         # Check if scrolls already exist
         existing_scrolls = await session.execute(text("SELECT COUNT(*) FROM scrolls"))
@@ -139,6 +142,91 @@ async def seed_scrolls():
         subjects_result = await session.execute(text("SELECT id, name FROM subjects"))
         subjects = {row[1]: row[0] for row in subjects_result}
 
+        # Define seed papers with their metadata
+        seed_papers_dir = Path(__file__).parent.parent / "seed_papers"
+
+        scrolls_data = [
+            {
+                "file": "damped_oscillators.html",
+                "title": "Damped Harmonic Oscillators: Three Characteristic Regimes",
+                "authors": "Dr. Henry Jekyll, Elizabeth Bennet",
+                "abstract": "The damped harmonic oscillator extends the simple harmonic oscillator by incorporating energy dissipation. This paper examines the three characteristic regimes—underdamped, critically damped, and overdamped—and demonstrates how the damping coefficient fundamentally determines system behavior. An interactive simulation enables exploration of parameter space, building intuition for this fundamental physical system.",
+                "keywords": ["physics", "oscillators", "damping", "interactive simulation", "RSM"],
+                "user": "Sarah Kim",
+                "subject": "Physics",
+                "license": "cc-by-4.0",
+            },
+            {
+                "file": "iris_analysis.html",
+                "title": "Interactive Analysis of the Iris Dataset",
+                "authors": "Sherlock Holmes, Alice Liddell",
+                "abstract": "The Iris dataset is a classic multivariate dataset used for classification and visualization. This paper provides an interactive exploratory analysis using Python and Plotly, demonstrating species clustering through petal and sepal measurements. Interactive visualizations enable readers to explore the data patterns that make this dataset ideal for demonstrating machine learning classification algorithms.",
+                "keywords": ["data science", "machine learning", "Quarto", "interactive plots", "classification"],
+                "user": "Anita Patel",
+                "subject": "Computer Science",
+                "license": "cc-by-4.0",
+            },
+            {
+                "file": "graph_traversal_myst.html",
+                "title": "Graph Traversal Algorithms: BFS and DFS",
+                "authors": "Dorothy Gale, Huckleberry Finn",
+                "abstract": "Graph traversal algorithms systematically visit vertices in a graph. This paper examines the two fundamental approaches: Breadth-First Search (BFS) explores level-by-level, while Depth-First Search (DFS) explores as deep as possible before backtracking. Understanding their distinct characteristics is essential for selecting the appropriate algorithm for path-finding, connectivity analysis, and graph-based problem solving.",
+                "keywords": ["algorithms", "graph theory", "BFS", "DFS", "MyST", "computer science"],
+                "user": "John Smith",
+                "subject": "Computer Science",
+                "license": "cc-by-4.0",
+            },
+            {
+                "file": "spectral_theorem.html",
+                "title": "The Spectral Theorem for Symmetric Matrices",
+                "authors": "Dr. Victor Frankenstein, Captain Nemo",
+                "abstract": "The spectral theorem establishes that symmetric matrices can be diagonalized by orthogonal transformations. This fundamental result connects linear algebra with geometric intuition and enables applications from optimization to quantum mechanics. We present the theorem with proof and demonstrate its power through concrete examples.",
+                "keywords": ["mathematics", "linear algebra", "spectral theorem", "Typst", "eigenvalues"],
+                "user": "Pavel Kowalski",
+                "subject": "Mathematics",
+                "license": "cc-by-4.0",
+            },
+        ]
+
+        # Load HTML content from files and create scrolls
+        for scroll_data in scrolls_data:
+            html_file = seed_papers_dir / scroll_data["file"]
+
+            if not html_file.exists():
+                print(f"Warning: {scroll_data['file']} not found, skipping...")
+                continue
+
+            with open(html_file, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+
+            # Generate content-addressable storage fields
+            from app.storage.content_processing import generate_permanent_url
+
+            url_hash, content_hash, tar_data = await generate_permanent_url(html_content)
+
+            db_scroll = Scroll(
+                title=scroll_data["title"],
+                authors=scroll_data["authors"],
+                abstract=scroll_data["abstract"],
+                keywords=scroll_data["keywords"],
+                html_content=html_content,
+                content_hash=content_hash,
+                url_hash=url_hash,
+                license=scroll_data["license"],
+                user_id=users[scroll_data["user"]],
+                subject_id=subjects[scroll_data["subject"]],
+                status="published",
+                version=1,
+            )
+            session.add(db_scroll)
+
+        await session.commit()
+        print(f"Created {len(scrolls_data)} seed papers from real HTML files")
+
+
+async def seed_scrolls_old():
+    """DEPRECATED: Old seed scrolls with minimal HTML - keeping for reference."""
+    async with AsyncSessionLocal() as session:
         scrolls_data = [
             {
                 "title": "Efficient Algorithms for Large-Scale Graph Neural Networks",
