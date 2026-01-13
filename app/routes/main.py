@@ -173,6 +173,7 @@ def robots_txt():
 Allow: /
 Disallow: /api/
 Disallow: /dashboard
+Disallow: /scroll/*/paper
 
 Sitemap: https://scroll.press/sitemap.xml
 """

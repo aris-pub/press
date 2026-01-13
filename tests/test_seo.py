@@ -14,6 +14,9 @@ async def test_robots_txt(client):
     assert response.headers["content-type"] == "text/plain; charset=utf-8"
     assert "User-agent: *" in response.text
     assert "Allow: /" in response.text
+    assert "Disallow: /api/" in response.text
+    assert "Disallow: /dashboard" in response.text
+    assert "Disallow: /scroll/*/paper" in response.text
     assert "Sitemap: https://scroll.press/sitemap.xml" in response.text
 
 
