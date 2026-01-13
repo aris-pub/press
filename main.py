@@ -48,16 +48,13 @@ if sentry_dsn:
         # Performance monitoring - sample rates by environment
         traces_sample_rate=1.0 if environment == "development" else 0.1,  # 10% in production
         profiles_sample_rate=1.0 if environment == "development" else 0.1,  # 10% in production
-
         # Environment and release tracking
         environment=environment,
         release=os.getenv("GIT_COMMIT", "dev"),
-
         # Error handling configuration
         attach_stacktrace=True,
         send_default_pii=False,  # GDPR compliance - no user emails/IPs in errors
         max_breadcrumbs=50,
-
         # Filter out test events
         before_send=lambda event, hint: event if environment != "testing" else None,
     )

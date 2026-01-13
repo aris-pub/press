@@ -133,6 +133,9 @@ class HTMLValidator:
         # Check for dangerous protocols
         self._check_dangerous_protocols(html_content, lines)
 
+        # Check for external resources (CDN links)
+        self._check_external_resources(html_content, lines)
+
         is_valid = len(self.errors) == 0
         error_dicts = [error.to_dict() for error in self.errors]
 
@@ -258,8 +261,33 @@ class HTMLValidator:
                 )
             )
 
-        # Check for @import statements
-        if re.search(r"@import\s+", css_content, re.IGNORECASE):
+        # Check for @import statements (including external URLs)
+        # Allow MathJax/KaTeX CDNs
+        import_matches = re.finditer(
+            r"@import\s+(?:url\(['\"](https?://[^'\"]+)['\"]\)|['\"](https?://[^'\"]+)['\"])",
+            css_content,
+            re.IGNORECASE,
+        )
+        for import_match in import_matches:
+            url = import_match.group(1) or import_match.group(2)
+
+            # Check if URL is from allowed CDN
+            if any(allowed in url for allowed in self.ALLOWED_CDN_DOMAINS):
+                continue
+
+            self.errors.append(
+                HTMLValidationError(
+                    error_type="css_import_external",
+                    message=f"CSS @import with external URL '{url}' found in {context} - not allowed. Papers must be self-contained (MathJax/KaTeX CDNs are allowed).",
+                    line_number=line_num,
+                    element=import_match.group(0),
+                )
+            )
+
+        # Check for any other @import statements (local files)
+        if re.search(
+            r"@import\s+(?:url\()?['\"]?(?!https?://)[^'\"]+", css_content, re.IGNORECASE
+        ):
             self.errors.append(
                 HTMLValidationError(
                     error_type="css_import",
@@ -305,6 +333,64 @@ class HTMLValidator:
                             element=match.group(0),
                         )
                     )
+
+    # Allowed CDN domains for essential rendering libraries
+    ALLOWED_CDN_DOMAINS = [
+        "cdn.jsdelivr.net/npm/mathjax",
+        "cdnjs.cloudflare.com/ajax/libs/mathjax",
+        "cdn.jsdelivr.net/npm/katex",
+        "cdnjs.cloudflare.com/ajax/libs/KaTeX",
+        "fonts.googleapis.com",
+        "fonts.gstatic.com",
+    ]
+
+    def _check_external_resources(self, content: str, lines: List[str]):
+        """Check for external script and stylesheet resources (reject non-self-contained HTML except for allowed CDNs)."""
+        # Check for external script tags (http:// or https://)
+        # Allow data: URIs since those are self-contained
+        # Allow MathJax/KaTeX CDNs since they're essential for math rendering
+        script_pattern = r'<script[^>]+src\s*=\s*["\'](?!data:)(https?://[^"\']+)["\'][^>]*>'
+        script_matches = re.finditer(script_pattern, content, re.IGNORECASE)
+
+        for match in script_matches:
+            url = match.group(1)
+
+            # Check if URL is from allowed CDN
+            if any(allowed in url for allowed in self.ALLOWED_CDN_DOMAINS):
+                continue
+
+            line_num = self._get_line_number(content, match.start(), lines)
+            self.errors.append(
+                HTMLValidationError(
+                    error_type="external_script",
+                    message=f"External script '{url}' not allowed. Papers must be self-contained with all resources embedded (MathJax/KaTeX CDNs are allowed).",
+                    line_number=line_num,
+                    element=match.group(0),
+                )
+            )
+
+        # Check for external stylesheet links (http:// or https://)
+        # Allow data: URIs since those are self-contained
+        # Allow MathJax/KaTeX CDNs since they're essential for math rendering
+        link_pattern = r'<link[^>]+href\s*=\s*["\'](?!data:)(https?://[^"\']+)["\'][^>]*>'
+        link_matches = re.finditer(link_pattern, content, re.IGNORECASE)
+
+        for match in link_matches:
+            url = match.group(1)
+
+            # Check if URL is from allowed CDN
+            if any(allowed in url for allowed in self.ALLOWED_CDN_DOMAINS):
+                continue
+
+            line_num = self._get_line_number(content, match.start(), lines)
+            self.errors.append(
+                HTMLValidationError(
+                    error_type="external_stylesheet",
+                    message=f"External stylesheet '{url}' not allowed. Papers must be self-contained with all resources embedded (MathJax/KaTeX CDNs are allowed).",
+                    line_number=line_num,
+                    element=match.group(0),
+                )
+            )
 
     def _get_line_number(self, content: str, position: int, lines: List[str]) -> int:
         """Get line number for a character position in the content."""

@@ -2,11 +2,10 @@
 
 import os
 from pathlib import Path
-import re
 import uuid as uuid_module
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 import sentry_sdk
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,76 +61,57 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
         extra_data={"title": scroll.title, "url_hash": scroll.url_hash},
     )
 
-    # Check if HTML content has CSS
-    has_css = bool(
-        re.search(r"<style|<link[^>]*stylesheet|style\s*=", scroll.html_content, re.IGNORECASE)
-    )
-
-    # If no CSS detected, inject basic styles
-    if not has_css:
-        basic_css = """
-        <style>
-            /* Base styles for injected scroll content */
-            .injected-scroll-content {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-                line-height: 1.6;
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 2rem;
-            }
-            .injected-scroll-content h1, 
-            .injected-scroll-content h2, 
-            .injected-scroll-content h3, 
-            .injected-scroll-content h4, 
-            .injected-scroll-content h5, 
-            .injected-scroll-content h6 {
-                font-family: Georgia, serif;
-                margin: 1.5rem 0 1rem 0;
-                font-weight: normal;
-            }
-            .injected-scroll-content h1 { font-size: 2rem; }
-            .injected-scroll-content h2 { font-size: 1.5rem; }
-            .injected-scroll-content h3 { font-size: 1.25rem; }
-            .injected-scroll-content h4 { font-size: 1.1rem; }
-            .injected-scroll-content h5 { font-size: 1rem; }
-            .injected-scroll-content h6 { font-size: 0.9rem; }
-            .injected-scroll-content p { 
-                margin: 1rem 0; 
-            }
-            .injected-scroll-content code {
-                background: var(--gray-bg);
-                padding: 0.2rem 0.4rem;
-                border-radius: 3px;
-                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-                font-size: 0.9em;
-            }
-            .injected-scroll-content pre {
-                background: var(--gray-bg);
-                padding: 1rem;
-                border-radius: 5px;
-                overflow-x: auto;
-            }
-            .injected-scroll-content blockquote {
-                border-left: 4px solid var(--red);
-                padding-left: 1rem;
-                margin: 1rem 0;
-                font-style: italic;
-                color: var(--gray);
-            }
-        </style>
-        """
-
-        # Wrap content in a styled container and inject CSS
-        wrapped_content = f"""
-        {basic_css}
-        <div class="injected-scroll-content">
-            {scroll.html_content}
-        </div>
-        """
-        scroll.html_content = wrapped_content
-
     return templates.TemplateResponse(
         request, "scroll.html", {"scroll": scroll, "base_url": get_base_url()}
+    )
+
+
+@router.get("/scroll/{url_hash}/paper")
+async def get_paper_html(
+    url_hash: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Serve paper HTML for iframe embedding.
+
+    Returns raw HTML content of a published paper for iframe rendering.
+    This route provides complete CSS/JS isolation from the parent Press page.
+
+    Security headers:
+    - X-Frame-Options: SAMEORIGIN (prevent external embedding)
+    - frame-ancestors 'self' (CSP equivalent)
+    """
+    sentry_sdk.set_tag("operation", "paper_view")
+    sentry_sdk.set_context("paper", {"url_hash": url_hash})
+
+    # Find published scroll by content-addressable hash
+    result = await db.execute(
+        select(Scroll).where(
+            Scroll.url_hash == url_hash,
+            Scroll.status == "published",
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    # Set security headers for iframe embedding
+    headers = {
+        "X-Frame-Options": "SAMEORIGIN",
+        "Content-Security-Policy": (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.plot.ly; "
+            "style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
+            "frame-ancestors 'self';"
+        ),
+    }
+
+    return Response(
+        content=scroll.html_content,
+        media_type="text/html",
+        headers=headers,
     )
 
 

@@ -1,7 +1,8 @@
 """Tests for GDPR data export endpoint."""
 
-import pytest
 from httpx import AsyncClient
+import pytest
+
 from app.models.scroll import Scroll
 from app.storage.content_processing import generate_permanent_url
 
@@ -14,7 +15,9 @@ async def test_export_data_requires_authentication(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_export_data_returns_user_data(client: AsyncClient, test_db, test_user, test_subject):
+async def test_export_data_returns_user_data(
+    client: AsyncClient, test_db, test_user, test_subject
+):
     """Test that authenticated user can export their data."""
     from app.auth.session import create_session
 
@@ -22,7 +25,9 @@ async def test_export_data_returns_user_data(client: AsyncClient, test_db, test_
     session_id = await create_session(test_db, test_user.id)
 
     # Create a scroll for the user
-    url_hash, content_hash, _ = await generate_permanent_url("<html><body>Test Export</body></html>")
+    url_hash, content_hash, _ = await generate_permanent_url(
+        "<html><body>Test Export</body></html>"
+    )
     scroll = Scroll(
         user_id=test_user.id,
         subject_id=test_subject.id,
@@ -40,10 +45,7 @@ async def test_export_data_returns_user_data(client: AsyncClient, test_db, test_
     await test_db.refresh(scroll)
 
     # Make request with session cookie
-    response = await client.get(
-        "/user/export-data",
-        cookies={"session_id": session_id}
-    )
+    response = await client.get("/user/export-data", cookies={"session_id": session_id})
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
@@ -72,11 +74,13 @@ async def test_export_data_returns_user_data(client: AsyncClient, test_db, test_
 
 
 @pytest.mark.asyncio
-async def test_export_data_only_returns_own_data(client: AsyncClient, test_db, test_user, test_subject):
+async def test_export_data_only_returns_own_data(
+    client: AsyncClient, test_db, test_user, test_subject
+):
     """Test that users can only export their own data, not other users'."""
     from app.auth.session import create_session
-    from app.models.user import User
     from app.auth.utils import get_password_hash
+    from app.models.user import User
 
     # Create another user
     other_user = User(
@@ -90,7 +94,9 @@ async def test_export_data_only_returns_own_data(client: AsyncClient, test_db, t
     await test_db.refresh(other_user)
 
     # Create scroll for other user
-    url_hash, content_hash, _ = await generate_permanent_url("<html><body>Other Content</body></html>")
+    url_hash, content_hash, _ = await generate_permanent_url(
+        "<html><body>Other Content</body></html>"
+    )
     other_scroll = Scroll(
         user_id=other_user.id,
         subject_id=test_subject.id,
@@ -110,10 +116,7 @@ async def test_export_data_only_returns_own_data(client: AsyncClient, test_db, t
     session_id = await create_session(test_db, test_user.id)
 
     # Export data
-    response = await client.get(
-        "/user/export-data",
-        cookies={"session_id": session_id}
-    )
+    response = await client.get("/user/export-data", cookies={"session_id": session_id})
 
     assert response.status_code == 200
     data = response.json()
@@ -128,7 +131,9 @@ async def test_export_data_only_returns_own_data(client: AsyncClient, test_db, t
 
 
 @pytest.mark.asyncio
-async def test_export_data_includes_all_scroll_fields(client: AsyncClient, test_db, test_user, test_subject):
+async def test_export_data_includes_all_scroll_fields(
+    client: AsyncClient, test_db, test_user, test_subject
+):
     """Test that all relevant scroll fields are included in export."""
     from app.auth.session import create_session
 
@@ -153,10 +158,7 @@ async def test_export_data_includes_all_scroll_fields(client: AsyncClient, test_
     await test_db.commit()
     await test_db.refresh(scroll)
 
-    response = await client.get(
-        "/user/export-data",
-        cookies={"session_id": session_id}
-    )
+    response = await client.get("/user/export-data", cookies={"session_id": session_id})
 
     data = response.json()
     scroll_data = data["scrolls"][0]

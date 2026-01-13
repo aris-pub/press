@@ -1,13 +1,13 @@
 # MyST configuration for building graph traversal paper
-project = 'Graph Traversal Algorithms'
-author = 'Dorothy Gale, Huckleberry Finn'
-release = '2025-01-05'
+project = "Graph Traversal Algorithms"
+author = "Dorothy Gale, Huckleberry Finn"
+release = "2025-01-05"
 
 extensions = [
-    'myst_parser',
-    'sphinx.ext.mathjax',
-    'sphinx_design',
-    'sphinx_togglebutton',
+    "myst_parser",
+    "sphinx.ext.mathjax",
+    "sphinx_design",
+    "sphinx_togglebutton",
 ]
 
 # MyST configuration
@@ -25,8 +25,8 @@ myst_enable_extensions = [
 myst_fence_as_directive = ["code-cell"]
 
 # HTML output options
-html_theme = 'sphinx_book_theme'
-html_title = 'Graph Traversal Algorithms: BFS and DFS'
+html_theme = "sphinx_book_theme"
+html_title = "Graph Traversal Algorithms: BFS and DFS"
 html_static_path = []
 templates_path = []
 
@@ -47,4 +47,4 @@ html_show_sourcelink = False
 html_show_sphinx = False
 
 # MathJax configuration
-mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
+mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"

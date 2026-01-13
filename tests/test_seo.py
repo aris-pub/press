@@ -1,7 +1,7 @@
 """Tests for SEO-related endpoints (robots.txt, sitemap.xml, meta tags)."""
 
 import pytest
-from httpx import AsyncClient
+
 from app.models.scroll import Scroll
 
 
@@ -104,5 +104,7 @@ async def test_scroll_page_has_article_meta_tags(client, test_db, test_user, tes
     # Check article meta tags
     assert '<meta name="description"' in html
     assert '<meta property="og:type" content="article">' in html
-    assert f'<meta property="og:url" content="https://scroll.press/scroll/{scroll.url_hash}">' in html
+    assert (
+        f'<meta property="og:url" content="https://scroll.press/scroll/{scroll.url_hash}">' in html
+    )
     assert f'<meta property="article:author" content="{scroll.authors}">' in html

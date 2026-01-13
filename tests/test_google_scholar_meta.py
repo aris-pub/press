@@ -1,8 +1,8 @@
 """Tests for Google Scholar meta tag implementation."""
 
+from bs4 import BeautifulSoup
 import pytest
 import pytest_asyncio
-from bs4 import BeautifulSoup
 
 
 @pytest_asyncio.fixture
@@ -201,9 +201,7 @@ async def test_xss_prevention_in_abstract(client, test_db, test_user, test_subje
 
 # EDGE CASE TESTS
 @pytest.mark.asyncio
-async def test_draft_scroll_no_google_scholar_tags(
-    client, test_db, test_user, test_subject
-):
+async def test_draft_scroll_no_google_scholar_tags(client, test_db, test_user, test_subject):
     """Verify draft scrolls do NOT include Google Scholar meta tags."""
     from app.models.scroll import Scroll
 
@@ -238,9 +236,7 @@ async def test_draft_scroll_no_google_scholar_tags(
 
 
 @pytest.mark.asyncio
-async def test_empty_string_authors_handled_gracefully(
-    client, test_db, test_user, test_subject
-):
+async def test_empty_string_authors_handled_gracefully(client, test_db, test_user, test_subject):
     """Verify scrolls with empty string authors don't crash."""
     from app.models.scroll import Scroll
 
@@ -271,9 +267,7 @@ async def test_empty_string_authors_handled_gracefully(
 
 
 @pytest.mark.asyncio
-async def test_empty_keywords_array_handled_gracefully(
-    client, test_db, test_user, test_subject
-):
+async def test_empty_keywords_array_handled_gracefully(client, test_db, test_user, test_subject):
     """Verify scrolls with empty keywords array don't crash."""
     from app.models.scroll import Scroll
 

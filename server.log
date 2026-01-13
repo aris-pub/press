@@ -1,7 +1,0 @@
-INFO:     Will watch for changes in these directories: ['/Users/leo.torres/aris/press']
-INFO:     Uvicorn running on https://127.0.0.1:7999 (Press CTRL+C to quit)
-INFO:     Started reloader process [47405] using WatchFiles
-INFO:     Started server process [47408]
-INFO:     Waiting for application startup.
-2026-01-01 20:56:56 - scroll_press - INFO - Starting Scroll Press application
-INFO:     Application startup complete.

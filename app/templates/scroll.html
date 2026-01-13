@@ -57,14 +57,17 @@
   </button>
 
   <!-- Store user HTML content as JSON data for strict-dynamic processing -->
-  <script type="application/json" id="user-content-data">
-    {{ scroll.html_content | tojson }}
-  </script>
-
   <div class="scroll-container">
-    <div class="scroll-content" id="user-content-container">
-      <!-- User content will be loaded here by nonce'd script -->
+    <div id="iframe-loading" class="loading-overlay">
+      <div class="spinner"></div>
     </div>
+    <iframe
+      id="paper-frame"
+      src="/scroll/{{ scroll.url_hash }}/paper"
+      style="width: 100%; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
+      title="{{ scroll.title }}"
+      scrolling="no"
+    ></iframe>
   </div>
 
   <footer class="scroll-attribution">
@@ -197,21 +200,34 @@
 
 .scroll-container {
   padding: 2rem 2rem 0 2rem;
-}
-
-.scroll-content {
-  max-width: 1200px;
+  position: relative;
   margin: 0 auto;
 }
 
-/* CSS isolation: undo Press's global * selector reset for user content */
-#user-content-container,
-#user-content-container * {
-  /* Undo the aggressive global reset: * { margin: 0; padding: 0; box-sizing: border-box; } */
-  /* MathJax needs its internal margins, padding, and content-box model to render correctly */
-  margin: revert !important;
-  padding: revert !important;
-  box-sizing: revert !important;
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-bg-light);
+  z-index: 10;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-light);
+  border-top-color: var(--red);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .scroll-attribution {
@@ -482,83 +498,64 @@ body.modal-open {
 }
 </style>
 
-<!-- Nonce'd script for strict-dynamic user content loading -->
+<!-- Auto-resize iframe to match content height -->
 <script{% if nonce %} nonce="{{ nonce }}"{% endif %}>
-// Load user HTML content using strict-dynamic pattern
 (function() {
-  try {
-    // Get user content data
-    const userDataElement = document.getElementById('user-content-data');
-    if (!userDataElement) {
-      console.error('User content data not found');
-      return;
-    }
-    
-    const userHtmlContent = JSON.parse(userDataElement.textContent);
-    const container = document.getElementById('user-content-container');
-    
-    if (!container) {
-      console.error('User content container not found');
-      return;
-    }
-    
-    // Inject HTML structure first
-    container.innerHTML = userHtmlContent;
-    
-    // Find and dynamically re-execute user scripts (inherits trust via strict-dynamic)
-    const scripts = container.querySelectorAll('script');
-    console.log(`Found ${scripts.length} user scripts to execute`);
-    
-    scripts.forEach(function(originalScript, index) {
-      try {
-        const newScript = document.createElement('script');
-        
-        // Copy script content
-        if (originalScript.textContent) {
-          const scriptContent = originalScript.textContent.trim();
-          if (scriptContent.length === 0) {
-            console.log(`Skipping empty user script ${index + 1}/${scripts.length}`);
-            originalScript.remove();
-            return;
-          }
-          newScript.textContent = scriptContent;
-        }
-        
-        // Copy important attributes
-        if (originalScript.src) {
-          newScript.src = originalScript.src;
-        }
-        if (originalScript.type) {
-          newScript.type = originalScript.type;
-        }
-        
-        // Remove the original script to avoid duplicate execution warnings
-        originalScript.remove();
-        
-        // Append new script (inherits nonce trust via strict-dynamic)
-        document.head.appendChild(newScript);
-        
-        console.log(`Executed user script ${index + 1}/${scripts.length}`);
-      } catch (scriptError) {
-        console.error(`Error executing user script ${index + 1}:`, scriptError);
-        console.error(`Script content:`, originalScript.textContent?.substring(0, 200) + '...');
-        // Remove problematic script
-        if (originalScript.parentNode) {
-          originalScript.remove();
-        }
+  const iframe = document.getElementById('paper-frame');
+  const loadingOverlay = document.getElementById('iframe-loading');
+
+  iframe.addEventListener('load', function() {
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+      // Function to update iframe height and width
+      function updateDimensions() {
+        const html = iframeDoc.documentElement;
+        const body = iframeDoc.body;
+
+        const height = Math.max(
+          html.scrollHeight,
+          html.offsetHeight,
+          body.scrollHeight,
+          body.offsetHeight
+        );
+
+        const width = Math.max(
+          html.scrollWidth,
+          body.scrollWidth
+        );
+
+        iframe.style.height = height + 'px';
+        iframe.style.width = width + 'px';
       }
-    });
-    
-    console.log('✓ User content loaded successfully with strict-dynamic');
-    
-  } catch (error) {
-    console.error('Error loading user content:', error);
-    // Fallback: show an error message
-    const container = document.getElementById('user-content-container');
-    if (container) {
-      container.innerHTML = '<div style="padding: 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; color: #721c24;"><strong>Error:</strong> Unable to load content. Please try refreshing the page.</div>';
+
+      // Set initial dimensions
+      updateDimensions();
+
+      // Hide loading overlay and show iframe
+      loadingOverlay.style.display = 'none';
+      iframe.style.opacity = '1';
+
+      // Use ResizeObserver to auto-adjust iframe dimensions on content changes
+      const resizeObserver = new ResizeObserver(() => {
+        updateDimensions();
+      });
+
+      resizeObserver.observe(iframeDoc.documentElement);
+      resizeObserver.observe(iframeDoc.body);
+    } catch (e) {
+      console.error('Failed to observe iframe content:', e);
+      // Fallback: set reasonable default height
+      iframe.style.height = '1000px';
+      loadingOverlay.style.display = 'none';
+      iframe.style.opacity = '1';
     }
-  }
+  });
+
+  iframe.addEventListener('error', function() {
+    loadingOverlay.innerHTML =
+      '<p style="color: var(--gray);">Failed to load paper. <a href="/scroll/{{ scroll.url_hash }}/paper" style="color: var(--red);">Open directly</a></p>';
+  });
 })();
 </script>
 
@@ -605,6 +602,12 @@ body.modal-open {
       
       localStorage.setItem('theme', newTheme);
       document.documentElement.setAttribute('data-theme', newTheme);
+
+      // Reload iframe to apply dark mode to paper
+      const iframe = document.getElementById('paper-frame');
+      if (iframe) {
+        iframe.src = iframe.src;
+      }
     });
   }
   

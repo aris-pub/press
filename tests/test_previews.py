@@ -152,14 +152,123 @@ async def test_view_published_preview(client: AsyncClient, test_db, test_user):
     assert response.status_code == 200
     assert "Test Published Scroll" in response.text
     assert "Test Author" in response.text
-    # HTML content should be available in the JSON data section for dynamic loading
-    # The content gets CSS-injected and JSON-encoded, so we check for the text content
-    assert "Test Published Content" in response.text
-    # Verify dynamic loading infrastructure is present
-    assert "user-content-data" in response.text
-    assert "user-content-container" in response.text
-    # Verify CSS injection happened (content should be wrapped)
-    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' in response.text
+    # Verify iframe infrastructure is present
+    assert 'id="paper-frame"' in response.text
+    assert f'src="/scroll/{preview.url_hash}/paper"' in response.text
+    assert "<iframe" in response.text
+
+
+async def test_paper_route_renders_html(client: AsyncClient, test_db, test_user):
+    """Test that /scroll/{hash}/paper returns raw paper HTML."""
+    from app.storage.content_processing import generate_permanent_url
+
+    subject = Subject(name="Test Subject", description="Test description")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    html_content = "<h1>Test Paper Content</h1>"
+    url_hash, content_hash, _ = await generate_permanent_url(html_content)
+
+    preview = Scroll(
+        title="Test Paper",
+        authors="Test Author",
+        abstract="Test abstract",
+        html_content=html_content,
+        content_hash=content_hash,
+        url_hash=url_hash,
+        license="cc-by-4.0",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="published",
+    )
+    preview.publish()
+    test_db.add(preview)
+    await test_db.commit()
+    await test_db.refresh(preview)
+
+    response = await client.get(f"/scroll/{preview.url_hash}/paper")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "text/html; charset=utf-8"
+
+    # Should return raw HTML content
+    assert preview.html_content in response.text
+
+    # Should NOT include Press template elements
+    assert "Scroll Press" not in response.text
+    assert "scroll-attribution" not in response.text
+
+
+async def test_paper_route_security_headers(client: AsyncClient, test_db, test_user):
+    """Test that paper route sets required security headers."""
+    from app.storage.content_processing import generate_permanent_url
+
+    subject = Subject(name="Test Subject", description="Test description")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    html_content = "<h1>Test</h1>"
+    url_hash, content_hash, _ = await generate_permanent_url(html_content)
+
+    preview = Scroll(
+        title="Test Paper",
+        authors="Test Author",
+        abstract="Test abstract",
+        html_content=html_content,
+        content_hash=content_hash,
+        url_hash=url_hash,
+        license="cc-by-4.0",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="published",
+    )
+    preview.publish()
+    test_db.add(preview)
+    await test_db.commit()
+    await test_db.refresh(preview)
+
+    response = await client.get(f"/scroll/{preview.url_hash}/paper")
+    assert response.status_code == 200
+
+    # Check CSP includes frame-ancestors
+    csp = response.headers.get("content-security-policy", "")
+    assert "frame-ancestors 'self'" in csp
+
+    # Check X-Frame-Options
+    assert response.headers.get("x-frame-options") == "SAMEORIGIN"
+
+
+async def test_paper_route_unpublished_404(client: AsyncClient, test_db, test_user):
+    """Test that unpublished papers return 404 on paper route."""
+    from app.storage.content_processing import generate_permanent_url
+
+    subject = Subject(name="Test Subject", description="Test description")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    html_content = "<h1>Test Draft</h1>"
+    url_hash, content_hash, _ = await generate_permanent_url(html_content)
+
+    preview = Scroll(
+        title="Test Draft Paper",
+        authors="Test Author",
+        abstract="Test abstract",
+        html_content=html_content,
+        content_hash=content_hash,
+        url_hash=url_hash,
+        license="cc-by-4.0",
+        user_id=test_user.id,
+        subject_id=subject.id,
+        status="draft",
+    )
+    test_db.add(preview)
+    await test_db.commit()
+    await test_db.refresh(preview)
+
+    response = await client.get(f"/scroll/{preview.url_hash}/paper")
+    assert response.status_code == 404
 
 
 async def test_view_nonexistent_scroll_404(client: AsyncClient):
@@ -211,94 +320,6 @@ async def test_upload_form_requires_auth(client: AsyncClient):
     response = await client.post("/upload-form", data=upload_data, follow_redirects=False)
     assert response.status_code == 302
     assert response.headers["location"] == "/login"
-
-
-async def test_css_injection_for_unstyled_content(client: AsyncClient, test_db, test_user):
-    """Test CSS injection when HTML content has no CSS styling."""
-    # Create a subject and published scroll with no CSS
-    subject = Subject(name="Test Subject", description="Test description")
-    test_db.add(subject)
-    await test_db.commit()
-    await test_db.refresh(subject)
-
-    preview = await create_content_addressable_scroll(
-        test_db,
-        test_user,
-        subject,
-        title="Unstyled Scroll",
-        authors="Test Author",
-        abstract="Test abstract",
-        html_content="<h1>Plain HTML Content</h1><p>This has no styling.</p>",
-        license="cc-by-4.0",
-    )
-    preview.publish()
-    await test_db.commit()
-
-    response = await client.get(f"/scroll/{preview.url_hash}")
-    assert response.status_code == 200
-
-    # Check that CSS was injected
-    assert "<style>" in response.text
-    assert ".injected-scroll-content" in response.text
-    assert "font-family: -apple-system" in response.text
-    assert "font-family: Georgia, serif" in response.text
-    assert "var(--gray-bg)" in response.text
-    assert "var(--red)" in response.text
-
-    # Check that content is wrapped in the injected container (JSON-encoded)
-    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' in response.text
-    assert "Plain HTML Content" in response.text
-    # Verify dynamic loading infrastructure is present
-    assert "user-content-data" in response.text
-
-
-async def test_no_css_injection_for_styled_content(client: AsyncClient, test_db, test_user):
-    """Test CSS is NOT injected when HTML content already has CSS."""
-    # Create a subject and published scroll with existing CSS
-    subject = Subject(name="Test Subject", description="Test description")
-    test_db.add(subject)
-    await test_db.commit()
-    await test_db.refresh(subject)
-
-    styled_content = """
-    <style>
-        body { background: red; }
-        h1 { color: blue; }
-    </style>
-    <h1>Styled Content</h1>
-    <p>This already has CSS.</p>
-    """
-
-    preview = await create_content_addressable_scroll(
-        test_db,
-        test_user,
-        subject,
-        title="Styled Scroll",
-        authors="Test Author",
-        abstract="Test abstract",
-        html_content=styled_content,
-        license="cc-by-4.0",
-    )
-    preview.publish()
-    await test_db.commit()
-
-    response = await client.get(f"/scroll/{preview.url_hash}")
-    assert response.status_code == 200
-
-    # Check that the original CSS is preserved
-    assert "background: red;" in response.text
-    assert "color: blue;" in response.text
-
-    # Check that our CSS injection styles are NOT present
-    assert ".injected-scroll-content" not in response.text
-    assert "font-family: -apple-system" not in response.text
-    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' not in response.text
-
-    # Original content should be in JSON data
-    assert "Styled Content" in response.text
-    assert "This already has CSS" in response.text
-    # Verify dynamic loading infrastructure is present
-    assert "user-content-data" in response.text
 
 
 async def test_upload_form_with_file_content_integration(
@@ -444,88 +465,3 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
     response = await authenticated_client.post("/upload-form", data=valid_upload_data)
     assert response.status_code == 200
     assert "Your scroll has been published successfully!" in response.text
-
-
-async def test_css_detection_with_link_tags(client: AsyncClient, test_db, test_user):
-    """Test CSS detection works with <link> stylesheet tags."""
-    # Create a subject and published scroll with link tag CSS
-    subject = Subject(name="Test Subject", description="Test description")
-    test_db.add(subject)
-    await test_db.commit()
-    await test_db.refresh(subject)
-
-    content_with_link = """
-    <link rel="stylesheet" href="styles.css">
-    <h1>Content with Link Tag</h1>
-    <p>This has CSS via link tag.</p>
-    """
-
-    preview = await create_content_addressable_scroll(
-        test_db,
-        test_user,
-        subject,
-        title="Link CSS Scroll",
-        authors="Test Author",
-        abstract="Test abstract",
-        html_content=content_with_link,
-        license="cc-by-4.0",
-    )
-    preview.publish()
-    await test_db.commit()
-
-    response = await client.get(f"/scroll/{preview.url_hash}")
-    assert response.status_code == 200
-
-    # Check that the original link tag is preserved (in JSON data)
-    assert 'rel="stylesheet"' in response.text or 'rel=\\"stylesheet\\"' in response.text
-    assert 'href="styles.css"' in response.text or 'href=\\"styles.css\\"' in response.text
-
-    # Check that our CSS injection styles are NOT present
-    assert ".injected-scroll-content" not in response.text
-    assert "font-family: -apple-system" not in response.text
-    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' not in response.text
-    # Verify dynamic loading infrastructure is present
-    assert "user-content-data" in response.text
-
-
-async def test_css_detection_with_inline_styles(client: AsyncClient, test_db, test_user):
-    """Test CSS detection works with inline style attributes."""
-    # Create a subject and published scroll with inline styles
-    subject = Subject(name="Test Subject", description="Test description")
-    test_db.add(subject)
-    await test_db.commit()
-    await test_db.refresh(subject)
-
-    content_with_inline = """
-    <h1 style="color: green; font-size: 24px;">Content with Inline Styles</h1>
-    <p>This has CSS via inline styles.</p>
-    """
-
-    preview = await create_content_addressable_scroll(
-        test_db,
-        test_user,
-        subject,
-        title="Inline CSS Scroll",
-        authors="Test Author",
-        abstract="Test abstract",
-        html_content=content_with_inline,
-        license="cc-by-4.0",
-    )
-    preview.publish()
-    await test_db.commit()
-
-    response = await client.get(f"/scroll/{preview.url_hash}")
-    assert response.status_code == 200
-
-    # Check that the original inline styles are preserved (in JSON data)
-    assert (
-        'style="color: green; font-size: 24px;"' in response.text
-        or 'style=\\"color: green; font-size: 24px;\\"' in response.text
-    )
-
-    # Check that our CSS injection styles are NOT present
-    assert ".injected-scroll-content" not in response.text
-    assert "font-family: -apple-system" not in response.text
-    assert '\\u003cdiv class=\\"injected-scroll-content\\"\\u003e' not in response.text
-    # Verify dynamic loading infrastructure is present
-    assert "user-content-data" in response.text

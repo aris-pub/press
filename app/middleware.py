@@ -166,7 +166,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Add security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
+        # Only set X-Frame-Options if not already set (e.g., by /paper endpoint)
+        if "X-Frame-Options" not in response.headers:
+            response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
@@ -175,8 +177,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         # Add CSP header with context-aware script protection
-        is_scroll_page = request.url.path.startswith("/scroll/") and not request.url.path.endswith(
-            "/raw"
+        # Skip if response already has CSP (e.g., from /paper endpoint)
+        if "Content-Security-Policy" in response.headers:
+            return response
+
+        # Exclude /paper endpoint - it sets its own CSP with frame-ancestors
+        is_scroll_page = (
+            request.url.path.startswith("/scroll/")
+            and not request.url.path.endswith("/raw")
+            and not request.url.path.endswith("/paper")
         )
 
         if is_scroll_page:
@@ -189,7 +198,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     "style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; "
                     "img-src 'self' data:; "
                     "font-src 'self' data: https://fonts.gstatic.com; "
-                    "connect-src 'self';"
+                    "connect-src 'self'; "
+                    "frame-src 'self';"
                 )
             else:
                 # Fallback for scroll pages without nonce (shouldn't happen)
@@ -199,7 +209,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     "style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; "
                     "img-src 'self' data:; "
                     "font-src 'self' data: https://fonts.gstatic.com; "
-                    "connect-src 'self';"
+                    "connect-src 'self'; "
+                    "frame-src 'self';"
                 )
         else:
             # Standard CSP for static pages (homepage, auth, etc) - no nonces needed
@@ -209,7 +220,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                 "img-src 'self' data:; "
                 "font-src 'self' https://fonts.gstatic.com; "
-                "connect-src 'self';"
+                "connect-src 'self'; "
+                "frame-src 'self';"
             )
         response.headers["Content-Security-Policy"] = csp
 
