@@ -20,7 +20,7 @@
 
 The spectral theorem establishes that symmetric matrices can be diagonalized by orthogonal transformations. This fundamental result connects linear algebra with geometric intuition and enables applications from optimization to quantum mechanics.
 
-_Example paper made with Typst + Pandoc for Scroll Press._
+_Example scroll made with Typst + Pandoc for Scroll Press._
 
 = Introduction
 
@@ -73,5 +73,5 @@ The spectral theorem provides both theoretical insight and computational power f
 #line(length: 100%)
 
 #align(center)[
-  #text(style: "italic")[Example paper made with Typst + Pandoc for Scroll Press.]
+  #text(style: "italic")[Example scroll made with Typst + Pandoc for Scroll Press.]
 ]

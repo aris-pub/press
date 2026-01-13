@@ -11,16 +11,6 @@ from app.models.user import User
 async def seed_users():
     """Create mock users with UTC timestamps."""
     async with AsyncSessionLocal() as session:
-        # Check if our seed users already exist
-        existing_seed_users = await session.execute(
-            text(
-                "SELECT COUNT(*) FROM users WHERE email LIKE '%university.edu' OR email LIKE '%institute.org' OR email LIKE '%lab.com'"
-            )
-        )
-        if existing_seed_users.scalar() > 0:
-            print("Seed users already exist, skipping seed.")
-            return
-
         # Sample users matching the paper authors
         users_data = [
             {
@@ -87,12 +77,6 @@ async def seed_users():
 async def seed_subjects():
     """Create academic subject categories."""
     async with AsyncSessionLocal() as session:
-        # Check if subjects already exist
-        existing_subjects = await session.execute(text("SELECT COUNT(*) FROM subjects"))
-        if existing_subjects.scalar() > 0:
-            print("Subjects already exist, skipping seed.")
-            return
-
         subjects_data = [
             {
                 "name": "Computer Science",
@@ -123,18 +107,31 @@ async def seed_subjects():
         print(f"Created {len(subjects_data)} academic subjects")
 
 
+async def delete_existing_data():
+    """Delete existing seed data in correct order (respecting foreign keys)."""
+    async with AsyncSessionLocal() as session:
+        print("Deleting existing seed data...")
+        # Delete in order: scrolls first (depends on users & subjects)
+        await session.execute(text("DELETE FROM scrolls"))
+        # Then tokens and sessions (depend on users)
+        await session.execute(text("DELETE FROM tokens"))
+        await session.execute(text("DELETE FROM sessions"))
+        # Then users and subjects
+        await session.execute(
+            text(
+                "DELETE FROM users WHERE email LIKE '%university.edu' OR email LIKE '%institute.org' OR email LIKE '%lab.com' OR email LIKE '%research.edu' OR email LIKE '%physics.edu' OR email LIKE '%biolab.org' OR email LIKE '%med.edu' OR email LIKE '%research.jp' OR email LIKE '%math.edu'"
+            )
+        )
+        await session.execute(text("DELETE FROM subjects"))
+        await session.commit()
+        print("Existing seed data deleted!")
+
+
 async def seed_scrolls():
     """Create seed scrolls from real HTML papers."""
-    import os
     from pathlib import Path
 
     async with AsyncSessionLocal() as session:
-        # Check if scrolls already exist
-        existing_scrolls = await session.execute(text("SELECT COUNT(*) FROM scrolls"))
-        if existing_scrolls.scalar() > 0:
-            print("Scrolls already exist, skipping seed.")
-            return
-
         # Get users and subjects for foreign keys
         users_result = await session.execute(text("SELECT id, display_name FROM users"))
         users = {row[1]: row[0] for row in users_result}
@@ -147,6 +144,32 @@ async def seed_scrolls():
 
         scrolls_data = [
             {
+                "file": "spectral_theorem.html",
+                "title": "The Spectral Theorem for Symmetric Matrices",
+                "authors": "Dr. Victor Frankenstein, Captain Nemo",
+                "abstract": "The spectral theorem establishes that symmetric matrices can be diagonalized by orthogonal transformations. This fundamental result connects linear algebra with geometric intuition and enables applications from optimization to quantum mechanics. We present the theorem with proof and demonstrate its power through concrete examples.",
+                "keywords": ["mathematics", "linear algebra", "spectral theorem", "Typst"],
+                "user": "Pavel Kowalski",
+                "subject": "Mathematics",
+                "license": "cc-by-4.0",
+            },
+            {
+                "file": "iris_analysis.html",
+                "title": "Interactive Analysis of the Iris Dataset",
+                "authors": "Sherlock Holmes, Alice Liddell",
+                "abstract": "The Iris dataset is a classic multivariate dataset used for classification and visualization. This paper provides an interactive exploratory analysis using Python and Plotly, demonstrating species clustering through petal and sepal measurements. Interactive visualizations enable readers to explore the data patterns that make this dataset ideal for demonstrating machine learning classification algorithms.",
+                "keywords": [
+                    "data science",
+                    "machine learning",
+                    "Quarto",
+                    "interactive plots",
+                    "classification",
+                ],
+                "user": "Anita Patel",
+                "subject": "Computer Science",
+                "license": "cc-by-4.0",
+            },
+            {
                 "file": "damped_oscillators.html",
                 "title": "Damped Harmonic Oscillators: Three Characteristic Regimes",
                 "authors": "Dr. Henry Jekyll, Elizabeth Bennet",
@@ -157,33 +180,13 @@ async def seed_scrolls():
                 "license": "cc-by-4.0",
             },
             {
-                "file": "iris_analysis.html",
-                "title": "Interactive Analysis of the Iris Dataset",
-                "authors": "Sherlock Holmes, Alice Liddell",
-                "abstract": "The Iris dataset is a classic multivariate dataset used for classification and visualization. This paper provides an interactive exploratory analysis using Python and Plotly, demonstrating species clustering through petal and sepal measurements. Interactive visualizations enable readers to explore the data patterns that make this dataset ideal for demonstrating machine learning classification algorithms.",
-                "keywords": ["data science", "machine learning", "Quarto", "interactive plots", "classification"],
-                "user": "Anita Patel",
-                "subject": "Computer Science",
-                "license": "cc-by-4.0",
-            },
-            {
                 "file": "graph_traversal_myst.html",
                 "title": "Graph Traversal Algorithms: BFS and DFS",
                 "authors": "Dorothy Gale, Huckleberry Finn",
                 "abstract": "Graph traversal algorithms systematically visit vertices in a graph. This paper examines the two fundamental approaches: Breadth-First Search (BFS) explores level-by-level, while Depth-First Search (DFS) explores as deep as possible before backtracking. Understanding their distinct characteristics is essential for selecting the appropriate algorithm for path-finding, connectivity analysis, and graph-based problem solving.",
-                "keywords": ["algorithms", "graph theory", "BFS", "DFS", "MyST", "computer science"],
+                "keywords": ["algorithms", "graph theory", "BFS", "DFS", "MyST"],
                 "user": "John Smith",
                 "subject": "Computer Science",
-                "license": "cc-by-4.0",
-            },
-            {
-                "file": "spectral_theorem.html",
-                "title": "The Spectral Theorem for Symmetric Matrices",
-                "authors": "Dr. Victor Frankenstein, Captain Nemo",
-                "abstract": "The spectral theorem establishes that symmetric matrices can be diagonalized by orthogonal transformations. This fundamental result connects linear algebra with geometric intuition and enables applications from optimization to quantum mechanics. We present the theorem with proof and demonstrate its power through concrete examples.",
-                "keywords": ["mathematics", "linear algebra", "spectral theorem", "Typst", "eigenvalues"],
-                "user": "Pavel Kowalski",
-                "subject": "Mathematics",
                 "license": "cc-by-4.0",
             },
         ]
@@ -196,7 +199,7 @@ async def seed_scrolls():
                 print(f"Warning: {scroll_data['file']} not found, skipping...")
                 continue
 
-            with open(html_file, 'r', encoding='utf-8') as f:
+            with open(html_file, "r", encoding="utf-8") as f:
                 html_content = f.read()
 
             # Generate content-addressable storage fields
@@ -224,11 +227,13 @@ async def seed_scrolls():
         print(f"Created {len(scrolls_data)} seed papers from real HTML files")
 
 
-
 async def main():
     """Run the seed script."""
     print("Creating database tables...")
     await create_tables()
+
+    print("Deleting existing data...")
+    await delete_existing_data()
 
     print("Seeding subjects...")
     await seed_subjects()

@@ -12,6 +12,25 @@ format:
     code-fold: true
     theme: cosmo
     embed-resources: true
+    html-math-method:
+      method: mathjax
+      url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    include-in-header:
+      - text: |
+          <script type="text/x-mathjax-config">
+          MathJax.Hub.Config({
+            showProcessingMessages: false,
+            showMathMenu: false,
+            showMathMenuMSIE: false,
+            menuSettings: {
+              zoom: "None"
+            },
+            MathEvents: {
+              Menu: {}
+            }
+          });
+          </script>
+jupyter: python3
 execute:
   echo: true
   warning: false
@@ -21,7 +40,7 @@ execute:
 
 The Iris dataset, introduced by Ronald Fisher in 1936, contains measurements of 150 flowers across three species: *setosa*, *versicolor*, and *virginica*. This paper presents an interactive exploratory analysis demonstrating how petal and sepal measurements distinguish these species. Our analysis shows that while *setosa* is easily separable, distinguishing *versicolor* from *virginica* requires more sophisticated approaches.
 
-*Example paper made with Quarto for Scroll Press.*
+*Example scroll made with Quarto for Scroll Press.*
 
 ## Analysis
 
@@ -138,4 +157,4 @@ The Iris dataset demonstrates fundamental machine learning concepts: *setosa* is
 
 ---
 
-*Example paper made with Quarto for Scroll Press.*
+*Example scroll made with Quarto for Scroll Press.*

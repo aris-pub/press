@@ -1,42 +1,45 @@
-:rsm:
-  :title: Damped Harmonic Oscillators
+# Damped Harmonic Oscillators {
   :date: 2025-01-05
+}
 
-:author:
+:author: {
   :name: Dr. Henry Jekyll
   :affiliation: Department of Oscillatory Studies, Pemberley Physics Institute
-::
+} ::
 
-:author:
+:author: {
   :name: Elizabeth Bennet
   :affiliation: Department of Oscillatory Studies, Pemberley Physics Institute
-::
+} ::
 
-:abstract:
+:abstract: {
   :keywords: {damped oscillator, differential equations, physics}
+}
 
-The damped harmonic oscillator extends the simple harmonic oscillator by incorporating energy dissipation. This paper examines the three characteristic regimes—underdamped, critically damped, and overdamped—and demonstrates how the damping coefficient fundamentally determines system behavior. An interactive simulation enables exploration of parameter space, building intuition for this fundamental physical system.
+The damped harmonic oscillator extends the simple harmonic oscillator by incorporating
+energy dissipation. This paper examines the three characteristic regimes—underdamped,
+critically damped, and overdamped—and demonstrates how the damping coefficient
+fundamentally determines system behavior. An interactive simulation enables exploration
+of parameter space, building intuition for this fundamental physical system.
 
-*Example paper made with RSM Studio for Scroll Press.*
+:paragraph: {:types: {press-note, small}} *Example scroll made with RSM Studio for
+Scroll Press.*
 
 ::
 
 ## Equation of Motion
 
-Consider a mass $m$ on a spring (constant $k$) subject to damping proportional to velocity\:
-
+Consider a mass $m$ on a spring (constant $k$) subject to damping proportional to velocity:
 $$
 m\frac{d^2x}{dt^2} = -kx - b\frac{dx}{dt}
 $$
 
-Rearranging with $\omega_0 = \sqrt{k/m}$ and $\gamma = b/(2m)$\:
-
+Rearranging with $\omega_0 = \sqrt{k/m}$ and $\gamma = b/(2m)$,
 $$
 \frac{d^2x}{dt^2} + 2\gamma\frac{dx}{dt} + \omega_0^2 x = 0
 $$
 
-The general solution depends on the discriminant $\gamma^2 - \omega_0^2$\:
-
+The general solution depends on the discriminant $\gamma^2 - \omega_0^2$,
 $$
 x(t) = A e^{-\gamma t} \cos(\omega_d t + \phi) \quad \text{(underdamped, } \gamma < \omega_0\text{)}
 $$
@@ -46,47 +49,63 @@ x(t) = (A + Bt)e^{-\gamma t} \quad \text{(critically damped, } \gamma = \omega_0
 $$
 
 $$
-x(t) = A_1 e^{r_1 t} + A_2 e^{r_2 t} \quad \text{(overdamped, } \gamma > \omega_0\text{)}
+x(t) = A_1 e^{r_1 t} + A_2 e^{r_2 t} \quad \text{(overdamped, } \gamma > \omega_0\text{)},
 $$
-
 where $\omega_d = \sqrt{\omega_0^2 - \gamma^2}$ is the damped frequency and $r_{1,2}$ are negative real roots.
 
 ## Three Damping Regimes
 
-The underdamped regime ($\gamma < \omega_0$) produces oscillations with exponentially decaying amplitude $Ae^{-\gamma t}$. Energy decays as $E(t) \propto e^{-2\gamma t}$. This behavior is common in mechanical systems where oscillation before settling is acceptable.
+The underdamped regime (${:label:under, :types: hl}\gamma < \omega_0$) produces
+oscillations with exponentially decaying amplitude $Ae^{-\gamma t}$. Energy decays as
+$E(t) \propto e^{-2\gamma t}$. This behavior is common in mechanical systems where
+oscillation before settling is acceptable.
 
-Critical damping ($\gamma = \omega_0$) represents the boundary case, returning to equilibrium in minimum time without overshooting. This regime is optimal for shock absorbers and door closers.
+Critical damping (${:label:crit, :types: hl}\gamma = \omega_0$) represents the boundary
+case, returning to equilibrium in minimum time without overshooting. This regime is
+optimal for shock absorbers and door closers.
 
-The overdamped regime ($\gamma > \omega_0$) causes the system to slowly creep to equilibrium without oscillating. Return is slower than critical damping. This behavior is common in highly viscous environments.
+The overdamped regime (${:label:over, :types: hl}\gamma > \omega_0$) causes the system
+to slowly creep to equilibrium without oscillating. Return is slower than critical
+damping. This behavior is common in highly viscous environments.
 
 ## Interactive Simulation
 
-The visualization below demonstrates all three regimes. Adjustable parameters include the natural frequency $\omega_0$ (oscillation rate without damping), damping coefficient $\gamma$ (energy dissipation strength), and initial conditions $x_0$ and $v_0$ (starting position and velocity). Watch the system transition from underdamped (oscillatory) through critically damped (optimal) to overdamped (slow decay) as $\gamma$ increases past $\omega_0$. The simulation shows position vs. time with exponential envelope (underdamped case) and phase space trajectories converging to the origin.
+The visualization below demonstrates all three regimes. Adjustable parameters include
+the natural frequency $\omega_0$ (oscillation rate without damping), damping coefficient
+$\gamma$ (energy dissipation strength), and initial conditions $x_0$ and $v_0$ (starting
+position and velocity). Watch the system transition from :ref:under,underdamped::
+(oscillatory) through :ref:crit, critically damped:: (optimal) to :ref:over,overdamped::
+(slow decay) as $\gamma$ increases past $\omega_0$. The simulation shows position vs.
+time with exponential envelope (underdamped case) and phase space trajectories
+converging to the origin.
 
-:html:
+:html: {
   :path: damped_oscillator_widget.html
-
-  :caption: Interactive damped oscillator simulation showing position vs. time and phase space trajectories for all three damping regimes.
-
+}
+  :caption: Interactive damped oscillator simulation showing position vs. time and phase
+  space trajectories for all three damping regimes.
 ::
 
 ## Applications
 
-In mechanical engineering, shock absorbers are designed as underdamped ($\zeta \approx 0.3-0.4$) to allow one oscillation after impact, providing comfort while maintaining tire contact. Buildings use underdamped dampers and tuned mass dampers for seismic protection, dissipating earthquake energy.
+In mechanical engineering, shock absorbers are designed as underdamped ($\zeta \approx
+0.3-0.4$) to allow one oscillation after impact, providing comfort while maintaining
+tire contact. Buildings use underdamped dampers and tuned mass dampers for seismic
+protection, dissipating earthquake energy.
 
-RLC circuits provide an electrical analog where inductance $L \leftrightarrow m$, capacitance $C \leftrightarrow 1/k$, and resistance $R \leftrightarrow b$. Door closers are designed as critically or slightly overdamped to close smoothly without bouncing.
+RLC circuits provide an electrical analog where inductance $L \leftrightarrow m$,
+capacitance $C \leftrightarrow 1/k$, and resistance $R \leftrightarrow b$. Door closers
+are designed as critically or slightly overdamped to close smoothly without bouncing.
 
 ## Conclusion
 
-The damping coefficient $\gamma$ relative to natural frequency $\omega_0$ determines qualitative behavior. Critical damping ($\gamma = \omega_0$) provides fastest non-oscillatory return, while underdamping and overdamping represent the oscillatory and slow-decay regimes. Understanding these fundamental dynamics is essential for applications from mechanical design to signal processing.
+The damping coefficient $\gamma$ relative to natural frequency $\omega_0$ determines
+qualitative behavior. :ref:crit,Critical:: damping provides fastest non-oscillatory
+return, while :ref:under,underdamping:: and :ref:over,overdamping:: represent the
+oscillatory and slow-decay regimes. Understanding these fundamental dynamics is
+essential for applications from mechanical design to signal processing.
 
-:bibliography: ::
-
-*Example paper made with RSM Studio for Scroll Press.*
-
-::
-
-:bibtex:
+:references:
 
 @book{landau1976,
   title={Mechanics},
@@ -105,3 +124,6 @@ The damping coefficient $\gamma$ relative to natural frequency $\omega_0$ determ
 }
 
 ::
+
+:paragraph: {:types: {press-note, small}} *Example scroll made with RSM Studio for
+Scroll Press.*

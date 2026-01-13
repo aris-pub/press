@@ -1,0 +1,24 @@
+.press-note p {
+  border: solid 2px var(--gray-200);
+  border-radius: 16px;
+  padding-block: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.hl {
+  border-radius: 8px;
+  padding-inline: 4px;
+}
+
+#under {
+  background: var(--red-50);
+}
+
+#crit {
+  background: var(--purple-50);
+}
+
+#over {
+  background: var(--blue-50);
+}
