@@ -508,7 +508,7 @@ body.modal-open {
     try {
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
-      // Function to update iframe height and width
+      // Function to update iframe height (width stays 100% responsive)
       function updateDimensions() {
         const html = iframeDoc.documentElement;
         const body = iframeDoc.body;
@@ -520,13 +520,7 @@ body.modal-open {
           body.offsetHeight
         );
 
-        const width = Math.max(
-          html.scrollWidth,
-          body.scrollWidth
-        );
-
         iframe.style.height = height + 'px';
-        iframe.style.width = width + 'px';
       }
 
       // Set initial dimensions
