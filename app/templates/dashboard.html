@@ -71,7 +71,7 @@
       {% if papers %}
         <button id="export-data-btn" class="btn btn-danger" onclick="openExportModal()" {% if not current_user.email_verified %}disabled{% endif %}>Export Data</button>
       {% endif %}
-      <button id="delete-account-btn" class="btn btn-danger" onclick="openDeleteModal()" {% if not current_user.email_verified %}disabled{% endif %}>Delete Account</button>
+      <button id="delete-account-btn" class="btn btn-danger" onclick="openDeleteModal()">Delete Account</button>
     </div>
   </div>
 </div>
@@ -578,27 +578,41 @@ function validateDeleteForm() {
 
 async function deleteAccount() {
   const submitBtn = document.getElementById('confirm-delete-btn');
-  
+
   // Show loading state
   submitBtn.disabled = true;
   submitBtn.textContent = 'DELETING...';
-  
+
   try {
+    // Fetch CSRF token
+    const csrfResponse = await fetch('/csrf-token');
+    if (!csrfResponse.ok) {
+      // Session expired or invalid - redirect to login
+      if (csrfResponse.status === 401) {
+        window.location.href = '/login?message=session_expired';
+        return;
+      }
+      throw new Error('Failed to get CSRF token');
+    }
+    const { csrf_token } = await csrfResponse.json();
+
+    // Delete account with CSRF token
     const response = await fetch('/account', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRF-Token': csrf_token,
       }
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(errorText || 'Account deletion failed');
     }
-    
+
     // Redirect to home page with success message
     window.location.href = '/?message=account_deleted';
-    
+
   } catch (error) {
     alert('Account deletion failed: ' + error.message);
     // Reset button state

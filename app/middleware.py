@@ -405,9 +405,13 @@ class EmailVerificationMiddleware(BaseHTTPMiddleware):
         "/reset-password",
         "/reset-password-form",
         "/dashboard",
+        "/scroll",  # Public scroll viewing
         "/static",
         "/favicon.ico",
         "/health",
+        "/csrf-token",  # CSRF token endpoint
+        "/user/export-data",  # GDPR data export
+        "/account",  # Account deletion
     }
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
@@ -485,6 +489,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         "/register-form",
         "/forgot-password-form",
         "/reset-password-form",
+        "/logout",  # Low-risk action, session-protected
     }
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:

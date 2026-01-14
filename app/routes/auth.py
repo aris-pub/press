@@ -9,6 +9,7 @@ import sentry_sdk
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.csrf import get_csrf_token
 from app.auth.session import create_session, delete_session, get_current_user_from_session
 from app.auth.tokens import (
     create_password_reset_token,
@@ -67,6 +68,30 @@ async def logout(request: Request, db: AsyncSession = Depends(get_db)):
     response.delete_cookie("session_id")
 
     return response
+
+
+@router.get("/csrf-token")
+async def get_csrf_token_endpoint(request: Request, db: AsyncSession = Depends(get_db)):
+    """Get CSRF token for the current session.
+
+    Returns the CSRF token needed for state-changing requests (DELETE, POST, etc.).
+    Requires an active session.
+
+    Returns:
+        JSONResponse: CSRF token for the current session
+
+    Raises:
+        HTTPException: 401 if no active session exists
+    """
+    # Validate session exists and is active
+    current_user = await get_current_user_from_session(request, db)
+    if not current_user:
+        return JSONResponse({"error": "No active session"}, status_code=401)
+
+    session_id = request.cookies.get("session_id")
+    token = await get_csrf_token(session_id)
+
+    return JSONResponse({"csrf_token": token})
 
 
 @router.delete("/account")
@@ -853,6 +878,11 @@ async def export_user_data(
                 "status": scroll.status,
                 "url_hash": scroll.url_hash,
                 "content_hash": scroll.content_hash,
+                "doi": scroll.doi,
+                "doi_status": scroll.doi_status,
+                "doi_minted_at": scroll.doi_minted_at.isoformat()
+                if scroll.doi_minted_at
+                else None,
                 "created_at": scroll.created_at.isoformat() if scroll.created_at else None,
                 "updated_at": scroll.updated_at.isoformat() if scroll.updated_at else None,
                 "published_at": scroll.published_at.isoformat() if scroll.published_at else None,
