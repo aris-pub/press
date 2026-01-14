@@ -52,19 +52,39 @@
     ></iframe>
   </div>
 
-  <footer class="scroll-attribution">
-    <div class="attribution-title">
-      {% if scroll.title | length > 60 %}
-        {{ scroll.title[:60] }}...
-      {% else %}
-        {{ scroll.title }}
-      {% endif %}
-    </div>
-    <div class="attribution-meta">
+  <!-- Article Metadata Section -->
+  <section class="scroll-metadata">
+    <h2 class="metadata-title">{{ scroll.title }}</h2>
+    <div class="metadata-authors">
       {{ scroll.authors }} • {{ scroll.subject.name }}
     </div>
-    <div class="attribution-footer">
-      {{ scroll.created_at.strftime('%B %d, %Y') }} • <a href="/" class="attribution-link">Scroll Press</a>
+    <div class="metadata-info">
+      <span>{{ scroll.created_at.strftime('%B %d, %Y') }}</span>
+      <span class="metadata-separator">•</span>
+      <span class="open-access-badge">Open Access</span>
+      <span class="metadata-separator">•</span>
+      {% if scroll.license == 'cc-by-4.0' %}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" class="license-link">CC BY 4.0</a>
+      {% else %}
+        <span class="license-text">All Rights Reserved</span>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- Platform Attribution Section -->
+  <footer class="scroll-platform">
+    <div class="platform-branding">
+      <a href="/" class="platform-link">Published on Scroll Press</a>
+    </div>
+    <div class="platform-ctas">
+      <a href="/" class="platform-cta">Explore More Scrolls</a>
+      <span class="cta-separator">•</span>
+      <a href="/about" class="platform-cta">Learn More</a>
+      <span class="cta-separator">•</span>
+      <a href="/upload" class="platform-cta">Publish Your Research</a>
+    </div>
+    <div class="platform-endorsement">
+      Part of <a href="https://aris.pub" target="_blank" rel="noopener noreferrer" class="aris-link">The Aris Program</a>
     </div>
   </footer>
 
@@ -167,42 +187,172 @@
   to { transform: rotate(360deg); }
 }
 
-.scroll-attribution {
-  padding: 1.5rem;
+/* Article Metadata Section */
+.scroll-metadata {
+  padding: 3rem 1.5rem;
   background: var(--gray-bg-light);
   border-top: 1px solid var(--border-light);
-  font-size: 0.85rem;
-  color: var(--gray);
   text-align: center;
+}
+
+.metadata-title {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--black);
+  margin: 0 0 1rem 0;
+  line-height: 1.3;
+}
+
+.metadata-authors {
+  font-size: 1rem;
+  color: var(--gray-dark);
+  margin-bottom: 0.75rem;
+}
+
+.metadata-info {
+  font-size: 0.9rem;
+  color: var(--gray);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.attribution-title {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--gray-medium);
+.metadata-separator {
+  color: var(--gray-light);
 }
 
-.attribution-meta {
+.open-access-badge {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.license-link {
+  color: var(--gray);
+  text-decoration: none;
+  font-weight: 400;
+}
+
+.license-link:hover {
+  color: var(--gray-dark);
+  text-decoration: underline;
+}
+
+.license-text {
+  color: var(--gray-dark);
+  font-weight: 500;
+}
+
+/* Platform Attribution Section */
+.scroll-platform {
+  padding: 3rem 1.5rem 5rem;
+  background: var(--white);
+  border-top: 2px solid var(--border-light);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.platform-branding {
+  font-size: 0.95rem;
+}
+
+.platform-link {
+  color: var(--black);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.platform-link:hover {
+  color: var(--red);
+}
+
+.platform-endorsement {
   font-size: 0.85rem;
   color: var(--gray);
 }
 
-.attribution-footer {
-  font-size: 0.8rem;
-  color: var(--gray-light);
-}
-
-.attribution-link {
+.aris-link {
   color: var(--red);
   text-decoration: none;
 }
 
-.attribution-link:hover {
+.aris-link:hover {
   color: var(--red-dark);
   text-decoration: underline;
+}
+
+.platform-ctas {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.cta-separator {
+  color: var(--gray-light);
+  font-size: 0.875rem;
+}
+
+.platform-cta {
+  color: var(--gray-dark);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 400;
+  transition: color 0.2s;
+  line-height: 1.2;
+  padding: 0.25rem 0;
+}
+
+.platform-cta:hover {
+  color: var(--red);
+  text-decoration: underline;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .scroll-metadata {
+  background: var(--gray-darker);
+  border-top-color: var(--border-dark);
+}
+
+[data-theme="dark"] .metadata-title {
+  color: var(--white);
+}
+
+[data-theme="dark"] .metadata-authors {
+  color: var(--gray-lighter);
+}
+
+[data-theme="dark"] .metadata-info {
+  color: var(--gray-lighter);
+}
+
+[data-theme="dark"] .open-access-badge {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .license-text {
+  color: var(--gray-lighter);
+}
+
+[data-theme="dark"] .scroll-platform {
+  background: #1a1a1a;
+  border-top-color: var(--border-dark);
+}
+
+[data-theme="dark"] .platform-link {
+  color: var(--white);
+}
+
+[data-theme="dark"] .platform-endorsement {
+  color: var(--gray-lighter);
+}
+
+[data-theme="dark"] .aris-link {
+  color: var(--red);
 }
 
 .fab {
@@ -337,14 +487,14 @@
 }
 
 .license-link {
-  color: var(--red);
+  color: var(--gray-dark);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.9rem;
 }
 
 .license-link:hover {
-  color: var(--red-dark);
+  color: var(--black);
   text-decoration: underline;
 }
 
@@ -408,7 +558,7 @@ body.modal-open {
   .scroll-container {
     padding: 0;
   }
-  
+
   .fab {
     bottom: 1rem;
     right: 1rem;
@@ -416,14 +566,53 @@ body.modal-open {
     height: 40px;
     font-size: 1.25rem;
   }
-  
+
   .modal-content {
     margin: 1rem;
     width: calc(100% - 2rem);
   }
-  
+
   .modal-actions {
     flex-direction: column;
+  }
+
+  /* Mobile footer styles */
+  .scroll-metadata {
+    padding: 1.5rem 1rem;
+  }
+
+  .metadata-title {
+    font-size: 1.25rem;
+  }
+
+  .metadata-info {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .metadata-separator {
+    display: none;
+  }
+
+  .scroll-platform {
+    padding: 2rem 1.5rem 4rem;
+    gap: 0.5rem;
+  }
+
+  .platform-ctas {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.25rem;
+  }
+
+  .cta-separator {
+    display: none;
+  }
+
+  .platform-cta {
+    width: 100%;
+    justify-content: center;
+    padding: 0.5rem 0;
   }
 }
 </style>
