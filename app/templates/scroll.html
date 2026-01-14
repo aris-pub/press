@@ -38,24 +38,6 @@
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Source Sans 3', sans-serif; background: var(--white); color: var(--black);">
 
-  <!-- Dark mode toggle -->
-  <button class="scroll-dark-mode-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
-    <svg class="theme-icon sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-    </svg>
-    <svg class="theme-icon moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  </button>
-
   <!-- Store user HTML content as JSON data for strict-dynamic processing -->
   <div class="scroll-container">
     <div id="iframe-loading" class="loading-overlay">
@@ -130,76 +112,8 @@
     </div>
 
 <style>
-/* Scroll page dark mode toggle */
-.scroll-dark-mode-toggle {
-  position: fixed;
-  bottom: 5.5rem;
-  right: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: var(--gray-bg);
-  border: 1px solid var(--gray-lighter);
-  border-radius: var(--border-radius);
-  color: var(--gray-medium);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 1100;
-}
-
-.scroll-dark-mode-toggle:hover {
-  background: var(--gray-bg-light);
-  border-color: var(--gray);
-  color: var(--gray-dark);
-}
-
-.scroll-dark-mode-toggle:focus {
-  outline: none;
-  border-color: var(--red);
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
-}
-
-.scroll-dark-mode-toggle .theme-icon {
-  position: absolute;
-  transition: all 0.3s ease;
-}
-
-.scroll-dark-mode-toggle .sun-icon {
-  opacity: 1;
-  transform: rotate(0deg) scale(1);
-}
-
-.scroll-dark-mode-toggle .moon-icon {
-  opacity: 0;
-  transform: rotate(-90deg) scale(0.8);
-}
-
-[data-theme="dark"] .scroll-dark-mode-toggle .sun-icon {
-  opacity: 0;
-  transform: rotate(90deg) scale(0.8);
-}
-
-[data-theme="dark"] .scroll-dark-mode-toggle .moon-icon {
-  opacity: 1;
-  transform: rotate(0deg) scale(1);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .scroll-dark-mode-toggle .sun-icon {
-    opacity: 0;
-    transform: rotate(90deg) scale(0.8);
-  }
-  
-  :root:not([data-theme="light"]) .scroll-dark-mode-toggle .moon-icon {
-    opacity: 1;
-    transform: rotate(0deg) scale(1);
-  }
-}
-
 .scroll-container {
-  padding: 2rem 2rem 0 2rem;
+  padding: 0;
   position: relative;
   margin: 0 auto;
 }
@@ -468,15 +382,8 @@ body.modal-open {
 }
 
 @media (max-width: 768px) {
-  .scroll-dark-mode-toggle {
-    bottom: 4.5rem;
-    right: 1rem;
-    width: 40px;
-    height: 40px;
-  }
-  
   .scroll-container {
-    padding: 1rem 1rem 0 1rem;
+    padding: 0;
   }
   
   .fab {
@@ -602,34 +509,6 @@ body.modal-open {
   // Set initial theme
   const initialTheme = getThemePreference();
   applyTheme(initialTheme);
-  
-  // Handle dark mode toggle
-  const themeToggle = document.querySelector('.scroll-dark-mode-toggle');
-  if (themeToggle) {
-    themeToggle.addEventListener('click', function() {
-      const currentTheme = localStorage.getItem('theme');
-      let newTheme;
-      
-      if (!currentTheme || currentTheme === 'auto') {
-        // Currently auto (following system), switch to opposite of current system preference
-        newTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark';
-      } else if (currentTheme === 'light') {
-        newTheme = 'dark';
-      } else {
-        newTheme = 'light';
-      }
-      
-      localStorage.setItem('theme', newTheme);
-      document.documentElement.setAttribute('data-theme', newTheme);
-
-      // Reload iframe to apply dark mode to paper
-      const iframe = document.getElementById('paper-frame');
-      if (iframe) {
-        iframe.src = iframe.src;
-      }
-    });
-  }
-  
   // Listen for system theme changes when in auto mode
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
     const currentTheme = localStorage.getItem('theme');
