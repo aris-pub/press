@@ -1818,7 +1818,7 @@ requires-dist = [
     { name = "python-magic", specifier = ">=0.4.27" },
     { name = "python-multipart", specifier = ">=0.0.6" },
     { name = "resend", specifier = ">=2.4.0" },
-    { name = "rsm-markup", specifier = "==0.4.1" },
+    { name = "rsm-markup", specifier = "==0.4.2" },
     { name = "ruff", specifier = ">=0.1.6" },
     { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=1.40.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.23" },
@@ -2493,7 +2493,7 @@ wheels = [
 
 [[package]]
 name = "rsm-markup"
-version = "0.4.1"
+version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fs" },
@@ -2504,9 +2504,9 @@ dependencies = [
     { name = "tree-sitter-rsm" },
     { name = "ujson" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bd/39/0daf8db62e56c77e09c0f96069a1aef7d11a115cdc897dfa865eb281157a/rsm_markup-0.4.1.tar.gz", hash = "sha256:bde6beaf2a35f82ef3c7a7652b89375fabda3f4ed454d89100a6318d7e7a8ace", size = 267233 }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/3d/1e5dfa922bf04fde6819d62b754f953246386cdae4d6c46b67da52e1f8be/rsm_markup-0.4.2.tar.gz", hash = "sha256:53531605cb1924f001fa859ac2b602ae22bfe02958ecd98727717940cd3d3837", size = 268245 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/37/b2/f6dd29cfaf24362a7ecb11c7a767c90dd9bdb86ca1cb6efcd1081c64f8a9/rsm_markup-0.4.1-py3-none-any.whl", hash = "sha256:1c829e0204749792cadd95bc8ef03c99f8376bf984863b242331a0c191682fca", size = 253313 },
+    { url = "https://files.pythonhosted.org/packages/d7/99/9d3e695f83a6c1894511e7303c142b09f076b8fc1ff9bdcc4ee11d63b266/rsm_markup-0.4.2-py3-none-any.whl", hash = "sha256:be94a51a5c4110dcd87f39e3ddd44a1588a89b5de252b54dc2a286ac08aad177", size = 254358 },
 ]
 
 [[package]]
