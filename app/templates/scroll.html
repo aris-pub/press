@@ -510,25 +510,47 @@ body.modal-open {
 
       // Function to update iframe height (width stays 100% responsive)
       function updateDimensions() {
-        const html = iframeDoc.documentElement;
         const body = iframeDoc.body;
 
-        const height = Math.max(
-          html.scrollHeight,
-          html.offsetHeight,
-          body.scrollHeight,
-          body.offsetHeight
-        );
+        // Find the bottom-most visible element to get true content height
+        const allElements = Array.from(body.getElementsByTagName('*'));
+        let maxBottom = 0;
 
+        for (const el of allElements) {
+          const style = window.getComputedStyle(el);
+
+          // Skip invisible, script/style, and positioned elements (fixed/absolute don't affect flow)
+          if (style.display === 'none' ||
+              el.tagName === 'SCRIPT' ||
+              el.tagName === 'STYLE' ||
+              style.position === 'fixed' ||
+              style.position === 'absolute') {
+            continue;
+          }
+
+          const rect = el.getBoundingClientRect();
+          if (rect.bottom > maxBottom) {
+            maxBottom = rect.bottom;
+          }
+        }
+
+        // Add body padding if any
+        const bodyStyle = window.getComputedStyle(body);
+        const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
+
+        const height = Math.ceil(maxBottom + paddingBottom);
         iframe.style.height = height + 'px';
       }
 
-      // Set initial dimensions
-      updateDimensions();
+      // Set initial dimensions after layout is complete
+      // Small delay ensures content has finished laying out
+      setTimeout(() => {
+        updateDimensions();
 
-      // Hide loading overlay and show iframe
-      loadingOverlay.style.display = 'none';
-      iframe.style.opacity = '1';
+        // Hide loading overlay and show iframe
+        loadingOverlay.style.display = 'none';
+        iframe.style.opacity = '1';
+      }, 100);
 
       // Use ResizeObserver to auto-adjust iframe dimensions on content changes
       const resizeObserver = new ResizeObserver(() => {
@@ -537,6 +559,9 @@ body.modal-open {
 
       resizeObserver.observe(iframeDoc.documentElement);
       resizeObserver.observe(iframeDoc.body);
+
+      // Also update dimensions when parent window resizes (affects iframe width)
+      window.addEventListener('resize', updateDimensions);
     } catch (e) {
       console.error('Failed to observe iframe content:', e);
       // Fallback: set reasonable default height
