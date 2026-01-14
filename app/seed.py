@@ -180,11 +180,11 @@ async def seed_scrolls():
                 "license": "cc-by-4.0",
             },
             {
-                "file": "graph_traversal_myst.html",
+                "file": "graph_traversal.html",
                 "title": "Graph Traversal Algorithms: BFS and DFS",
                 "authors": "Dorothy Gale, Huckleberry Finn",
                 "abstract": "Graph traversal algorithms systematically visit vertices in a graph. This paper examines the two fundamental approaches: Breadth-First Search (BFS) explores level-by-level, while Depth-First Search (DFS) explores as deep as possible before backtracking. Understanding their distinct characteristics is essential for selecting the appropriate algorithm for path-finding, connectivity analysis, and graph-based problem solving.",
-                "keywords": ["algorithms", "graph theory", "BFS", "DFS", "MyST"],
+                "keywords": ["algorithms", "graph theory", "BFS", "DFS", "Jupyter"],
                 "user": "John Smith",
                 "subject": "Computer Science",
                 "license": "cc-by-4.0",

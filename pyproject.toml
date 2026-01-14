@@ -31,7 +31,7 @@ dependencies = [
     "nbformat>=5.10.4",
     "ipykernel>=7.1.0",
     "bokeh>=3.8.2",
-    "rsm-markup==0.4.2",
+    "rsm-markup==0.4.3",
 ]
 
 [tool.pytest.ini_options]
@@ -103,7 +103,6 @@ dev = [
     "beautifulsoup4>=4.14.3",
     "ipykernel>=7.1.0",
     "jupyter>=1.1.1",
-    "mystmd>=1.7.1",
     "nbformat>=5.10.4",
     "numpy>=2.4.0",
     "pandas>=2.3.3",

@@ -1291,19 +1291,6 @@ wheels = [
 ]
 
 [[package]]
-name = "mystmd"
-version = "1.7.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "nodeenv" },
-    { name = "platformdirs" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/20/b1/b129b0efe29c73b0e9bdaf556bd53d2371d51c9e922869b1b9c542c74ee2/mystmd-1.7.1.tar.gz", hash = "sha256:ae9a49a7c25aa9a79bc4ef921ffcf20a163f082e76592b296666ba6a6f9a4133", size = 2778812 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/77/7abd13ca8304ec1d8832c23455107f4dc44c4684e56e1578365065739504/mystmd-1.7.1-py3-none-any.whl", hash = "sha256:c85019ac9d9e238d2ddd314f295e07a9950c671f759b497c85b6d260444628d4", size = 2810038 },
-]
-
-[[package]]
 name = "narwhals"
 version = "2.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1374,15 +1361,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/83/f8/51569ac65d696c8ecbee95938f89d4abf00f47d58d48f6fbabfe8f0baefe/nest_asyncio-1.6.0.tar.gz", hash = "sha256:6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe", size = 7418 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/c4/c2971a3ba4c6103a3d10c4b0f24f461ddc027f0f09763220cf35ca1401b3/nest_asyncio-1.6.0-py3-none-any.whl", hash = "sha256:87af6efd6b5e897c81050477ef65c62e2b2f35d51703cae01aff2905b1852e1c", size = 5195 },
-]
-
-[[package]]
-name = "nodeenv"
-version = "1.9.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/43/16/fc88b08840de0e0a72a2f9d8c6bae36be573e475a6326ae854bcc549fc45/nodeenv-1.9.1.tar.gz", hash = "sha256:6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f", size = 47437 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/1d/1b658dbd2b9fa9c4c9f32accbfc0205d532c8c6194dc0f2a4c0428e7128a/nodeenv-1.9.1-py2.py3-none-any.whl", hash = "sha256:ba11c9782d29c27c70ffbdda2d7415098754709be8a7056d79a737cd901155c9", size = 22314 },
 ]
 
 [[package]]
@@ -1785,7 +1763,6 @@ dev = [
     { name = "beautifulsoup4" },
     { name = "ipykernel" },
     { name = "jupyter" },
-    { name = "mystmd" },
     { name = "nbformat" },
     { name = "numpy" },
     { name = "pandas" },
@@ -1818,7 +1795,7 @@ requires-dist = [
     { name = "python-magic", specifier = ">=0.4.27" },
     { name = "python-multipart", specifier = ">=0.0.6" },
     { name = "resend", specifier = ">=2.4.0" },
-    { name = "rsm-markup", specifier = "==0.4.2" },
+    { name = "rsm-markup", specifier = "==0.4.3" },
     { name = "ruff", specifier = ">=0.1.6" },
     { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=1.40.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.23" },
@@ -1830,7 +1807,6 @@ dev = [
     { name = "beautifulsoup4", specifier = ">=4.14.3" },
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
-    { name = "mystmd", specifier = ">=1.7.1" },
     { name = "nbformat", specifier = ">=5.10.4" },
     { name = "numpy", specifier = ">=2.4.0" },
     { name = "pandas", specifier = ">=2.3.3" },
@@ -2493,7 +2469,7 @@ wheels = [
 
 [[package]]
 name = "rsm-markup"
-version = "0.4.2"
+version = "0.4.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fs" },
@@ -2504,9 +2480,9 @@ dependencies = [
     { name = "tree-sitter-rsm" },
     { name = "ujson" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3b/3d/1e5dfa922bf04fde6819d62b754f953246386cdae4d6c46b67da52e1f8be/rsm_markup-0.4.2.tar.gz", hash = "sha256:53531605cb1924f001fa859ac2b602ae22bfe02958ecd98727717940cd3d3837", size = 268245 }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/21/d3319014a8c21fdb45589ed010f598eed7cfe1326d6d27e3d1c652b8a5dd/rsm_markup-0.4.3.tar.gz", hash = "sha256:130829198a733db25072fb55362077b6582baf277f16c9c606e2b193a5b52548", size = 268256 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/99/9d3e695f83a6c1894511e7303c142b09f076b8fc1ff9bdcc4ee11d63b266/rsm_markup-0.4.2-py3-none-any.whl", hash = "sha256:be94a51a5c4110dcd87f39e3ddd44a1588a89b5de252b54dc2a286ac08aad177", size = 254358 },
+    { url = "https://files.pythonhosted.org/packages/0e/1c/6d01de57f5322f3a33747ab4f7a062f42f3e54ece93f62efbd5c5964ead1/rsm_markup-0.4.3-py3-none-any.whl", hash = "sha256:714db6c1e7824beafd390079567893a3434095d054f17a0a1780133cd8831ca7", size = 254366 },
 ]
 
 [[package]]
