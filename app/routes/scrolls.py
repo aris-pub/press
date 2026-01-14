@@ -1,5 +1,6 @@
 """Scroll upload and management routes."""
 
+import asyncio
 import os
 from pathlib import Path
 import uuid as uuid_module
@@ -14,6 +15,7 @@ from sqlalchemy.orm import selectinload
 from app.auth.session import get_current_user_from_session
 from app.config import get_base_url
 from app.database import get_db
+from app.integrations.doi_service import mint_doi_safe
 from app.logging_config import get_logger, log_error, log_preview_event, log_request
 from app.models.scroll import Scroll, Subject
 from app.templates_config import templates
@@ -328,8 +330,11 @@ async def upload_form(
                 scroll.url_hash,
                 str(current_user.id),
                 request,
-                extra_data={"title": scroll.title},
+                extra_data={"title": scroll.title, "doi_status": "pending"},
             )
+
+            # Start background task for DOI minting
+            asyncio.create_task(mint_doi_safe(str(scroll.id)))
 
         # Return success response - just the content for HTMX
         success_message = "Your scroll has been published successfully!"
@@ -526,8 +531,11 @@ async def upload_html_paper(
                 scroll.preview_id,
                 str(current_user.id),
                 request,
-                extra_data={"title": scroll.title},
+                extra_data={"title": scroll.title, "doi_status": "pending"},
             )
+
+            # Start background task for DOI minting
+            asyncio.create_task(mint_doi_safe(str(scroll.id)))
 
         # Prepare response
         response_data = {

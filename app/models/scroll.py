@@ -143,6 +143,16 @@ class Scroll(Base):
     )
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # DOI fields
+    doi: Mapped[Optional[str]] = mapped_column(String(100), unique=True, nullable=True, index=True)
+    doi_status: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True
+    )  # 'pending', 'minted', 'failed'
+    doi_minted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    zenodo_deposit_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+
     # Foreign keys
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         GUID, ForeignKey("users.id"), nullable=True

@@ -89,7 +89,26 @@
           time_ago="Published " + scroll.published_at.strftime('%B %d, %Y') if scroll.published_at else "Not published",
           version="v" + scroll.version|string
         ) }}
-        
+
+        {% if scroll.doi and scroll.doi_status == 'minted' %}
+        <div class="doi-badge" style="margin: 1rem 0; padding: 0.75rem; background: var(--gray-bg); border-radius: 4px;">
+          <strong>DOI:</strong>
+          <a href="https://doi.org/{{ scroll.doi }}"
+             target="_blank"
+             rel="noopener noreferrer"
+             style="color: var(--red); text-decoration: none; font-family: monospace;">
+            {{ scroll.doi }}
+          </a>
+          <span style="color: var(--gray); font-size: 0.9em; margin-left: 0.5rem;">
+            (Registered via Zenodo)
+          </span>
+        </div>
+        {% elif scroll.doi_status == 'pending' %}
+        <div class="doi-badge" style="margin: 1rem 0; padding: 0.75rem; background: var(--gray-bg); border-radius: 4px;">
+          <span style="color: var(--gray);">DOI registration in progress...</span>
+        </div>
+        {% endif %}
+
         <div class="license-info">
           <div class="license-label">License:</div>
           <div class="license-value">

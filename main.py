@@ -71,6 +71,19 @@ async def lifespan(app: FastAPI):
     logger = get_logger()
     logger.info("Starting Scroll Press application")
 
+    # Validate Zenodo configuration
+    from app.integrations.zenodo import get_zenodo_client
+
+    zenodo_client = get_zenodo_client()
+    if zenodo_client is None:
+        logger.warning(
+            "Zenodo API token not configured or is a placeholder. "
+            "DOI minting will be disabled. Set ZENODO_API_TOKEN to enable."
+        )
+    else:
+        logger.info("Zenodo client initialized successfully")
+        await zenodo_client.close()
+
     # Skip database operations during startup to avoid Supabase pgbouncer prepared statement issues
     # But ensure database connectivity in CI/testing environments
     if os.getenv("TESTING") == "1":
