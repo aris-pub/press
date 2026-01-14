@@ -422,6 +422,7 @@
     {% endif %}
 
     <form id="upload-form" hx-post="/upload-form" hx-target="#upload-container" hx-swap="innerHTML">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research scroll") }}
 
         {{ form_input("Authors", "authors", "text", form_data.authors if form_data else "", required=true, help_text="Comma-separated list of author names") }}

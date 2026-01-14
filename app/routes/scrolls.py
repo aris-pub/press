@@ -173,8 +173,16 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
         get_logger().error(f"❌ Failed to load subjects: {e}")
         subjects = []  # Fallback to empty list
 
+    # Get CSRF token for form
+    from app.auth.csrf import get_csrf_token
+
+    session_id = request.cookies.get("session_id")
+    csrf_token = await get_csrf_token(session_id)
+
     return templates.TemplateResponse(
-        request, "upload.html", {"current_user": current_user, "subjects": subjects}
+        request,
+        "upload.html",
+        {"current_user": current_user, "subjects": subjects, "csrf_token": csrf_token},
     )
 
 

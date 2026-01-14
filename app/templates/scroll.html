@@ -107,6 +107,10 @@
         <div class="doi-badge" style="margin: 1rem 0; padding: 0.75rem; background: var(--gray-bg); border-radius: 4px;">
           <span style="color: var(--gray);">DOI registration in progress...</span>
         </div>
+        {% elif scroll.doi_status == 'failed' %}
+        <div class="doi-badge" style="margin: 1rem 0; padding: 0.75rem; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px;">
+          <span style="color: #92400e;">DOI registration failed. Please contact support.</span>
+        </div>
         {% endif %}
 
         <div class="license-info">

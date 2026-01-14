@@ -57,7 +57,6 @@ class ZenodoClient:
             base_url=config.base_url,
             headers={
                 "Authorization": f"Bearer {config.api_token}",
-                "Content-Type": "application/json",
             },
             timeout=config.timeout,
         )
@@ -159,7 +158,7 @@ class ZenodoClient:
                 "PUT",
                 file_url,
                 content=content,
-                headers={"Content-Type": "text/html"},
+                headers={"Content-Type": "application/octet-stream"},
             )
 
             self.logger.info(f"Uploaded file {filename} to Zenodo deposit")
@@ -230,10 +229,15 @@ class ZenodoClient:
             try:
                 # Handle absolute URLs (for bucket operations)
                 if url.startswith("http"):
+                    # Merge headers from kwargs with client headers
+                    request_headers = dict(self.client.headers)
+                    if "headers" in kwargs:
+                        request_headers.update(kwargs.pop("headers"))
+
                     response = await httpx.AsyncClient().request(
                         method,
                         url,
-                        headers=self.client.headers,
+                        headers=request_headers,
                         timeout=self.config.timeout,
                         **kwargs,
                     )
