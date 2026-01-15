@@ -93,7 +93,7 @@ seed:
         echo "examples-press submodule not found. Initializing..."
         git submodule update --init examples-press
     fi
-    PYTHONPATH=. uv run python app/seed.py
+    PYTHONPATH=. uv run python scripts/seed.py
 
 # Reset database (migrate + seed)
 reset-db: migrate seed
