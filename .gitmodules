@@ -1,0 +1,3 @@
+[submodule "examples-press"]
+	path = examples-press
+	url = git@github.com:aris-pub/examples-press.git

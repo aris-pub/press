@@ -129,6 +129,7 @@ async def delete_existing_data():
 
 async def seed_scrolls():
     """Create seed scrolls from real HTML papers."""
+    import json
     from pathlib import Path
 
     async with AsyncSessionLocal() as session:
@@ -139,61 +140,25 @@ async def seed_scrolls():
         subjects_result = await session.execute(text("SELECT id, name FROM subjects"))
         subjects = {row[1]: row[0] for row in subjects_result}
 
-        # Define seed papers with their metadata
-        seed_papers_dir = Path(__file__).parent.parent / "seed_papers"
+        # Load scrolls metadata from examples-press submodule
+        examples_dir = Path(__file__).parent.parent / "examples-press"
+        metadata_file = examples_dir / "scrolls.json"
 
-        scrolls_data = [
-            {
-                "file": "spectral_theorem.html",
-                "title": "The Spectral Theorem for Symmetric Matrices",
-                "authors": "Dr. Victor Frankenstein, Captain Nemo",
-                "abstract": "The spectral theorem establishes that symmetric matrices can be diagonalized by orthogonal transformations. This fundamental result connects linear algebra with geometric intuition and enables applications from optimization to quantum mechanics. We present the theorem with proof and demonstrate its power through concrete examples.",
-                "keywords": ["mathematics", "linear algebra", "spectral theorem", "Typst"],
-                "user": "Pavel Kowalski",
-                "subject": "Mathematics",
-                "license": "cc-by-4.0",
-            },
-            {
-                "file": "iris_analysis.html",
-                "title": "Interactive Analysis of the Iris Dataset",
-                "authors": "Sherlock Holmes, Alice Liddell",
-                "abstract": "The Iris dataset is a classic multivariate dataset used for classification and visualization. This paper provides an interactive exploratory analysis using Python and Plotly, demonstrating species clustering through petal and sepal measurements. Interactive visualizations enable readers to explore the data patterns that make this dataset ideal for demonstrating machine learning classification algorithms.",
-                "keywords": [
-                    "data science",
-                    "machine learning",
-                    "Quarto",
-                    "interactive plots",
-                    "classification",
-                ],
-                "user": "Anita Patel",
-                "subject": "Computer Science",
-                "license": "cc-by-4.0",
-            },
-            {
-                "file": "damped_oscillators.html",
-                "title": "Damped Harmonic Oscillators: Three Characteristic Regimes",
-                "authors": "Dr. Henry Jekyll, Elizabeth Bennet",
-                "abstract": "The damped harmonic oscillator extends the simple harmonic oscillator by incorporating energy dissipation. This paper examines the three characteristic regimes—underdamped, critically damped, and overdamped—and demonstrates how the damping coefficient fundamentally determines system behavior. An interactive simulation enables exploration of parameter space, building intuition for this fundamental physical system.",
-                "keywords": ["physics", "oscillators", "damping", "interactive simulation", "RSM"],
-                "user": "Sarah Kim",
-                "subject": "Physics",
-                "license": "cc-by-4.0",
-            },
-            {
-                "file": "graph_traversal.html",
-                "title": "Graph Traversal Algorithms: BFS and DFS",
-                "authors": "Dorothy Gale, Huckleberry Finn",
-                "abstract": "Graph traversal algorithms systematically visit vertices in a graph. This paper examines the two fundamental approaches: Breadth-First Search (BFS) explores level-by-level, while Depth-First Search (DFS) explores as deep as possible before backtracking. Understanding their distinct characteristics is essential for selecting the appropriate algorithm for path-finding, connectivity analysis, and graph-based problem solving.",
-                "keywords": ["algorithms", "graph theory", "BFS", "DFS", "Jupyter"],
-                "user": "John Smith",
-                "subject": "Computer Science",
-                "license": "cc-by-4.0",
-            },
-        ]
+        if not metadata_file.exists():
+            print(
+                f"Error: {metadata_file} not found. Make sure examples-press submodule is initialized."
+            )
+            print("Run: git submodule update --init")
+            return
+
+        with open(metadata_file, "r", encoding="utf-8") as f:
+            metadata = json.load(f)
+
+        scrolls_data = metadata["scrolls"]
 
         # Load HTML content from files and create scrolls
         for scroll_data in scrolls_data:
-            html_file = seed_papers_dir / scroll_data["file"]
+            html_file = examples_dir / scroll_data["file"]
 
             if not html_file.exists():
                 print(f"Warning: {scroll_data['file']} not found, skipping...")

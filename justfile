@@ -86,6 +86,13 @@ migration message:
 
 # Seed database with sample data
 seed:
+    #!/usr/bin/env bash
+    set -e
+    # Check if examples-press submodule exists
+    if [[ ! -f "examples-press/scrolls.json" ]]; then
+        echo "examples-press submodule not found. Initializing..."
+        git submodule update --init examples-press
+    fi
     PYTHONPATH=. uv run python app/seed.py
 
 # Reset database (migrate + seed)
