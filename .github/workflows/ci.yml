@@ -27,6 +27,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Set up Python 3.11
       uses: actions/setup-python@v4
@@ -68,7 +70,7 @@ jobs:
         PYTHONPATH: .
       run: |
         echo "Seeding database..."
-        uv run python app/seed.py
+        uv run python scripts/seed.py
         echo "Waiting for seeding to complete..."
         sleep 2
 
