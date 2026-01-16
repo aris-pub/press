@@ -219,12 +219,17 @@ header.navbar .logo {
   font-family: var(--font-serif); 
 }
 
-header.navbar .logo a { 
-  text-decoration: none; 
-  color: inherit; 
-  display: flex; 
-  align-items: center; 
-  gap: var(--space-xs); 
+header.navbar .logo a {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+header.navbar .logo a img {
+  width: 1em;
+  height: 1em;
 }
 
 header.navbar nav { 
@@ -739,7 +744,8 @@ button.btn, a.btn {
 /* Homepage styles */
 /* Hero */
 .hero { text-align: center; padding: var(--space-4xl) 0; }
-.hero-title { display: flex; align-items: center; justify-content: center; gap: var(--space-sm); margin-bottom: var(--space-lg); }
+.hero-title { display: flex; align-items: center; justify-content: center; gap: 0.25em; margin-bottom: var(--space-lg); font-size: 32px; }
+.hero-title img { width: 1em; height: 1em; }
 .hero h1 { font-size: var(--text-3xl); font-weight: normal; margin-bottom: 0; font-family: var(--font-serif); }
 .hero-tagline { font-size: var(--text-lg); color: var(--gray-dark); font-style: italic; margin-bottom: var(--space-md); font-family: var(--font-serif); }
 .hero-subtitle { font-size: var(--text-base); color: var(--gray); font-weight: 400; margin-bottom: var(--space-3xl); font-family: var(--font-sans); }
@@ -790,13 +796,9 @@ button.btn, a.btn {
   }
   
   .hero-title {
-    gap: var(--mobile-space-xs);
+    gap: 0.25em;
     margin-bottom: var(--mobile-space-lg);
-  }
-  
-  .hero-title img {
-    width: 28px;
-    height: 28px;
+    font-size: 24px;
   }
   
   .hero h1 {
