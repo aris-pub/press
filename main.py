@@ -138,6 +138,21 @@ app.add_middleware(RateLimitMiddleware, enabled=rate_limit_enabled)
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Mount brand assets
+brand_paths = [
+    "brand",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "brand")
+]
+
+brand_dir = None
+for path in brand_paths:
+    if os.path.exists(path):
+        brand_dir = path
+        break
+
+if brand_dir:
+    app.mount("/brand", StaticFiles(directory=brand_dir), name="brand")
+
 # Exception handlers
 app.add_exception_handler(404, not_found_handler)
 app.add_exception_handler(429, rate_limit_handler)
