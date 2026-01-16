@@ -1,3 +1,6 @@
 [submodule "examples-press"]
 	path = examples-press
 	url = git@github.com:aris-pub/examples-press.git
+[submodule "brand"]
+	path = brand
+	url = https://github.com/leotrs/brand.git
