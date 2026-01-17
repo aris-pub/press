@@ -27,11 +27,6 @@ dependencies = [
     "pytest-playwright>=0.4.3",
     "sentry-sdk[fastapi]>=1.40.0",
     "resend>=2.4.0",
-    "jupyter>=1.1.1",
-    "nbformat>=5.10.4",
-    "ipykernel>=7.1.0",
-    "bokeh>=3.8.2",
-    "rsm-markup==0.4.3",
 ]
 
 [tool.pytest.ini_options]
@@ -101,10 +96,6 @@ max_line_length = 99
 [dependency-groups]
 dev = [
     "beautifulsoup4>=4.14.3",
-    "ipykernel>=7.1.0",
-    "jupyter>=1.1.1",
-    "nbformat>=5.10.4",
-    "numpy>=2.4.0",
     "pandas>=2.3.3",
     "plotly>=6.5.0",
     "scikit-learn>=1.8.0",
