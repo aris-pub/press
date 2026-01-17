@@ -194,24 +194,13 @@ app/
 ## Testing Best Practices
 - Never try to fix a test by adding a longer wait without making absolutely sure beyond doubt that a longer wait is strictly necessary
 
-## Database Backup Strategy
+## Documentation
 
-### Production Backups
-- **Current**: GitHub Actions automated backups (daily at 2 AM UTC)
-- **Storage**: GitHub Actions artifacts (30-day retention, last 7 backups kept)
-- **Security**: Private artifacts, only repository collaborators can access
-- **Cost**: Free using GitHub Actions minutes
-- **Future**: Upgrade to Supabase Pro Plan ($25/month) for official backups when user base grows
-
-### Backup Configuration
-- **Workflow**: `.github/workflows/database-backup.yml`
-- **Setup**: Repository secrets required (see `BACKUP_SETUP.md`)
-- **Verification**: Each backup is compressed and integrity-tested
-- **Cleanup**: Automatic removal of old backups to manage storage
-- **Manual Trigger**: Backups can be triggered manually from GitHub Actions
-
-### Restore Process
-1. Download backup artifact from GitHub Actions
-2. Extract compressed SQL file (`gunzip backup.sql.gz`)
-3. Restore to target database (`psql target_db < backup.sql`)
-4. Update environment configuration if switching databases
+For detailed information, see:
+- **Database**: `docs/DATABASE.md` - Database configuration, migrations, models, backups
+- **Authentication**: `docs/AUTHENTICATION.md` - Session management, email verification, security
+- **GDPR**: `docs/GDPR.md` - Data export and compliance features
+- **Testing**: `docs/TESTING.md` - Unit, integration, and E2E testing guide
+- **Deployment**: `docs/DEPLOYMENT.md` - Production deployment instructions
+- **Backup Setup**: `docs/BACKUP_SETUP.md` - Database backup configuration
+- **Sentry**: `docs/SENTRY_SETUP.md` - Error tracking and monitoring setup

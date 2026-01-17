@@ -22,14 +22,14 @@ uv run playwright install chromium firefox
 
 2. Run the e2e tests in another terminal:
    ```bash
-   # Run all e2e tests (recommended)
-   just test-e2e
-   
-   # Or run directly
-   ./scripts/run-e2e-tests.sh
-   
-   # Run as part of full check suite
-   just check
+   # Run all e2e tests
+   uv run pytest -m e2e
+
+   # Run specific test file
+   uv run pytest tests/e2e/test_auth_flows.py
+
+   # Run unit/integration tests only (excludes e2e)
+   just test
    ```
 
 ## Test Structure
@@ -134,7 +134,7 @@ Tests use generated unique data to avoid conflicts:
 
 ## Configuration
 
-- **Server URL**: `http://localhost:8000` (adjust in test files if needed)
+- **Server URL**: `https://localhost:7999` (adjust in test files if needed)
 - **Database**: Uses same database as dev server
 - **Timeouts**: Default Playwright timeouts (30s for most actions)
 

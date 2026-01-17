@@ -1,5 +1,11 @@
 # Scroll Press
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![CI](https://github.com/aris-pub/press/actions/workflows/ci.yml/badge.svg)](https://github.com/aris-pub/press/actions/workflows/ci.yml)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
 A modern HTML-native preprint server for academic research documents. Built with
 FastAPI, Scroll Press accepts research from any authoring tool that produces HTML—Typst,
 Quarto, MyST, Jupyter, or handwritten HTML. Format freedom, instant publication,
@@ -102,166 +108,23 @@ tests/                 # Comprehensive test suite
 - **Security**: HTTPS-only development with self-signed certificates
 - **Testing**: pytest with asyncio support, parallel execution, and Playwright e2e tests
 
-## Database Setup
+## Documentation
 
-Scroll Press uses different databases for each environment:
-
-| Environment | Database | Purpose |
-|-------------|----------|---------|
-| **Local Development** | PostgreSQL (localhost) | Development work with persistent data |
-| **Local Testing** | SQLite (in-memory) | Fast, isolated test execution |
-| **CI Testing** | PostgreSQL (CI container) | Production-like testing environment |
-| **Production** | Supabase PostgreSQL | Hosted production database |
-
-### Environment Configuration
-
-Set your `DATABASE_URL` in `.env`:
-
-```bash
-# Local development (adjust username as needed)
-DATABASE_URL=postgresql+asyncpg://leo.torres@localhost:5432/press
-
-# Production (Supabase)
-DATABASE_URL=postgresql+asyncpg://postgres.xyz:password@aws-0-region.pooler.supabase.com:6543/postgres
-```
-
-### Database Migrations
-
-```bash
-# Apply migrations
-just migrate
-# or: uv run alembic upgrade head
-
-# Create new migration
-just migration "description"
-# or: uv run alembic revision --autogenerate -m "description"
-
-# Reset database with fresh seed data
-just reset-db
-```
-
-## Backup Strategy
-
-### Current Setup (Bootstrap Phase)
-- **Method**: Automated GitHub Actions backups
-- **Schedule**: Daily at 2 AM UTC
-- **Retention**: 30 days (last 7 backups kept)
-- **Cost**: Free using GitHub Actions
-- **Security**: Private artifacts, repository collaborators only
-
-### Setup Instructions
-1. Add required secrets to GitHub repository (see `BACKUP_SETUP.md`)
-2. Backups run automatically via `.github/workflows/database-backup.yml`
-3. Manual backups can be triggered from GitHub Actions tab
-
-### Future Migration
-Plan to upgrade to **Supabase Pro Plan** ($25/month) for official backups once user base grows:
-- 14-day automated backups
-- Point-in-time recovery
-- Professional support
-- Integrated dashboard management
-
-## Database Models
-
-### User
-- UUID primary keys
-- Email verification status and password hashing
-- Display names and timestamps
-
-### Token
-- Email verification and password reset tokens
-- Hashed token storage for security
-- Expiration timestamps (1 hour for password reset, 24 hours for email verification)
-- One active token per user per type
-
-### Scroll
-- Academic manuscript storage with HTML content
-- Draft/published status workflow
-- Version tracking and unique scroll IDs
-- Metadata (title, authors, abstract, keywords)
-
-### Subject
-- Academic discipline categorization
-- Hierarchical organization for research areas
-
-## Email Verification Flow
-
-1. **Registration**: User registers and receives verification email via Resend
-2. **Verification**: User clicks email link with time-limited token
-3. **Access Control**: Unverified users can view dashboard but cannot upload or export data
-4. **Password Reset**: Secure token-based password reset with 1-hour expiration
-
-## GDPR Compliance
-
-### Data Export (Article 20 - Right to Data Portability)
-
-Users can export all their data in JSON format via the `/user/export-data` endpoint:
-
-```bash
-# Requires authentication (session cookie)
-curl -X GET https://scroll.press/user/export-data \
-  -H "Cookie: session_id=YOUR_SESSION_ID"
-```
-
-**Exported data includes**:
-- User profile (email, display name, verification status, timestamps)
-- All scrolls (published and drafts) with complete metadata
-- Active sessions with expiration times
-
-**Security**:
-- Requires authentication (401 if not logged in)
-- Users can only export their own data
-- Returns structured JSON for portability
-
-## Testing
-
-Scroll Press includes comprehensive testing with both unit/integration tests and end-to-end browser tests.
-
-### Unit and Integration Tests
-```bash
-# Run all tests
-just test
-
-# Run with coverage
-just test-cov
-
-# Run specific test file
-uv run pytest tests/test_main.py -v
-```
-
-### End-to-End Tests
-E2E tests use Playwright to verify complete user journeys in real browsers.
-
-```bash
-# Install e2e dependencies (one time)
-uv run playwright install chromium firefox
-
-# Start development server
-just dev
-
-# Run e2e tests (in another terminal)
-just test-e2e
-
-# Or run directly
-./scripts/run-e2e-tests.sh
-```
-
-#### Critical E2E Test Scenarios
-- **Registration → Upload → Public Access**: Verifies scrolls remain publicly accessible
-- **Registration → Upload → Account Deletion → Public Access**: Verifies scroll persistence after user deletion
-- **License Selection**: Tests CC BY 4.0 and All Rights Reserved license workflows
-- **Mobile Responsive**: Validates mobile upload and interaction flows
-- **Search & Discovery**: Tests content search and subject browsing
-
-See [E2E Testing Documentation](tests/e2e/README.md) for detailed information.
+- [Database Setup & Models](docs/DATABASE.md) - Database configuration, migrations, and data models
+- [Authentication](docs/AUTHENTICATION.md) - Session management, email verification, and security
+- [GDPR Compliance](docs/GDPR.md) - Data export and privacy features
+- [Testing](docs/TESTING.md) - Unit, integration, and E2E testing guide
+- [Deployment](docs/DEPLOYMENT.md) - Production deployment instructions
+- [Backup Setup](docs/BACKUP_SETUP.md) - Database backup configuration
 
 ## Contributing
 
 1. **Run all checks**: `just check` (includes lint, unit tests, and e2e tests)
-2. **Run tests only**: `just test`
-3. **Run e2e tests only**: `just test-e2e`
-4. **Follow existing patterns**: Session-based auth, macro components, async/await
-4. **Write tests**: All new features should include test coverage
+2. **Follow existing patterns**: Session-based auth, macro components, async/await
+3. **Write tests**: All new features should include test coverage
+4. **Read the docs**: See [Testing Guide](docs/TESTING.md) for testing best practices
+
+Contributions are welcome! Please open an issue to discuss major changes before submitting a PR.
 
 ## License
 
