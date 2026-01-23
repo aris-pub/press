@@ -1,3 +1,34 @@
+{% if error %}
+<div class="error-container">
+  <h1>Publishing Failed</h1>
+  <p class="error-message">{{ error }}</p>
+
+  <div class="action-buttons">
+    <a href="/upload" class="btn btn-primary">Try Again</a>
+    <a href="/" class="btn btn-secondary">Go Home</a>
+  </div>
+</div>
+
+<style>
+.error-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-container h1 {
+  color: var(--red);
+  font-family: var(--font-serif);
+  font-weight: normal;
+  margin-bottom: 1rem;
+}
+
+.error-message {
+  color: var(--gray-dark);
+  margin-bottom: 2rem;
+  white-space: pre-wrap;
+}
+</style>
+{% else %}
 <div class="success-container">
   <h1>Success!</h1>
   <p>{{ success_message }}</p>
@@ -14,3 +45,4 @@
     <a href="/" class="btn btn-secondary">Go Home</a>
   </div>
 </div>
+{% endif %}

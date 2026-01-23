@@ -421,7 +421,7 @@
     </div>
     {% endif %}
 
-    <form id="upload-form" hx-post="/upload-form" hx-target="#upload-container" hx-swap="innerHTML">
+    <form id="upload-form" hx-post="/upload-preview" hx-target="#upload-container" hx-swap="innerHTML">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research scroll") }}
 
@@ -508,12 +508,73 @@
         {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
 
         <div class="form-actions">
-            {{ button("Publish Scroll", type="submit", variant="primary", name="action", value="publish") }}
+            {{ button("Preview Scroll", type="submit", variant="primary", name="action", value="preview") }}
         </div>
     </form>
 </div>
 
 <script>
+// Restore form data from sessionStorage if returning from preview
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('restore') === '1') {
+        const savedData = sessionStorage.getItem('upload_form_data');
+        if (savedData) {
+            try {
+                const formData = JSON.parse(savedData);
+
+                // Restore text fields
+                if (formData.title) document.getElementById('title').value = formData.title;
+                if (formData.authors) document.getElementById('authors').value = formData.authors;
+                if (formData.abstract) document.getElementById('abstract').value = formData.abstract;
+                if (formData.keywords) document.getElementById('keywords').value = formData.keywords;
+
+                // Restore subject selection
+                if (formData.subject_id) {
+                    const subjectSelect = document.getElementById('subject_id');
+                    if (subjectSelect) subjectSelect.value = formData.subject_id;
+                }
+
+                // Restore license selection
+                if (formData.license) {
+                    const licenseRadio = document.querySelector('input[name="license"][value="' + formData.license + '"]');
+                    if (licenseRadio) licenseRadio.checked = true;
+                }
+
+                // Restore HTML content
+                if (formData.html_content) {
+                    document.getElementById('html_content').value = formData.html_content;
+
+                    // Update file zone UI to show content is loaded
+                    const fileUploadZone = document.getElementById('file-upload-zone');
+                    const fileInfo = document.getElementById('file-info');
+                    const fileSuccess = document.getElementById('file-success');
+
+                    fileUploadZone.classList.add('has-file');
+                    document.getElementById('file-name').textContent = 'Content restored from preview';
+                    document.getElementById('file-size').textContent = Math.round(formData.html_content.length / 1024) + ' KB';
+                    document.getElementById('file-type').textContent = 'text/html';
+                    fileInfo.classList.add('show');
+                    fileSuccess.textContent = 'Previous content restored';
+                    fileSuccess.style.display = 'block';
+                }
+
+                // Re-check the rights confirmation
+                const confirmRights = document.getElementById('confirm_rights');
+                if (confirmRights) confirmRights.checked = true;
+
+                // Clear the stored data
+                sessionStorage.removeItem('upload_form_data');
+
+                // Clean URL without reload
+                window.history.replaceState({}, '', '/upload');
+            } catch (e) {
+                console.error('Failed to restore form data:', e);
+            }
+        }
+    }
+})();
+
 // File upload handling
 const fileUploadZone = document.getElementById('file-upload-zone');
 const fileInput = document.getElementById('html_file');

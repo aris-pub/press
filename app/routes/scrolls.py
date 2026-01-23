@@ -186,6 +186,352 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
     )
 
 
+@router.post("/upload-preview", response_class=HTMLResponse)
+async def upload_preview(
+    request: Request,
+    title: str = Form(...),
+    authors: str = Form(...),
+    subject_id: str = Form(...),
+    abstract: str = Form(...),
+    keywords: str = Form(""),
+    html_content: str = Form(...),
+    license: str = Form(...),
+    confirm_rights: str = Form(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Validate upload and show preview before publishing.
+
+    Validates the upload form data and HTML content, then displays a preview
+    of how the scroll will appear on Scroll Press. The user can then confirm
+    to publish or go back to edit.
+
+    Args:
+        request: The HTTP request object
+        title: The scroll title (required)
+        authors: Comma-separated author names (required)
+        subject_id: UUID of the academic subject (required)
+        abstract: Research abstract/summary (required)
+        keywords: Comma-separated keywords (optional)
+        html_content: Complete HTML document content (required)
+        license: License type (cc-by-4.0 or arr)
+        confirm_rights: Rights confirmation checkbox
+        db: Database session dependency
+
+    Returns:
+        HTMLResponse: Preview page or error form with validation messages
+    """
+    current_user = await get_current_user_from_session(request, db)
+
+    # Redirect unauthenticated users
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    log_request(
+        request, user_id=str(current_user.id), extra_data={"title": title, "action": "preview"}
+    )
+
+    try:
+        sentry_sdk.set_tag("operation", "scroll_preview")
+        sentry_sdk.set_user({"id": str(current_user.id)})
+        sentry_sdk.set_context(
+            "upload", {"title": title, "subject_id": subject_id, "license": license}
+        )
+
+        # Validate required fields
+        if not title or not title.strip():
+            raise ValueError("Title is required")
+        if not authors or not authors.strip():
+            raise ValueError("Authors are required")
+        if not abstract or not abstract.strip():
+            raise ValueError("Abstract is required")
+        if not html_content or not html_content.strip():
+            raise ValueError("HTML content is required")
+        if not license or license not in ["cc-by-4.0", "arr"]:
+            raise ValueError("License must be selected (CC BY 4.0 or All Rights Reserved)")
+        if not confirm_rights or confirm_rights.lower() != "true":
+            raise ValueError("You must confirm that you have the right to publish this content")
+
+        # Find the subject - handle UUID conversion
+        try:
+            subject_uuid = uuid_module.UUID(subject_id)
+            result = await db.execute(select(Subject).where(Subject.id == subject_uuid))
+            subject = result.scalar_one_or_none()
+            if not subject:
+                raise ValueError("Invalid subject selected")
+        except (ValueError, TypeError):
+            raise ValueError("Invalid subject ID format")
+
+        # Validate HTML content for security - REJECT if dangerous content found
+        from app.security.html_validator import HTMLValidator
+
+        html_validator = HTMLValidator()
+        is_html_safe, html_errors = html_validator.validate(html_content.strip())
+
+        if not is_html_safe:
+            # Format errors for user display as bulleted list
+            error_messages = []
+            for error in html_errors:
+                if error.get("line_number"):
+                    error_messages.append(f"Line {error['line_number']}: {error['message']}")
+                else:
+                    error_messages.append(f"{error['message']}")
+
+            error_summary = (
+                "Your HTML contains content that is not allowed for security reasons:\n\n"
+                + "\n".join(error_messages)
+            )
+            raise ValueError(error_summary)
+
+        log_preview_event(
+            "preview",
+            "pending",
+            str(current_user.id),
+            request,
+            extra_data={"title": title.strip()},
+        )
+
+        # Get CSRF token for the publish form
+        from app.auth.csrf import get_csrf_token
+
+        session_id = request.cookies.get("session_id")
+        csrf_token = await get_csrf_token(session_id)
+
+        # Return preview page
+        return templates.TemplateResponse(
+            request,
+            "upload_preview.html",
+            {
+                "current_user": current_user,
+                "csrf_token": csrf_token,
+                "subject_name": subject.name,
+                "form_data": {
+                    "title": title.strip(),
+                    "authors": authors.strip(),
+                    "subject_id": subject_id,
+                    "abstract": abstract.strip(),
+                    "keywords": keywords.strip(),
+                    "html_content": html_content.strip(),
+                    "license": license,
+                },
+            },
+        )
+
+    except Exception as e:
+        error_message = str(e) if str(e) else "Validation failed. Please try again."
+        log_error(e, request, user_id=str(current_user.id), context="upload_preview")
+
+        # Load subjects for error response
+        result = await db.execute(select(Subject).order_by(Subject.name))
+        subjects = result.scalars().all()
+
+        # Get CSRF token for the form
+        from app.auth.csrf import get_csrf_token
+
+        session_id = request.cookies.get("session_id")
+        csrf_token = await get_csrf_token(session_id)
+
+        # Return form with error
+        return templates.TemplateResponse(
+            request,
+            "upload.html",
+            {
+                "current_user": current_user,
+                "subjects": subjects,
+                "csrf_token": csrf_token,
+                "error": error_message,
+                "form_data": {
+                    "title": title,
+                    "authors": authors,
+                    "subject_id": subject_id,
+                    "abstract": abstract,
+                    "keywords": keywords,
+                    "html_content": html_content,
+                    "license": license,
+                    "confirm_rights": confirm_rights,
+                },
+            },
+            status_code=422,
+        )
+
+
+@router.post("/publish-scroll", response_class=HTMLResponse)
+async def publish_scroll(
+    request: Request,
+    title: str = Form(...),
+    authors: str = Form(...),
+    subject_id: str = Form(...),
+    abstract: str = Form(...),
+    keywords: str = Form(""),
+    html_content: str = Form(...),
+    license: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Publish a scroll after preview confirmation.
+
+    This endpoint is called after the user has previewed their scroll and
+    confirmed they want to publish. It performs final validation and creates
+    the published scroll.
+
+    Args:
+        request: The HTTP request object
+        title: The scroll title (required)
+        authors: Comma-separated author names (required)
+        subject_id: UUID of the academic subject (required)
+        abstract: Research abstract/summary (required)
+        keywords: Comma-separated keywords (optional)
+        html_content: Complete HTML document content (required)
+        license: License type (cc-by-4.0 or arr)
+        db: Database session dependency
+
+    Returns:
+        HTMLResponse: Success page or error message
+    """
+    current_user = await get_current_user_from_session(request, db)
+
+    # Redirect unauthenticated users
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    log_request(
+        request, user_id=str(current_user.id), extra_data={"title": title, "action": "publish"}
+    )
+
+    try:
+        sentry_sdk.set_tag("operation", "scroll_publish")
+        sentry_sdk.set_user({"id": str(current_user.id)})
+        sentry_sdk.set_context(
+            "upload", {"title": title, "subject_id": subject_id, "license": license}
+        )
+
+        # Validate required fields (re-validate in case of tampering)
+        if not title or not title.strip():
+            raise ValueError("Title is required")
+        if not authors or not authors.strip():
+            raise ValueError("Authors are required")
+        if not abstract or not abstract.strip():
+            raise ValueError("Abstract is required")
+        if not html_content or not html_content.strip():
+            raise ValueError("HTML content is required")
+        if not license or license not in ["cc-by-4.0", "arr"]:
+            raise ValueError("License must be selected (CC BY 4.0 or All Rights Reserved)")
+
+        # Find the subject - handle UUID conversion
+        try:
+            subject_uuid = uuid_module.UUID(subject_id)
+            result = await db.execute(select(Subject).where(Subject.id == subject_uuid))
+            subject = result.scalar_one_or_none()
+            if not subject:
+                raise ValueError("Invalid subject selected")
+        except (ValueError, TypeError):
+            raise ValueError("Invalid subject ID format")
+
+        # Process keywords
+        keyword_list = []
+        if keywords.strip():
+            keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+
+        # Re-validate HTML content for security (in case of tampering)
+        from app.security.html_validator import HTMLValidator
+
+        html_validator = HTMLValidator()
+        is_html_safe, html_errors = html_validator.validate(html_content.strip())
+
+        if not is_html_safe:
+            error_messages = []
+            for error in html_errors:
+                if error.get("line_number"):
+                    error_messages.append(f"Line {error['line_number']}: {error['message']}")
+                else:
+                    error_messages.append(f"{error['message']}")
+
+            error_summary = (
+                "Your HTML contains content that is not allowed for security reasons:\n\n"
+                + "\n".join(error_messages)
+            )
+            raise ValueError(error_summary)
+
+        # Generate content-addressable storage fields
+        from app.storage.content_processing import generate_permanent_url
+
+        url_hash, content_hash, tar_data = await generate_permanent_url(html_content.strip())
+
+        # Create scroll with content-addressable storage
+        scroll = Scroll(
+            user_id=current_user.id,
+            title=title.strip(),
+            authors=authors.strip(),
+            subject_id=subject.id,
+            abstract=abstract.strip(),
+            keywords=keyword_list,
+            html_content=html_content.strip(),
+            license=license,
+            content_hash=content_hash,
+            url_hash=url_hash,
+            status="published",
+        )
+        scroll.publish()
+
+        db.add(scroll)
+        await db.commit()
+        await db.refresh(scroll)
+
+        log_preview_event(
+            "create",
+            str(scroll.id),
+            str(current_user.id),
+            request,
+            extra_data={"title": scroll.title, "status": "published"},
+        )
+
+        # Load the subject relationship
+        result = await db.execute(
+            select(Scroll).options(selectinload(Scroll.subject)).where(Scroll.id == scroll.id)
+        )
+        scroll = result.scalar_one()
+
+        log_preview_event(
+            "publish",
+            scroll.url_hash,
+            str(current_user.id),
+            request,
+            extra_data={"title": scroll.title, "doi_status": "pending"},
+        )
+
+        # Start background task for DOI minting
+        asyncio.create_task(mint_doi_safe(str(scroll.id)))
+
+        # Return success response
+        success_message = "Your scroll has been published successfully!"
+        preview_url = f"/scroll/{scroll.url_hash}"
+
+        return templates.TemplateResponse(
+            request,
+            "upload_success.html",
+            {
+                "scroll": scroll,
+                "preview_url": preview_url,
+                "success_message": success_message,
+            },
+        )
+
+    except Exception as e:
+        error_message = str(e) if str(e) else "Publishing failed. Please try again."
+        log_error(e, request, user_id=str(current_user.id), context="publish_scroll")
+
+        # Return error response - user will need to start over
+        return templates.TemplateResponse(
+            request,
+            "upload_success.html",
+            {
+                "error": error_message,
+                "scroll": None,
+                "preview_url": None,
+                "success_message": None,
+            },
+            status_code=422,
+        )
+
+
 @router.post("/upload-form", response_class=HTMLResponse)
 async def upload_form(
     request: Request,
@@ -200,7 +546,10 @@ async def upload_form(
     action: str = Form("publish"),  # Always publish
     db: AsyncSession = Depends(get_db),
 ):
-    """Process HTML scroll upload form submission.
+    """Process HTML scroll upload form submission (legacy direct publish).
+
+    Note: This endpoint is kept for backwards compatibility. The recommended
+    flow now uses /upload-preview -> /publish-scroll for a preview step.
 
     Validates and processes the upload of HTML research scrolls with
     direct publishing. Uses HTMX for seamless form submission
@@ -281,9 +630,9 @@ async def upload_form(
             error_messages = []
             for error in html_errors:
                 if error.get("line_number"):
-                    error_messages.append(f"• Line {error['line_number']}: {error['message']}")
+                    error_messages.append(f"Line {error['line_number']}: {error['message']}")
                 else:
-                    error_messages.append(f"• {error['message']}")
+                    error_messages.append(f"{error['message']}")
 
             error_summary = (
                 "Your HTML contains content that is not allowed for security reasons:\n\n"
@@ -367,6 +716,12 @@ async def upload_form(
         result = await db.execute(select(Subject).order_by(Subject.name))
         subjects = result.scalars().all()
 
+        # Get CSRF token for the form
+        from app.auth.csrf import get_csrf_token
+
+        session_id = request.cookies.get("session_id")
+        csrf_token = await get_csrf_token(session_id)
+
         # Return form with error
         return templates.TemplateResponse(
             request,
@@ -374,6 +729,7 @@ async def upload_form(
             {
                 "current_user": current_user,
                 "subjects": subjects,
+                "csrf_token": csrf_token,
                 "error": error_message,
                 "form_data": {
                     "title": title,

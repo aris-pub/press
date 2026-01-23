@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Your Scroll - Scroll Press{% endblock %}
+
+{% block extra_styles %}
+.preview-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.preview-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--gray-bg-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-light);
+}
+
+.preview-header h1 {
+    font-size: 1.5rem;
+    font-weight: normal;
+    color: var(--black);
+    margin-bottom: 0.5rem;
+    font-family: var(--font-serif);
+}
+
+.preview-header p {
+    color: var(--gray);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.preview-metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+}
+
+.metadata-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metadata-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gray);
+    font-weight: 500;
+}
+
+.metadata-value {
+    font-size: 0.95rem;
+    color: var(--black);
+}
+
+.metadata-value.license-cc {
+    color: #16a34a;
+}
+
+.preview-frame-container {
+    position: relative;
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.preview-frame-label {
+    background: var(--gray-bg-light);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 0.85rem;
+    color: var(--gray);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.preview-frame-label svg {
+    width: 16px;
+    height: 16px;
+}
+
+.preview-iframe {
+    width: 100%;
+    border: none;
+    display: block;
+    min-height: 400px;
+}
+
+.preview-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: var(--gray);
+}
+
+.preview-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-light);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.preview-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--gray-bg-light);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-light);
+}
+
+.btn-publish {
+    background: var(--red);
+    color: var(--white);
+    padding: 0.875rem 2.5rem;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-publish:hover {
+    background: var(--red-dark);
+}
+
+.btn-back {
+    background: var(--white);
+    color: var(--gray-dark);
+    padding: 0.875rem 2rem;
+    border: 1px solid var(--gray-lighter);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: var(--gray-bg);
+    border-color: var(--gray);
+}
+
+.abstract-preview {
+    padding: 1rem;
+    background: var(--gray-bg-light);
+    border-radius: var(--border-radius);
+    border-left: 3px solid var(--red);
+    margin-bottom: 2rem;
+}
+
+.abstract-preview-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gray);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.abstract-preview-text {
+    font-size: 0.9rem;
+    color: var(--gray-dark);
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .preview-container {
+        margin: 1rem auto;
+        padding: 0 1rem;
+    }
+
+    .preview-header {
+        padding: 1rem;
+    }
+
+    .preview-header h1 {
+        font-size: 1.25rem;
+    }
+
+    .preview-metadata {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .preview-actions {
+        flex-direction: column;
+        padding: 1.5rem;
+    }
+
+    .btn-publish,
+    .btn-back {
+        width: 100%;
+        text-align: center;
+    }
+}
+{% endblock %}
+
+{% block content %}
+<div class="preview-container" id="preview-container">
+    <div class="preview-header">
+        <h1>Preview Your Scroll</h1>
+        <p>Review how your scroll will appear on Scroll Press before publishing</p>
+    </div>
+
+    <div class="preview-metadata">
+        <div class="metadata-item">
+            <span class="metadata-label">Title</span>
+            <span class="metadata-value">{{ form_data.title }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Authors</span>
+            <span class="metadata-value">{{ form_data.authors }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">Subject</span>
+            <span class="metadata-value">{{ subject_name }}</span>
+        </div>
+        <div class="metadata-item">
+            <span class="metadata-label">License</span>
+            <span class="metadata-value {% if form_data.license == 'cc-by-4.0' %}license-cc{% endif %}">
+                {% if form_data.license == 'cc-by-4.0' %}CC BY 4.0 (Open Access){% else %}All Rights Reserved{% endif %}
+            </span>
+        </div>
+        {% if form_data.keywords %}
+        <div class="metadata-item">
+            <span class="metadata-label">Keywords</span>
+            <span class="metadata-value">{{ form_data.keywords }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="abstract-preview">
+        <div class="abstract-preview-label">Abstract</div>
+        <div class="abstract-preview-text">{{ form_data.abstract }}</div>
+    </div>
+
+    <div class="preview-frame-container">
+        <div class="preview-frame-label">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            Content Preview
+        </div>
+        <div id="preview-loading" class="preview-loading">
+            <div class="preview-spinner"></div>
+            <span>Loading preview...</span>
+        </div>
+        <iframe
+            id="preview-iframe"
+            class="preview-iframe"
+            srcdoc=""
+            title="Scroll content preview"
+            sandbox="allow-scripts allow-same-origin"
+            style="opacity: 0; transition: opacity 0.2s;"
+        ></iframe>
+    </div>
+
+    <div class="preview-actions">
+        <form id="back-form" action="/upload" method="get" style="display: inline;">
+            <button type="button" class="btn-back" id="back-btn">Go Back and Edit</button>
+        </form>
+        <form id="publish-form" hx-post="/publish-scroll" hx-target="#preview-container" hx-swap="innerHTML">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="title" value="{{ form_data.title }}">
+            <input type="hidden" name="authors" value="{{ form_data.authors }}">
+            <input type="hidden" name="subject_id" value="{{ form_data.subject_id }}">
+            <input type="hidden" name="abstract" value="{{ form_data.abstract }}">
+            <input type="hidden" name="keywords" value="{{ form_data.keywords }}">
+            <input type="hidden" name="license" value="{{ form_data.license }}">
+            <input type="hidden" name="html_content" id="hidden-html-content">
+            <button type="submit" class="btn-publish">Publish Scroll</button>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    // Store the HTML content for preview and form submission
+    const htmlContent = {{ form_data.html_content | tojson }};
+
+    // Set hidden field value for publish form
+    document.getElementById('hidden-html-content').value = htmlContent;
+
+    // Load content into preview iframe
+    const iframe = document.getElementById('preview-iframe');
+    const loading = document.getElementById('preview-loading');
+
+    iframe.srcdoc = htmlContent;
+
+    iframe.addEventListener('load', function() {
+        try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            // Calculate height based on content
+            function updateHeight() {
+                const body = iframeDoc.body;
+                const allElements = Array.from(body.getElementsByTagName('*'));
+                let maxBottom = 0;
+
+                for (const el of allElements) {
+                    const style = window.getComputedStyle(el);
+                    if (style.display === 'none' ||
+                        el.tagName === 'SCRIPT' ||
+                        el.tagName === 'STYLE' ||
+                        style.position === 'fixed' ||
+                        style.position === 'absolute') {
+                        continue;
+                    }
+
+                    const rect = el.getBoundingClientRect();
+                    if (rect.bottom > maxBottom) {
+                        maxBottom = rect.bottom;
+                    }
+                }
+
+                const bodyStyle = window.getComputedStyle(body);
+                const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
+                const height = Math.max(400, Math.ceil(maxBottom + paddingBottom));
+                iframe.style.height = height + 'px';
+            }
+
+            setTimeout(function() {
+                updateHeight();
+                loading.style.display = 'none';
+                iframe.style.opacity = '1';
+            }, 100);
+
+            // Update on resize
+            const resizeObserver = new ResizeObserver(updateHeight);
+            resizeObserver.observe(iframeDoc.documentElement);
+            resizeObserver.observe(iframeDoc.body);
+            window.addEventListener('resize', updateHeight);
+
+        } catch (e) {
+            console.error('Failed to setup iframe:', e);
+            iframe.style.height = '600px';
+            loading.style.display = 'none';
+            iframe.style.opacity = '1';
+        }
+    });
+
+    // Back button - store form data and go back
+    document.getElementById('back-btn').addEventListener('click', function() {
+        // Store form data in sessionStorage for restoration
+        const formData = {
+            title: {{ form_data.title | tojson }},
+            authors: {{ form_data.authors | tojson }},
+            subject_id: {{ form_data.subject_id | tojson }},
+            abstract: {{ form_data.abstract | tojson }},
+            keywords: {{ form_data.keywords | tojson }},
+            license: {{ form_data.license | tojson }},
+            html_content: htmlContent
+        };
+        sessionStorage.setItem('upload_form_data', JSON.stringify(formData));
+        window.location.href = '/upload?restore=1';
+    });
+})();
+</script>
+{% endblock %}
