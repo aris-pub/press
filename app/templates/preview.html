@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview: {{ scroll.title }} - Scroll Press</title>
+
+  <link rel="icon" type="image/svg+xml" href="/brand/logos/press/press-logo-64.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Source Sans 3', sans-serif; background: var(--white); color: var(--black);">
+
+  <!-- Preview Banner (sticky at top) -->
+  <div class="preview-banner">
+    <div class="preview-banner-content">
+      <span class="preview-banner-icon">⚠️</span>
+      <span class="preview-banner-text">PREVIEW MODE - Review your scroll below. Confirm to publish or cancel to discard.</span>
+    </div>
+  </div>
+
+  <!-- Rendered Content (iframe with loading spinner) -->
+  <div class="scroll-container">
+    <div id="iframe-loading" class="loading-overlay">
+      <div class="spinner"></div>
+      <p style="margin-top: 1rem; color: var(--gray); font-size: 0.9rem;">Loading preview...</p>
+    </div>
+    <iframe
+      id="paper-frame"
+      src="/scroll/{{ scroll.url_hash }}/paper"
+      style="width: 100%; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
+      title="{{ scroll.title }}"
+      scrolling="no"
+    ></iframe>
+  </div>
+
+  <!-- Article Metadata Section (matches scroll.html) -->
+  <section class="scroll-metadata">
+    <h2 class="metadata-title">{{ scroll.title }}</h2>
+    <div class="metadata-authors">
+      {{ scroll.authors }} • {{ scroll.subject.name }}
+    </div>
+    <div class="metadata-info">
+      <span>Preview</span>
+      <span class="metadata-separator">•</span>
+      {% if scroll.license == 'cc-by-4.0' %}
+        <span>CC BY 4.0</span>
+      {% else %}
+        <span>All Rights Reserved</span>
+      {% endif %}
+    </div>
+    {% if scroll.keywords %}
+    <div class="metadata-keywords">
+      {{ scroll.keywords | join(', ') }}
+    </div>
+    {% endif %}
+    <div class="metadata-abstract">
+      {{ scroll.abstract }}
+    </div>
+  </section>
+
+  <!-- Preview Action Buttons -->
+  <section class="preview-actions">
+    <form method="POST" action="/preview/{{ scroll.url_hash }}/confirm" style="display: inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-publish">
+        Confirm & Publish
+      </button>
+    </form>
+
+    <form method="POST" action="/preview/{{ scroll.url_hash }}/cancel" style="display: inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-cancel" onclick="return confirm('Are you sure? This will delete the preview.');">
+        Cancel
+      </button>
+    </form>
+  </section>
+
+<style>
+/* Preview banner */
+.preview-banner {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.preview-banner-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  color: #78350f;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.preview-banner-icon {
+  font-size: 1.2rem;
+}
+
+/* Scroll container and loading (from scroll.html) */
+.scroll-container {
+  padding: 0;
+  position: relative;
+  margin: 0 auto;
+  min-height: 400px;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-bg-light);
+  z-index: 10;
+  min-height: 400px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-light);
+  border-top-color: var(--red);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Metadata section (from scroll.html) */
+.scroll-metadata {
+  padding: 3rem 1.5rem;
+  background: var(--gray-bg-light);
+  border-top: 1px solid var(--border-light);
+  text-align: center;
+}
+
+.metadata-title {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--black);
+  margin: 0 0 1rem 0;
+  line-height: 1.3;
+}
+
+.metadata-authors {
+  font-size: 1rem;
+  color: var(--gray-dark);
+  margin-bottom: 0.75rem;
+}
+
+.metadata-info {
+  font-size: 0.9rem;
+  color: var(--gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.metadata-separator {
+  color: var(--gray-light);
+}
+
+.metadata-keywords {
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.metadata-abstract {
+  max-width: 800px;
+  margin: 0 auto;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--gray-dark);
+  text-align: left;
+}
+
+/* Preview actions */
+.preview-actions {
+  padding: 2rem 1.5rem;
+  background: var(--white);
+  border-top: 1px solid var(--border-light);
+  text-align: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.btn-publish {
+  background: var(--red);
+  color: var(--white);
+}
+
+.btn-publish:hover {
+  background: var(--red-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(237, 94, 81, 0.2);
+}
+
+.btn-cancel {
+  background: var(--white);
+  color: var(--gray-dark);
+  border: 1px solid var(--border-light);
+}
+
+.btn-cancel:hover {
+  background: var(--gray-bg-light);
+  border-color: var(--gray);
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .preview-banner-content {
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+  }
+
+  .preview-banner-text {
+    line-height: 1.4;
+  }
+
+  .scroll-container {
+    min-height: 300px;
+  }
+
+  .loading-overlay {
+    min-height: 300px;
+  }
+
+  .scroll-metadata {
+    padding: 2rem 1.5rem;
+  }
+
+  .metadata-title {
+    font-size: 1.1rem;
+  }
+
+  .metadata-info {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .metadata-separator {
+    display: none;
+  }
+
+  .preview-actions {
+    flex-direction: column;
+    padding: 1.5rem;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+
+<!-- Auto-resize iframe script (from scroll.html) -->
+<script>
+(function() {
+  const iframe = document.getElementById('paper-frame');
+  const loadingOverlay = document.getElementById('iframe-loading');
+
+  iframe.addEventListener('load', function() {
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+      function updateDimensions() {
+        const body = iframeDoc.body;
+        const allElements = Array.from(body.getElementsByTagName('*'));
+        let maxBottom = 0;
+
+        for (const el of allElements) {
+          const style = window.getComputedStyle(el);
+
+          if (style.display === 'none' ||
+              el.tagName === 'SCRIPT' ||
+              el.tagName === 'STYLE' ||
+              style.position === 'fixed' ||
+              style.position === 'absolute') {
+            continue;
+          }
+
+          const rect = el.getBoundingClientRect();
+          if (rect.bottom > maxBottom) {
+            maxBottom = rect.bottom;
+          }
+        }
+
+        const bodyStyle = window.getComputedStyle(body);
+        const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
+        const height = Math.ceil(maxBottom + paddingBottom);
+        iframe.style.height = height + 'px';
+      }
+
+      setTimeout(() => {
+        updateDimensions();
+        loadingOverlay.style.display = 'none';
+        iframe.style.opacity = '1';
+      }, 100);
+
+      const resizeObserver = new ResizeObserver(() => {
+        updateDimensions();
+      });
+
+      resizeObserver.observe(iframeDoc.documentElement);
+      resizeObserver.observe(iframeDoc.body);
+
+      window.addEventListener('resize', updateDimensions);
+    } catch (e) {
+      console.error('Failed to observe iframe content:', e);
+      iframe.style.height = '1000px';
+      loadingOverlay.style.display = 'none';
+      iframe.style.opacity = '1';
+    }
+  });
+
+  iframe.addEventListener('error', function() {
+    loadingOverlay.innerHTML =
+      '<p style="color: var(--gray);">Failed to load preview. <a href="/scroll/{{ scroll.url_hash }}/paper" style="color: var(--red);">Open directly</a></p>';
+  });
+
+  // Fallback timeout
+  setTimeout(function() {
+    if (loadingOverlay.style.display !== 'none') {
+      loadingOverlay.style.display = 'none';
+      iframe.style.opacity = '1';
+      iframe.style.height = '800px';
+    }
+  }, 10000);
+})();
+</script>
+
+</body>
+</html>

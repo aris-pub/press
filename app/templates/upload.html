@@ -508,7 +508,7 @@
         {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
 
         <div class="form-actions">
-            {{ button("Publish Scroll", type="submit", variant="primary", name="action", value="publish") }}
+            {{ button("Preview & Publish", type="submit", variant="primary", name="action", value="publish") }}
         </div>
     </form>
 </div>
@@ -642,11 +642,10 @@ function hideMessages() {
     fileSuccess.style.display = 'none';
 }
 
-// Add HTMX configuration for better form handling
-document.body.addEventListener('htmx:configRequest', function(evt) {
-    // Ensure form data is sent correctly
-    if (evt.detail.verb === 'post' && evt.detail.path === '/upload-form') {
-        evt.detail.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+// Restore file input name after HTMX request completes (for error cases)
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.pathInfo.requestPath === '/upload-form') {
+        fileInput.setAttribute('name', 'html_file');
     }
 });
 
@@ -657,6 +656,10 @@ document.getElementById('upload-form').addEventListener('submit', function(e) {
         showError('Please select and upload an HTML file before submitting');
         return false;
     }
+
+    // Remove name attribute from file input to prevent it from being submitted
+    // We already have the content in the hidden field
+    fileInput.removeAttribute('name');
 });
 </script>
 {% endblock %}

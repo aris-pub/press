@@ -201,10 +201,11 @@ async def create_content_addressable_scroll(
         license=license,
         content_hash=content_hash,
         url_hash=url_hash,
-        status="draft",
+        status="published",
         user_id=test_user.id,
         subject_id=test_subject.id,
     )
+    scroll.publish()
 
     test_db.add(scroll)
     await test_db.commit()

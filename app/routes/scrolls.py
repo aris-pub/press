@@ -24,6 +24,163 @@ from app.upload import HTMLProcessor
 router = APIRouter()
 
 
+@router.get("/preview/{url_hash}", response_class=HTMLResponse)
+async def view_preview(request: Request, url_hash: str, db: AsyncSession = Depends(get_db)):
+    """Display preview of scroll before publishing.
+
+    Only the owner can view their preview. Shows the scroll exactly as it would
+    appear when published, with options to confirm publication or cancel.
+    """
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    log_request(request, user_id=str(current_user.id), extra_data={"url_hash": url_hash})
+
+    # Find preview scroll by url_hash
+    result = await db.execute(
+        select(Scroll)
+        .options(selectinload(Scroll.subject))
+        .where(
+            Scroll.url_hash == url_hash,
+            Scroll.status == "preview",
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        get_logger().warning(f"Preview not found: {url_hash}")
+        return templates.TemplateResponse(
+            request, "404.html", {"message": "Preview not found"}, status_code=404
+        )
+
+    # Verify ownership
+    if scroll.user_id != current_user.id:
+        get_logger().warning(
+            f"User {current_user.id} attempted to view preview {url_hash} owned by {scroll.user_id}"
+        )
+        return templates.TemplateResponse(
+            request, "404.html", {"message": "Preview not found"}, status_code=404
+        )
+
+    # Get CSRF token for forms
+    from app.auth.csrf import get_csrf_token
+
+    session_id = request.cookies.get("session_id")
+    csrf_token = await get_csrf_token(session_id)
+
+    return templates.TemplateResponse(
+        request,
+        "preview.html",
+        {"scroll": scroll, "current_user": current_user, "csrf_token": csrf_token},
+    )
+
+
+@router.post("/preview/{url_hash}/confirm", response_class=HTMLResponse)
+async def confirm_preview(request: Request, url_hash: str, db: AsyncSession = Depends(get_db)):
+    """Confirm and publish a preview scroll.
+
+    Publishes the scroll, sets published timestamp, and initiates DOI minting.
+    Only the owner can confirm their preview.
+    """
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    log_request(
+        request,
+        user_id=str(current_user.id),
+        extra_data={"url_hash": url_hash, "action": "confirm"},
+    )
+
+    # Find preview scroll
+    result = await db.execute(
+        select(Scroll)
+        .options(selectinload(Scroll.subject))
+        .where(
+            Scroll.url_hash == url_hash,
+            Scroll.status == "preview",
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Preview not found")
+
+    # Verify ownership
+    if scroll.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to publish this preview")
+
+    # Publish the scroll
+    scroll.publish()
+    await db.commit()
+
+    log_preview_event(
+        "publish",
+        scroll.url_hash,
+        str(current_user.id),
+        request,
+        extra_data={"title": scroll.title, "doi_status": "pending"},
+    )
+
+    # Start background task for DOI minting
+    asyncio.create_task(mint_doi_safe(str(scroll.id)))
+
+    # Redirect to published scroll
+    return RedirectResponse(url=f"/scroll/{scroll.url_hash}", status_code=303)
+
+
+@router.post("/preview/{url_hash}/cancel", response_class=HTMLResponse)
+async def cancel_preview(request: Request, url_hash: str, db: AsyncSession = Depends(get_db)):
+    """Cancel and delete a preview scroll.
+
+    Removes the preview from the database. Only the owner can cancel their preview.
+    """
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    log_request(
+        request,
+        user_id=str(current_user.id),
+        extra_data={"url_hash": url_hash, "action": "cancel"},
+    )
+
+    # Find preview scroll
+    result = await db.execute(
+        select(Scroll).where(
+            Scroll.url_hash == url_hash,
+            Scroll.status == "preview",
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Preview not found")
+
+    # Verify ownership
+    if scroll.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to cancel this preview")
+
+    # Delete the preview
+    await db.delete(scroll)
+    await db.commit()
+
+    log_preview_event(
+        "cancel_preview",
+        url_hash,
+        str(current_user.id),
+        request,
+        extra_data={"title": scroll.title},
+    )
+
+    # Redirect to upload page
+    return RedirectResponse(url="/upload", status_code=303)
+
+
 @router.get("/scroll/{identifier}", response_class=HTMLResponse)
 async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depends(get_db)):
     """Display a published scroll by its identifier.
@@ -70,12 +227,14 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
 
 @router.get("/scroll/{url_hash}/paper")
 async def get_paper_html(
+    request: Request,
     url_hash: str,
     db: AsyncSession = Depends(get_db),
 ):
     """Serve paper HTML for iframe embedding.
 
     Returns raw HTML content of a published paper for iframe rendering.
+    For preview scrolls, only the owner can view.
     This route provides complete CSS/JS isolation from the parent Press page.
 
     Security headers:
@@ -85,17 +244,20 @@ async def get_paper_html(
     sentry_sdk.set_tag("operation", "paper_view")
     sentry_sdk.set_context("paper", {"url_hash": url_hash})
 
-    # Find published scroll by content-addressable hash
+    # Find scroll by content-addressable hash (published or preview)
     result = await db.execute(
-        select(Scroll).where(
-            Scroll.url_hash == url_hash,
-            Scroll.status == "published",
-        )
+        select(Scroll).where(Scroll.url_hash == url_hash)
     )
     scroll = result.scalar_one_or_none()
 
     if not scroll:
         raise HTTPException(status_code=404, detail="Paper not found")
+
+    # If preview, verify ownership
+    if scroll.status == "preview":
+        current_user = await get_current_user_from_session(request, db)
+        if not current_user or scroll.user_id != current_user.id:
+            raise HTTPException(status_code=404, detail="Paper not found")
 
     # Set security headers for iframe embedding
     headers = {
@@ -135,6 +297,24 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
         return RedirectResponse(url="/login", status_code=302)
 
     log_request(request, user_id=str(current_user.id))
+
+    # Clean up any abandoned previews from this user
+    # (User closed window/lost session without confirming or canceling)
+    try:
+        abandoned_previews = await db.execute(
+            select(Scroll).where(Scroll.user_id == current_user.id, Scroll.status == "preview")
+        )
+        abandoned = abandoned_previews.scalars().all()
+        if abandoned:
+            for preview in abandoned:
+                await db.delete(preview)
+            await db.commit()
+            get_logger().info(
+                f"Cleaned up {len(abandoned)} abandoned preview(s) for user {current_user.id}"
+            )
+    except Exception as e:
+        get_logger().error(f"Failed to clean up abandoned previews: {e}")
+        await db.rollback()
 
     # Load available subjects
     get_logger().info("Loading subjects for upload form...")
@@ -296,7 +476,21 @@ async def upload_form(
 
         url_hash, content_hash, tar_data = await generate_permanent_url(html_content.strip())
 
-        # Create scroll with content-addressable storage
+        # Check if content already exists (published or preview)
+        existing_scroll = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
+        existing = existing_scroll.scalar_one_or_none()
+        if existing:
+            if existing.status == "published":
+                raise ValueError(
+                    "This content has already been published. Each scroll must have unique content."
+                )
+            else:
+                # There's an abandoned preview with the same content
+                raise ValueError(
+                    "A preview with identical content already exists. Please cancel or confirm the existing preview before uploading again, or modify your content to make it unique."
+                )
+
+        # Create scroll with preview status (not yet published)
         scroll = Scroll(
             user_id=current_user.id,
             title=title.strip(),
@@ -308,60 +502,53 @@ async def upload_form(
             license=license,
             content_hash=content_hash,
             url_hash=url_hash,
-            status="published",
+            status="preview",
         )
-        scroll.publish()
 
         db.add(scroll)
         await db.commit()
         await db.refresh(scroll)
 
+        # Load the subject relationship for preview display
+        result = await db.execute(
+            select(Scroll).options(selectinload(Scroll.subject)).where(Scroll.id == scroll.id)
+        )
+        scroll = result.scalar_one()
+
         log_preview_event(
-            "create",
+            "create_preview",
             str(scroll.id),
             str(current_user.id),
             request,
-            extra_data={"title": scroll.title, "status": "published"},
+            extra_data={"title": scroll.title, "status": "preview", "url_hash": scroll.url_hash},
         )
 
-        # If publishing directly, publish the scroll after it's in the database
-        if action == "publish":
-            # Load the subject relationship before publishing
-            result = await db.execute(
-                select(Scroll).options(selectinload(Scroll.subject)).where(Scroll.id == scroll.id)
-            )
-            scroll = result.scalar_one()
-            scroll.publish()
-            await db.commit()  # Commit the publish changes
-            log_preview_event(
-                "publish",
-                scroll.url_hash,
-                str(current_user.id),
-                request,
-                extra_data={"title": scroll.title, "doi_status": "pending"},
-            )
+        # Get CSRF token for preview page forms
+        from app.auth.csrf import get_csrf_token
 
-            # Start background task for DOI minting
-            asyncio.create_task(mint_doi_safe(str(scroll.id)))
+        session_id = request.cookies.get("session_id")
+        csrf_token = await get_csrf_token(session_id)
 
-        # Return success response - just the content for HTMX
-        success_message = "Your scroll has been published successfully!"
-        preview_url = f"/scroll/{scroll.url_hash}"
-
-        # Return success response using proper template
+        # Return preview page for user to review before publishing
         return templates.TemplateResponse(
             request,
-            "upload_success.html",
+            "preview.html",
             {
                 "scroll": scroll,
-                "preview_url": preview_url,
-                "success_message": success_message,
+                "current_user": current_user,
+                "csrf_token": csrf_token,
             },
         )
 
     except Exception as e:
         error_message = str(e) if str(e) else "Upload failed. Please try again."
-        log_error(e, request, user_id=str(current_user.id), context="preview_upload")
+        # Store user_id before potential session issues
+        user_id = str(current_user.id) if current_user else None
+
+        # Rollback the session to clear any pending transactions
+        await db.rollback()
+
+        log_error(e, request, user_id=user_id, context="preview_upload")
 
         # Load subjects for error response
         result = await db.execute(select(Subject).order_by(Subject.name))

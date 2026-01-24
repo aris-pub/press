@@ -174,6 +174,18 @@ class Scroll(Base):
             raise ValueError(f"License must be one of: {allowed_licenses}, got: {license_value}")
         return license_value
 
+    @validates("status")
+    def validate_status(self, key, status_value):
+        """Validate status field to ensure only allowed values."""
+        allowed_statuses = ["preview", "published"]
+        if status_value not in allowed_statuses:
+            raise ValueError(f"Status must be one of: {allowed_statuses}, got: {status_value}")
+        return status_value
+
+    def is_preview(self) -> bool:
+        """Check if scroll is in preview status."""
+        return self.status == "preview"
+
     def publish(self):
         """Publish the scroll and set published timestamp."""
         # For content-addressable scrolls, ensure they have the required fields
