@@ -35,6 +35,7 @@ donations and academic grants.
 - PostgreSQL database
 - [uv](https://docs.astral.sh/uv/) package manager
 - `just` to run common commands
+- `pandoc` for building documentation (install: `brew install pandoc` on macOS)
 
 ### Installation
 
@@ -95,8 +96,39 @@ static/
 ├── css/               # Stylesheet
 └── images/            # Static assets
 
+docs/                  # Documentation source (markdown)
+├── quick-start.md     # Quick start guide (source)
+├── faq.md             # FAQ (source)
+├── docs-meta-template.html  # Jinja wrapper template
+└── build.sh           # Build script (markdown → HTML templates)
+
 tests/                 # Comprehensive test suite
 ```
+
+### Documentation Build Pipeline
+
+Documentation pages are written in Markdown and built into Jinja2 templates at build time:
+
+**Source files** (edit these):
+- `docs/quick-start.md` - Quick start guide
+- `docs/faq.md` - Frequently asked questions
+- `docs/docs-meta-template.html` - Wrapper template with Jinja blocks
+
+**Generated files** (do not edit directly):
+- `app/templates/docs/quick-start.html` - Built from quick-start.md
+- `app/templates/docs/faq.html` - Built from faq.md
+
+**When to build**:
+```bash
+just build
+```
+
+Run this command whenever you:
+- Edit any `.md` file in `docs/`
+- Edit `docs-meta-template.html`
+- After pulling changes that modify documentation source
+
+The build process uses `pandoc` to convert Markdown to HTML fragments, then injects them into the Jinja template wrapper. At runtime, these are served as normal Jinja templates with full access to base template styling and navigation.
 
 ### Architecture
 
@@ -122,7 +154,8 @@ tests/                 # Comprehensive test suite
 1. **Run all checks**: `just check` (includes lint, unit tests, and e2e tests)
 2. **Follow existing patterns**: Session-based auth, macro components, async/await
 3. **Write tests**: All new features should include test coverage
-4. **Read the docs**: See [Testing Guide](docs/TESTING.md) for testing best practices
+4. **Documentation changes**: Edit `.md` files in `docs/`, then run `just build`
+5. **Read the docs**: See [Testing Guide](docs/TESTING.md) for testing best practices
 
 Contributions are welcome! Please open an issue to discuss major changes before submitting a PR.
 

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}FAQ - Scroll Press{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="page-content docs-content">
+    <h1 id="frequently-asked-questions">Frequently Asked Questions</h1>
+<h2 id="what-formats-does-press-accept">What formats does Press accept?</h2>
+<p>Press accepts HTML files from any source:</p>
+<ul>
+<li><strong>Quarto</strong> - Export with <code>quarto render document.qmd --to html</code></li>
+<li><strong>Typst</strong> - Export to HTML when available</li>
+<li><strong>Jupyter</strong> - Convert with <code>jupyter nbconvert --to html notebook.ipynb</code></li>
+<li><strong>MyST</strong> - Build with <code>myst build --html</code></li>
+<li><strong>Hand-coded HTML</strong> - Upload your HTML file directly</li>
+</ul>
+<p>You can upload a single HTML file or a ZIP containing HTML with assets (images, CSS, JavaScript). Maximum file size is 50MB.</p>
+<h2 id="what-is-a-scroll">What is a “Scroll”?</h2>
+<p>A scroll is what we call a preprint on Press. The name reflects how HTML research is meant to be experienced: you scroll through it on your screen, rather than flipping through static pages like a PDF.</p>
+<p>It’s also a nod to ancient scrolls—the original format for sharing knowledge before bound books existed. Just as scrolls were designed to be unrolled and read continuously, web-native research is designed to flow naturally on screens of any size.</p>
+<h2 id="is-press-free">Is Press free?</h2>
+<p>Yes, forever. Publishing and hosting on Press is completely free with no paywalls or subscriptions.</p>
+<p>We may introduce optional premium features in the future (custom domains, advanced analytics), but core publishing will always remain free.</p>
+<h2 id="who-owns-my-content">Who owns my content?</h2>
+<p>You do, 100%. You retain full ownership and copyright of your work.</p>
+<p>When you publish, you choose a license:</p>
+<ul>
+<li><strong>CC BY 4.0</strong> - Open access with attribution (recommended for research)</li>
+<li><strong>All Rights Reserved</strong> - Traditional copyright</li>
+</ul>
+<p>Press simply hosts and archives your work. You can request deletion at any time.</p>
+<h2 id="how-long-do-links-last">How long do links last?</h2>
+<p>Permanently. Once published, your paper receives a permanent URL that will never break. Content is immutable - what you publish is what stays archived.</p>
+<p>We’re integrating with DataCite to issue DOIs (Digital Object Identifiers) for long-term citability and discoverability.</p>
+<h2 id="can-i-update-a-paper-after-publishing">Can I update a paper after publishing?</h2>
+<p>Not yet. Currently, published papers are immutable to ensure archival integrity.</p>
+<p>We’re building a versioning system that will allow you to publish new versions while preserving the original. This will work similar to arXiv’s versioning (v1, v2, v3…).</p>
+<h2 id="is-my-content-private-before-publishing">Is my content private before publishing?</h2>
+<p>Yes. Uploaded drafts are only visible to you until you click “Publish.” Once published, papers become publicly accessible.</p>
+<h2 id="how-do-i-cite-a-paper-from-press">How do I cite a paper from Press?</h2>
+<p>Use the permanent URL and author/title information. Example:</p>
+<blockquote>
+<p>Torres, L. (2026). <em>Title of Paper</em>. Scroll Press. https://press.aris.pub/scroll/abc123</p>
+</blockquote>
+<p>DOI-based citations will be available once DataCite integration is complete.</p>
+<h2 id="can-i-delete-my-paper">Can I delete my paper?</h2>
+<p>Yes. Contact us at hello@aris.pub to request removal. We’ll take down the public-facing content, though we may retain archival copies for legal/administrative purposes.</p>
+<h2 id="what-if-i-find-a-bug-or-have-feedback">What if I find a bug or have feedback?</h2>
+<p>We’re in closed beta and actively improving the platform. Please report issues or share feedback:</p>
+<ul>
+<li>Email: hello@aris.pub</li>
+<li>GitHub: <a href="https://github.com/aris-pub/press">github.com/aris-pub/press</a></li>
+</ul>
+<p>Your feedback helps make Press better for everyone.</p>
+<h2 id="is-press-open-source">Is Press open source?</h2>
+<p>Yes, always and forever. Press is fully open source and community-managed.</p>
+<p>The entire codebase is available on <a href="https://github.com/aris-pub/press">GitHub</a> under an open source license. We believe research infrastructure should be transparent, collaborative, and owned by the community it serves.</p>
+<p>Anyone can contribute code, report issues, or fork the project. Press will never be closed-source or controlled by a single entity.</p>
+<h2 id="whats-next-on-the-roadmap">What’s next on the roadmap?</h2>
+<p>Check our <a href="/roadmap">roadmap</a> to see upcoming features including:</p>
+<ul>
+<li>DOI integration via DataCite</li>
+<li>Versioning system</li>
+<li>Advanced search and filtering</li>
+<li>Custom themes</li>
+<li>And more…</li>
+</ul>
+  </div>
+</div>
+{% endblock %}

@@ -341,6 +341,43 @@ async def roadmap_page(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(request, "roadmap.html", {"current_user": current_user})
 
 
+@router.get("/docs")
+@router.get("/docs/")
+async def docs_redirect():
+    """Redirect /docs to /docs/quick-start."""
+    return RedirectResponse(url="/docs/quick-start", status_code=302)
+
+
+@router.get("/docs/quick-start", response_class=HTMLResponse)
+async def quick_start_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the Quick Start guide.
+
+    Shows step-by-step instructions for publishing your first paper on Scroll Press.
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "docs/quick-start.html", {"current_user": current_user})
+
+
+@router.get("/docs/faq", response_class=HTMLResponse)
+async def faq_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the FAQ page.
+
+    Shows frequently asked questions about Scroll Press.
+    """
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(request, "docs/faq.html", {"current_user": current_user})
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     """Display user dashboard with their published papers."""

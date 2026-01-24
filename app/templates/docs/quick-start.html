@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Start - Scroll Press{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="page-content docs-content">
+    <h1 id="quick-start-guide">Quick Start Guide</h1>
+<p>Get from signup to published paper in 5 minutes.</p>
+<h2 id="create-account">1. Create Account</h2>
+<p><a href="/register">Sign up</a> with your email address. Check your inbox for a verification email and click the link to activate your account.</p>
+<h2 id="upload-html">2. Upload HTML</h2>
+<p>Once logged in, go to your <a href="/dashboard">dashboard</a> and click “Upload New Scroll.”</p>
+<p>You can upload:</p>
+<ul>
+<li>A single HTML file</li>
+<li>All JS and CSS must be inlined in that single HTML file</li>
+<li>Maximum file size: 50MB</li>
+</ul>
+<p><strong>Supported tools:</strong> Quarto, Typst, Jupyter, MyST, hand-coded HTML, or any tool that exports to HTML.</p>
+<h2 id="add-metadata">3. Add Metadata</h2>
+<p>Fill in the required fields:</p>
+<ul>
+<li><strong>Title</strong> - Your paper’s title</li>
+<li><strong>Authors</strong> - Author names (one per line or comma-separated)</li>
+<li><strong>Abstract</strong> - Brief summary of your work</li>
+<li><strong>Subject</strong> - Primary research area</li>
+<li><strong>Keywords</strong> - Searchable tags (optional)</li>
+</ul>
+<p>Choose a license:</p>
+<ul>
+<li><strong>CC BY 4.0</strong> (recommended for open research)</li>
+<li><strong>All Rights Reserved</strong></li>
+</ul>
+<h2 id="preview">4. Preview</h2>
+<p>Review how your paper will look on the platform. Check that:</p>
+<ul>
+<li>Images and media load correctly</li>
+<li>Formatting looks right</li>
+<li>Interactive elements work (if applicable)</li>
+</ul>
+<h2 id="publish">5. Publish</h2>
+<p>Click “Publish” to make your work live. You’ll receive:</p>
+<ul>
+<li>A permanent URL</li>
+<li>A DOI</li>
+</ul>
+<p>Your paper is now publicly accessible and permanently archived.</p>
+<hr />
+<p><strong>Need help?</strong> Contact hello@aris.pub or check the <a href="/docs/faq">FAQ</a>.</p>
+  </div>
+</div>
+{% endblock %}

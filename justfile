@@ -71,6 +71,11 @@ test:
         uv run pytest -m "e2e and not desktop and not mobile" -v
     fi
 
+# Build documentation templates from markdown
+build:
+    #!/usr/bin/env bash
+    cd docs && ./build.sh
+
 # Format and lint code
 lint:
     uv run ruff check --fix .
