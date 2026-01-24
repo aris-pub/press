@@ -99,7 +99,7 @@
     <h1>Scroll Press</h1>
   </div>
   <p class="hero-tagline">A preprint server for interactive research papers.</p>
-  <p class="hero-subtitle">Interactive visualizations. Live figures. Get a citable URL in seconds.</p>
+  <p class="hero-subtitle">Interactive visualizations. Live figures. Permanent DOIs. Free forever.</p>
 
   <div class="search-box">
     {{ search_form(button_class="search-btn-override") }}
@@ -125,7 +125,7 @@
 
 <div class="recent" id="recent">
   <h2 id="recent-submissions-heading">Recent Scrolls</h2>
-  
+
   <div class="scrolls-grid">
     {% for preview_row in scrolls %}
     {% set preview = preview_row[0] %}
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filter scrolls by subject (fetch new data)
     async function filterPreviews(subjectName) {
         const scrollsGrid = document.querySelector('.scrolls-grid');
-        
+
         try {
             // Build API URL
             let apiUrl = '/api/scrolls';
@@ -180,42 +180,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 apiUrl += `?subject=${encodeURIComponent(subjectName)}`;
                 console.log('Subject name being sent to API:', subjectName);
             }
-            
+
             // Fetch filtered scrolls
             const response = await fetch(apiUrl);
             const data = await response.json();
-            
+
             // Clear existing scrolls
             scrollsGrid.innerHTML = '';
-            
+
             // Add new scrolls
             data.scrolls.forEach(scroll => {
                 const scrollCard = createScrollCard(scroll);
                 scrollsGrid.appendChild(scrollCard);
             });
-            
+
             // Debug: Show number of cards created
             if (data.scrolls.length === 0) {
                 scrollsGrid.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">No scrolls found for this subject.</p>';
             }
-            
+
             // Update preview cards reference
             window.previewCards = document.querySelectorAll('.preview');
-            
+
         } catch (error) {
             console.error('Error fetching scrolls:', error);
         }
     }
-    
+
     // Create scroll card HTML element
     function createScrollCard(scroll) {
         const div = document.createElement('div');
         div.className = 'scroll preview';
         div.setAttribute('data-subject', scroll.subject_name.toLowerCase().replace(' ', '-'));
-        
+
         const tagsHtml = scroll.keywords.map(tag => `<span class="tag">${tag}</span>`).join('');
         const timeAgo = 'recently'; // You might want to calculate this properly
-        
+
         div.innerHTML = `
             <a href="/scroll/${scroll.url_hash}" class="scroll-link">
                 <div class="scroll-title">${scroll.title}</div>
@@ -225,13 +225,13 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="scroll-footer">
                 <div class="scroll-tags">${tagsHtml}</div>
                 <div class="scroll-meta">
-                    <span class="preview-subject-link" data-subject-name="${scroll.subject_name.toLowerCase().replace(' ', '-')}" data-subject-display="${scroll.subject_name}" style="color: var(--red); cursor: pointer;">${scroll.subject_name}</span> | 
-                    Submitted ${timeAgo} | 
+                    <span class="preview-subject-link" data-subject-name="${scroll.subject_name.toLowerCase().replace(' ', '-')}" data-subject-display="${scroll.subject_name}" style="color: var(--red); cursor: pointer;">${scroll.subject_name}</span> |
+                    Submitted ${timeAgo} |
                     <span style="color: var(--red);">v${scroll.version}</span>
                 </div>
             </div>
         `;
-        
+
         return div;
     }
 
@@ -315,12 +315,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const subjectName = e.target.dataset.subjectName;
             const subjectDisplay = e.target.dataset.subjectDisplay;
-            
+
             // Find the matching subject card
-            const matchingCard = Array.from(subjectCards).find(card => 
+            const matchingCard = Array.from(subjectCards).find(card =>
                 card.dataset.subjectName === subjectName
             );
-            
+
             await selectSubject(subjectName, subjectDisplay, matchingCard);
         }
     });
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
     (async function() {
         const urlSubject = getSubjectFromURL();
         if (urlSubject) {
-            const matchingCard = Array.from(subjectCards).find(card => 
+            const matchingCard = Array.from(subjectCards).find(card =>
                 card.dataset.subjectName === urlSubject
             );
             if (matchingCard) {
