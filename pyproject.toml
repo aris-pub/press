@@ -96,7 +96,4 @@ max_line_length = 99
 [dependency-groups]
 dev = [
     "beautifulsoup4>=4.14.3",
-    "pandas>=2.3.3",
-    "plotly>=6.5.0",
-    "scikit-learn>=1.8.0",
 ]

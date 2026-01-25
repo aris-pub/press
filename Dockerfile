@@ -29,7 +29,7 @@ COPY . .
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser -m
-RUN chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /app /root/.cache
 RUN mkdir -p /home/appuser/.cache && chown -R appuser:appuser /home/appuser/.cache
 USER appuser
 
@@ -37,4 +37,4 @@ USER appuser
 EXPOSE 8000
 
 # Start application
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["uv", "run", "--frozen", "--no-dev", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
