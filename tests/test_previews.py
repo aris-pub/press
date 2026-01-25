@@ -24,7 +24,7 @@ async def test_upload_page_shows_form(authenticated_client: AsyncClient):
 
 
 async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, test_db, test_user):
-    """Test POST /upload-form publishes scroll directly (no drafts)."""
+    """Test POST /upload-form creates preview scroll."""
     # Create a subject for the test
     subject = Subject(name="Test Subject", description="Test description")
     test_db.add(subject)
@@ -45,17 +45,17 @@ async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, tes
 
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 200
-    assert "Your scroll has been published successfully!" in response.text
+    assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
-    # Verify scroll was created and published in database
+    # Verify scroll was created with preview status
     result = await test_db.execute(select(Scroll).where(Scroll.title == "Test Scroll"))
     preview = result.scalar_one()
-    assert preview.status == "published"
+    assert preview.status == "preview"
     assert preview.user_id == test_user.id
 
 
 async def test_upload_form_publish_preview(authenticated_client: AsyncClient, test_db, test_user):
-    """Test POST /upload-form publishes preview directly."""
+    """Test POST /upload-form creates preview."""
     # Create a subject for the test
     subject = Subject(name="Test Subject", description="Test description")
     test_db.add(subject)
@@ -76,12 +76,12 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
 
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 200
-    assert "Your scroll has been published successfully!" in response.text
+    assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
-    # Verify preview was created and published
+    # Verify preview was created
     result = await test_db.execute(select(Scroll).where(Scroll.title == "Published Scroll"))
     preview = result.scalar_one()
-    assert preview.status == "published"
+    assert preview.status == "preview"
     assert preview.url_hash is not None
 
 
@@ -261,7 +261,7 @@ async def test_paper_route_unpublished_404(client: AsyncClient, test_db, test_us
         license="cc-by-4.0",
         user_id=test_user.id,
         subject_id=subject.id,
-        status="draft",
+        status="preview",
     )
     test_db.add(preview)
     await test_db.commit()
@@ -294,7 +294,7 @@ async def test_view_unpublished_scroll_404(client: AsyncClient, test_db, test_us
         license="cc-by-4.0",
         user_id=test_user.id,
         subject_id=subject.id,
-        status="draft",  # Hypothetical unpublished status
+        status="preview",  # Hypothetical unpublished status
     )
     test_db.add(preview)
     await test_db.commit()
@@ -403,14 +403,14 @@ async def test_upload_form_with_file_content_integration(
 
     response = await authenticated_client.post("/upload-form", data=upload_data)
     assert response.status_code == 200
-    assert "Your scroll has been published successfully!" in response.text
+    assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
-    # Verify the scroll was created with file content
+    # Verify the scroll was created with file content in preview status
     result = await test_db.execute(
         select(Scroll).where(Scroll.title == "Advanced ML Techniques for Research Data")
     )
     scroll = result.scalar_one()
-    assert scroll.status == "published"
+    assert scroll.status == "preview"
     assert scroll.user_id == test_user.id
     assert scroll.url_hash is not None
     assert scroll.content_hash is not None
@@ -464,4 +464,4 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
 
     response = await authenticated_client.post("/upload-form", data=valid_upload_data)
     assert response.status_code == 200
-    assert "Your scroll has been published successfully!" in response.text
+    assert "PREVIEW MODE" in response.text or "Preview" in response.text

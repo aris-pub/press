@@ -542,24 +542,42 @@ async def upload_form(
 
     except Exception as e:
         error_message = str(e) if str(e) else "Upload failed. Please try again."
-        # Store user_id before potential session issues
-        user_id = str(current_user.id) if current_user else None
+        # Store user attributes before rollback to avoid lazy-load issues
+        user_id_value = current_user.id if current_user else None
+        user_id = str(user_id_value) if user_id_value else None
+        user_display_name = current_user.display_name if current_user else None
+        user_email = current_user.email if current_user else None
 
         # Rollback the session to clear any pending transactions
         await db.rollback()
 
         log_error(e, request, user_id=user_id, context="preview_upload")
 
-        # Load subjects for error response
-        result = await db.execute(select(Subject).order_by(Subject.name))
-        subjects = result.scalars().all()
+        # Create a simple dict for current_user to avoid session state issues
+        user_context = None
+        if user_id_value:
+            user_context = type('User', (), {
+                'id': user_id_value,
+                'display_name': user_display_name,
+                'email': user_email
+            })()
+
+        # Load subjects for error response - convert to dicts to avoid session state issues
+        try:
+            result = await db.execute(select(Subject).order_by(Subject.name))
+            subject_rows = result.scalars().all()
+            # Convert to simple dicts to avoid detached object issues
+            subjects = [{"id": s.id, "name": s.name} for s in subject_rows]
+        except Exception as subject_error:
+            get_logger().error(f"Failed to load subjects in error handler: {subject_error}")
+            subjects = []
 
         # Return form with error
         return templates.TemplateResponse(
             request,
             "upload.html",
             {
-                "current_user": current_user,
+                "current_user": user_context,
                 "subjects": subjects,
                 "error": error_message,
                 "form_data": {

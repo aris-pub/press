@@ -27,8 +27,8 @@ async def test_complete_login_flow_mobile(test_server):
             test_email = f"mobile-logintest-{timestamp}@example.com"
             await page.fill('input[name="email"]', test_email)
             await page.fill('input[name="display_name"]', "Login Test User")
-            await page.fill('input[name="password"]', "loginpassword")
-            await page.fill('input[name="confirm_password"]', "loginpassword")
+            await page.fill('input[name="password"]', "loginpassword123")
+            await page.fill('input[name="confirm_password"]', "loginpassword123")
             await page.check('input[name="agree_terms"]')
             await page.click('button[type="submit"]')
 
@@ -84,7 +84,7 @@ async def test_complete_login_flow_mobile(test_server):
 
             # Fill and submit login form
             await page.fill('input[name="email"]', test_email)
-            await page.fill('input[name="password"]', "loginpassword")
+            await page.fill('input[name="password"]', "loginpassword123")
             await page.click('button[type="submit"]')
 
             # Wait for login response

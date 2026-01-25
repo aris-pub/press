@@ -95,7 +95,7 @@ class TestLicenseValidation:
 
             response = await authenticated_client.post("/upload-form", data=upload_data)
             assert response.status_code == 200
-            assert "Success!" in response.text
+            assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
 
 class TestLicenseDisplay:

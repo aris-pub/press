@@ -150,7 +150,7 @@ async def test_export_data_includes_all_scroll_fields(
         keywords=["keyword1", "keyword2", "keyword3"],
         html_content="<html><body>Complete</body></html>",
         license="arr",
-        status="draft",
+        status="preview",
         url_hash=url_hash,
         content_hash=content_hash,
     )
@@ -169,7 +169,7 @@ async def test_export_data_includes_all_scroll_fields(
     assert scroll_data["abstract"] == "Full abstract with details"
     assert scroll_data["keywords"] == ["keyword1", "keyword2", "keyword3"]
     assert scroll_data["license"] == "arr"
-    assert scroll_data["status"] == "draft"
+    assert scroll_data["status"] == "preview"
     assert scroll_data["url_hash"] == url_hash
     assert scroll_data["content_hash"] == content_hash
     assert "created_at" in scroll_data

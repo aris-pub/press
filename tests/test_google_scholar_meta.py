@@ -216,7 +216,7 @@ async def test_draft_scroll_no_google_scholar_tags(client, test_db, test_user, t
         license="cc-by-4.0",
         content_hash="draft123",
         url_hash="draft789",
-        status="draft",  # NOT published
+        status="preview",  # NOT published
     )
     test_db.add(draft_scroll)
     await test_db.commit()

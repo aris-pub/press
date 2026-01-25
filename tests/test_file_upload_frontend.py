@@ -89,7 +89,7 @@ class TestFileUploadFormSubmission:
 
         response = await authenticated_client.post("/upload-form", data=upload_data)
         assert response.status_code == 200
-        assert "Your scroll has been published successfully!" in response.text
+        assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
     async def test_upload_form_rejects_empty_html_content(
         self, authenticated_client: AsyncClient, test_db
@@ -143,7 +143,7 @@ class TestFileUploadFormSubmission:
 
         response = await authenticated_client.post("/upload-form", data=upload_data)
         assert response.status_code == 200
-        assert "Your scroll has been published successfully!" in response.text
+        assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
     async def test_upload_form_handles_large_html_content(
         self, authenticated_client: AsyncClient, test_db
@@ -182,7 +182,7 @@ class TestFileUploadFormSubmission:
 
         response = await authenticated_client.post("/upload-form", data=upload_data)
         assert response.status_code == 200
-        assert "Your scroll has been published successfully!" in response.text
+        assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
     async def test_upload_form_rejects_dangerous_html(
         self, authenticated_client: AsyncClient, test_db

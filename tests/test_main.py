@@ -111,7 +111,7 @@ async def test_homepage_only_shows_published_previews(client: AsyncClient, test_
         license="cc-by-4.0",
         user_id=test_user.id,
         subject_id=subject.id,
-        status="draft",  # Draft status
+        status="preview",  # Draft status
     )
 
     # Create published preview (should appear)
@@ -304,7 +304,7 @@ async def test_search_only_published_previews(client: AsyncClient, test_db, test
         license="cc-by-4.0",
         user_id=test_user.id,
         subject_id=subject.id,
-        status="draft",
+        status="preview",
     )
 
     # Create published preview (should appear in search)
@@ -563,7 +563,7 @@ async def test_dashboard_does_not_show_draft_papers(
         license="cc-by-4.0",
         user_id=test_user.id,
         subject_id=subject.id,
-        status="draft",  # Draft status
+        status="preview",  # Draft status
     )
 
     # Create published preview (should appear)

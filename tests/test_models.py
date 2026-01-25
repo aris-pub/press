@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.session import _get_user_id_from_session_id, create_session, delete_session
 from app.auth.utils import get_password_hash, verify_password
-from app.models.scroll import Subject
+from app.models.scroll import Scroll, Subject
 from app.models.session import Session
 from app.models.user import User
 from tests.conftest import create_content_addressable_scroll
@@ -125,26 +125,37 @@ class TestScrollModel:
 
     async def test_scroll_publish_method(self, test_db, test_user):
         """Test Scroll.publish() method."""
+        from app.storage.content_processing import generate_permanent_url
+
         # Create a subject
         subject = Subject(name="Test Subject", description="Test description")
         test_db.add(subject)
         await test_db.commit()
         await test_db.refresh(subject)
 
-        # Create a draft scroll
-        scroll = await create_content_addressable_scroll(
-            test_db,
-            test_user,
-            subject,
+        # Generate content hash
+        html_content = "<h1>Test Content</h1>"
+        url_hash, content_hash, _ = await generate_permanent_url(html_content)
+
+        # Create a preview scroll
+        scroll = Scroll(
             title="Test Scroll",
             authors="Test Author",
             abstract="Test abstract",
-            html_content="<h1>Test Content</h1>",
+            html_content=html_content,
             license="cc-by-4.0",
+            content_hash=content_hash,
+            url_hash=url_hash,
+            status="preview",
+            user_id=test_user.id,
+            subject_id=subject.id,
         )
+        test_db.add(scroll)
+        await test_db.commit()
+        await test_db.refresh(scroll)
 
-        # Test initial state
-        assert scroll.status == "draft"
+        # Test initial state (preview)
+        assert scroll.status == "preview"
         assert scroll.url_hash is not None  # Content-addressable scroll has url_hash
         assert len(scroll.url_hash) >= 12  # Should be 12+ character hash
         assert scroll.published_at is None
