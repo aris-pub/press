@@ -22,7 +22,7 @@ donations and academic grants.
 - **Email verification**: Token-based email verification with password reset functionality
 - **GDPR compliance**: Data export endpoint for user data portability (Article 20)
 - **Subject categorization**: Organize research by academic disciplines
-- **Draft and publish workflow**: Save drafts and publish when ready
+- **Preview and publish workflow**: Review uploads before publishing
 - **Scroll cards**: Browse recent submissions with rich metadata
 - **Responsive design**: Clean, academic-focused UI with HTMX interactions
 - **Performance optimized**: Static file caching with CDN-ready headers
