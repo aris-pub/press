@@ -92,7 +92,9 @@ async def test_mobile_theme_persistence_across_navigation(test_server):
             await mobile_menu_toggle.tap()
 
             # Wait for menu to open and About link to become visible
-            await page.wait_for_selector('.mobile-nav.open a[href="/about"]', state="visible", timeout=5000)
+            await page.wait_for_selector(
+                '.mobile-nav.open a[href="/about"]', state="visible", timeout=5000
+            )
 
             # Click About link in mobile menu
             await page.locator('.mobile-nav.open a[href="/about"]').tap()

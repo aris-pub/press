@@ -63,7 +63,9 @@ async def test_complete_login_flow_mobile(test_server):
             await mobile_menu_toggle.click()
 
             # Wait for menu to open and logout button to become visible
-            await page.wait_for_selector('.mobile-nav.open form[action="/logout"] button', state="visible", timeout=5000)
+            await page.wait_for_selector(
+                '.mobile-nav.open form[action="/logout"] button', state="visible", timeout=5000
+            )
 
             # Click mobile logout button
             mobile_logout = page.locator('.mobile-nav.open form[action="/logout"] button')
@@ -147,7 +149,9 @@ async def test_registration_duplicate_email_mobile(test_server):
             await mobile_menu_toggle.click()
 
             # Wait for menu to open and logout button to become visible
-            await page.wait_for_selector('.mobile-nav.open form[action="/logout"] button', state="visible", timeout=5000)
+            await page.wait_for_selector(
+                '.mobile-nav.open form[action="/logout"] button', state="visible", timeout=5000
+            )
 
             # Click mobile logout button
             mobile_logout = page.locator('.mobile-nav.open form[action="/logout"] button')
@@ -189,14 +193,15 @@ async def test_mobile_menu_navigation(test_server):
             mobile_menu_toggle = page.locator(".mobile-menu-toggle")
             await expect(mobile_menu_toggle).to_be_visible()
 
-            # Mobile nav should initially be closed
-            mobile_nav = page.locator(".mobile-nav")
-
             # Click toggle to open menu
             await mobile_menu_toggle.click()
 
             # Wait for menu to open and links to become visible
-            await page.wait_for_selector('.mobile-nav.open .mobile-nav-links a[href="/#browse"]', state="visible", timeout=5000)
+            await page.wait_for_selector(
+                '.mobile-nav.open .mobile-nav-links a[href="/#browse"]',
+                state="visible",
+                timeout=5000,
+            )
 
             # Click a navigation link
             await page.locator('.mobile-nav.open a[href="/about"]').click()
