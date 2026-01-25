@@ -360,7 +360,9 @@ async def quick_start_page(request: Request, db: AsyncSession = Depends(get_db))
     if current_user:
         log_request(request, user_id=str(current_user.id))
 
-    return templates.TemplateResponse(request, "docs/quick-start.html", {"current_user": current_user})
+    return templates.TemplateResponse(
+        request, "docs/quick-start.html", {"current_user": current_user}
+    )
 
 
 @router.get("/docs/faq", response_class=HTMLResponse)

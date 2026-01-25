@@ -8,7 +8,9 @@ from app.models.scroll import Scroll
 
 
 @pytest.mark.asyncio
-async def test_upload_creates_preview_scroll(client, test_db: AsyncSession, authenticated_client, test_subject):
+async def test_upload_creates_preview_scroll(
+    client, test_db: AsyncSession, authenticated_client, test_subject
+):
     """Test that upload route creates a scroll with preview status."""
     html_content = """
     <!DOCTYPE html>
@@ -45,7 +47,9 @@ async def test_upload_creates_preview_scroll(client, test_db: AsyncSession, auth
 
 
 @pytest.mark.asyncio
-async def test_preview_page_shows_preview_banner(authenticated_client, test_db: AsyncSession, test_user, test_subject):
+async def test_preview_page_shows_preview_banner(
+    authenticated_client, test_db: AsyncSession, test_user, test_subject
+):
     """Test that preview page displays preview banner."""
     # Create preview scroll
     scroll = Scroll(
@@ -70,7 +74,9 @@ async def test_preview_page_shows_preview_banner(authenticated_client, test_db: 
 
 
 @pytest.mark.asyncio
-async def test_confirm_preview_redirects_to_published_scroll(authenticated_client, test_db: AsyncSession, test_user, test_subject):
+async def test_confirm_preview_redirects_to_published_scroll(
+    authenticated_client, test_db: AsyncSession, test_user, test_subject
+):
     """Test that confirming a preview publishes and redirects."""
     # Create preview scroll
     scroll = Scroll(
@@ -104,7 +110,9 @@ async def test_confirm_preview_redirects_to_published_scroll(authenticated_clien
 
 
 @pytest.mark.asyncio
-async def test_cancel_preview_deletes_and_redirects(authenticated_client, test_db: AsyncSession, test_user, test_subject):
+async def test_cancel_preview_deletes_and_redirects(
+    authenticated_client, test_db: AsyncSession, test_user, test_subject
+):
     """Test that canceling a preview deletes scroll and redirects to upload."""
     # Create preview scroll
     scroll = Scroll(
@@ -173,7 +181,9 @@ async def test_preview_routes_require_authentication(client, test_db: AsyncSessi
 
 
 @pytest.mark.asyncio
-async def test_preview_iframe_only_accessible_by_owner(authenticated_client, test_db: AsyncSession, test_user, test_subject):
+async def test_preview_iframe_only_accessible_by_owner(
+    authenticated_client, test_db: AsyncSession, test_user, test_subject
+):
     """Test that preview iframe content is only accessible by the owner."""
     # Create preview scroll owned by test_user
     scroll = Scroll(
@@ -198,7 +208,9 @@ async def test_preview_iframe_only_accessible_by_owner(authenticated_client, tes
 
 
 @pytest.mark.asyncio
-async def test_preview_iframe_not_accessible_without_auth(client, test_db: AsyncSession, test_user, test_subject):
+async def test_preview_iframe_not_accessible_without_auth(
+    client, test_db: AsyncSession, test_user, test_subject
+):
     """Test that preview iframe requires authentication."""
     # Create preview scroll
     scroll = Scroll(
@@ -222,7 +234,9 @@ async def test_preview_iframe_not_accessible_without_auth(client, test_db: Async
 
 
 @pytest.mark.asyncio
-async def test_published_scroll_iframe_accessible_to_all(client, test_db: AsyncSession, test_user, test_subject):
+async def test_published_scroll_iframe_accessible_to_all(
+    client, test_db: AsyncSession, test_user, test_subject
+):
     """Test that published scroll iframe is accessible to everyone."""
     # Create published scroll
     scroll = Scroll(

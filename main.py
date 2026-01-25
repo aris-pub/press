@@ -139,10 +139,7 @@ app.add_middleware(RateLimitMiddleware, enabled=rate_limit_enabled)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Mount brand assets
-brand_paths = [
-    "brand",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "brand")
-]
+brand_paths = ["brand", os.path.join(os.path.dirname(os.path.abspath(__file__)), "brand")]
 
 brand_dir = None
 for path in brand_paths:

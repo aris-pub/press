@@ -5,7 +5,7 @@ install:
     uv sync
 
 # Run development server (HTTPS-only, detached by default, add 'attach' to run in foreground)
-dev MODE="detached":
+dev MODE="detached": build
     #!/usr/bin/env bash
     set -a && source .env && set +a
     PORT=${PORT:-7999}
@@ -120,5 +120,5 @@ gen-certs:
     fi
 
 # Setup project from scratch
-init: install migrate seed
+init: install build migrate seed
     @echo "Project setup complete! Run 'just dev' to start the server."
