@@ -55,7 +55,7 @@ async def test_scroll_status_accepts_published(test_db: AsyncSession, test_subje
 async def test_scroll_status_rejects_invalid_status(test_db: AsyncSession, test_subject):
     """Test that scroll model rejects invalid status values."""
     with pytest.raises(ValueError, match="Status must be one of"):
-        scroll = Scroll(
+        Scroll(
             title="Test Paper",
             authors="Test Author",
             subject_id=test_subject.id,

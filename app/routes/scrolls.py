@@ -245,9 +245,7 @@ async def get_paper_html(
     sentry_sdk.set_context("paper", {"url_hash": url_hash})
 
     # Find scroll by content-addressable hash (published or preview)
-    result = await db.execute(
-        select(Scroll).where(Scroll.url_hash == url_hash)
-    )
+    result = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
     scroll = result.scalar_one_or_none()
 
     if not scroll:
@@ -556,11 +554,11 @@ async def upload_form(
         # Create a simple dict for current_user to avoid session state issues
         user_context = None
         if user_id_value:
-            user_context = type('User', (), {
-                'id': user_id_value,
-                'display_name': user_display_name,
-                'email': user_email
-            })()
+            user_context = type(
+                "User",
+                (),
+                {"id": user_id_value, "display_name": user_display_name, "email": user_email},
+            )()
 
         # Load subjects for error response - convert to dicts to avoid session state issues
         try:
