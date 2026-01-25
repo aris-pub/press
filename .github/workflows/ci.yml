@@ -86,6 +86,7 @@ jobs:
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
+        E2E_TESTING: 1
         PYTHONPATH: .
         PORT: 8000
       run: |
