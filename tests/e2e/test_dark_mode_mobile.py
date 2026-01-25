@@ -90,10 +90,12 @@ async def test_mobile_theme_persistence_across_navigation(test_server):
             # Navigate using mobile menu
             mobile_menu_toggle = page.locator(".mobile-menu-toggle")
             await mobile_menu_toggle.tap()
-            await page.wait_for_timeout(200)
+
+            # Wait for menu to open and About link to become visible
+            await page.wait_for_selector('.mobile-nav.open a[href="/about"]', state="visible", timeout=5000)
 
             # Click About link in mobile menu
-            await page.locator('.mobile-nav a[href="/about"]').tap()
+            await page.locator('.mobile-nav.open a[href="/about"]').tap()
             await page.wait_for_load_state("networkidle")
 
             # Verify theme persisted

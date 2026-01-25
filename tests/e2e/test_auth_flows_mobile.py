@@ -61,16 +61,12 @@ async def test_complete_login_flow_mobile(test_server):
             # Open mobile menu first
             mobile_menu_toggle = page.locator(".mobile-menu-toggle")
             await mobile_menu_toggle.click()
-            await page.wait_for_timeout(200)  # Wait for menu to open
 
-            # Verify mobile menu is open
-            mobile_nav = page.locator(".mobile-nav")
-            is_open = await mobile_nav.evaluate("el => el.classList.contains('open')")
-            assert is_open, "Mobile menu should be open after clicking toggle"
+            # Wait for menu to open and logout button to become visible
+            await page.wait_for_selector('.mobile-nav.open form[action="/logout"] button', state="visible", timeout=5000)
 
             # Click mobile logout button
-            mobile_logout = page.locator('.mobile-nav form[action="/logout"] button')
-            await expect(mobile_logout).to_be_visible()
+            mobile_logout = page.locator('.mobile-nav.open form[action="/logout"] button')
             await mobile_logout.click()
 
             await page.wait_for_load_state("networkidle")
@@ -149,11 +145,12 @@ async def test_registration_duplicate_email_mobile(test_server):
             # Open mobile menu
             mobile_menu_toggle = page.locator(".mobile-menu-toggle")
             await mobile_menu_toggle.click()
-            await page.wait_for_timeout(200)
+
+            # Wait for menu to open and logout button to become visible
+            await page.wait_for_selector('.mobile-nav.open form[action="/logout"] button', state="visible", timeout=5000)
 
             # Click mobile logout button
-            mobile_logout = page.locator('.mobile-nav form[action="/logout"] button')
-            await expect(mobile_logout).to_be_visible()
+            mobile_logout = page.locator('.mobile-nav.open form[action="/logout"] button')
             await mobile_logout.click()
 
             # Wait for logout to complete
@@ -197,19 +194,12 @@ async def test_mobile_menu_navigation(test_server):
 
             # Click toggle to open menu
             await mobile_menu_toggle.click()
-            await page.wait_for_timeout(200)
 
-            # Menu should now be open
-            is_open = await mobile_nav.evaluate("el => el.classList.contains('open')")
-            assert is_open, "Mobile menu should be open"
-
-            # Navigation links should be visible
-            await expect(page.locator('.mobile-nav a[href="/#browse"]')).to_be_visible()
-            await expect(page.locator('.mobile-nav a[href="/#recent"]')).to_be_visible()
-            await expect(page.locator('.mobile-nav a[href="/about"]')).to_be_visible()
+            # Wait for menu to open and links to become visible
+            await page.wait_for_selector('.mobile-nav.open .mobile-nav-links a[href="/#browse"]', state="visible", timeout=5000)
 
             # Click a navigation link
-            await page.locator('.mobile-nav a[href="/about"]').click()
+            await page.locator('.mobile-nav.open a[href="/about"]').click()
             await page.wait_for_load_state("networkidle")
 
             # Should navigate to about page and menu should close

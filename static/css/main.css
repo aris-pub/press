@@ -232,18 +232,18 @@ header.navbar .logo a img {
   height: 1em;
 }
 
-header.navbar nav { 
+header.navbar .main-nav { 
   display: flex; 
   gap: var(--space-2xl); 
 }
 
-header.navbar nav a { 
+header.navbar .main-nav a { 
   text-decoration: none; 
   color: var(--gray-medium); 
   font-size: var(--text-base); 
 }
 
-header.navbar nav a:hover { 
+header.navbar .main-nav a:hover { 
   color: var(--red); 
 }
 
@@ -386,7 +386,7 @@ header.navbar .user-welcome {
     font-size: var(--mobile-text-xl) !important;
   }
   
-  header.navbar nav {
+  header.navbar .main-nav {
     display: none !important;
   }
   

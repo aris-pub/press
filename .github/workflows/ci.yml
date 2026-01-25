@@ -104,7 +104,7 @@ jobs:
         TESTING: 1
       run: |
         echo "Running desktop-specific E2E tests..."
-        timeout 120 uv run pytest -m "e2e and desktop" --tb=short -v || echo "Desktop E2E tests completed with issues"
+        timeout 120 uv run pytest -m "e2e and desktop" --tb=short -v
 
     - name: Run mobile e2e tests - WebKit (iOS Safari)
       env:
@@ -112,7 +112,7 @@ jobs:
         TESTING: 1
       run: |
         echo "Running mobile E2E tests with WebKit (iOS Safari emulation)..."
-        timeout 120 uv run pytest -m "e2e and mobile" --tb=short -v --browser webkit || echo "Mobile WebKit E2E tests completed with issues"
+        timeout 120 uv run pytest -m "e2e and mobile" --tb=short -v --browser webkit
 
     - name: Run mobile e2e tests - Chromium (Android)
       env:
@@ -120,7 +120,7 @@ jobs:
         TESTING: 1
       run: |
         echo "Running mobile E2E tests with Chromium (Android emulation)..."
-        timeout 120 uv run pytest -m "e2e and mobile" --tb=short -v --browser chromium || echo "Mobile Chromium E2E tests completed with issues"
+        timeout 120 uv run pytest -m "e2e and mobile" --tb=short -v --browser chromium
 
     - name: Run universal e2e tests
       env:
@@ -128,4 +128,4 @@ jobs:
         TESTING: 1
       run: |
         echo "Running universal E2E tests (work on both desktop and mobile)..."
-        timeout 120 uv run pytest -m "e2e and not desktop and not mobile" --tb=short -v || echo "Universal E2E tests completed with issues"
+        timeout 120 uv run pytest -m "e2e and not desktop and not mobile" --tb=short -v
