@@ -39,6 +39,7 @@ jobs:
       uses: astral-sh/setup-uv@v3
       with:
         enable-cache: true
+        prune-cache: false
         cache-suffix: v1
 
     - name: Install dependencies
