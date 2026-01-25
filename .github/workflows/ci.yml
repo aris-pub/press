@@ -63,17 +63,6 @@ jobs:
         TESTING: 1
       run: uv run alembic upgrade head
 
-    - name: Seed database with test data
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
-        TESTING: 1
-        PYTHONPATH: .
-      run: |
-        echo "Seeding database..."
-        uv run python scripts/seed.py
-        echo "Waiting for seeding to complete..."
-        sleep 2
-
     - name: Run linting
       run: just lint
 
@@ -82,6 +71,16 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
       run: uv run pytest -m "not e2e"
+
+    - name: Seed database for e2e tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        TESTING: 1
+        PYTHONPATH: .
+      run: |
+        echo "Seeding database for e2e tests..."
+        uv run python scripts/seed.py
+        echo "Seed completed"
 
     - name: Start development server for e2e tests
       env:

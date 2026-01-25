@@ -58,10 +58,19 @@ donations and academic grants.
    - `FROM_EMAIL`: Email address to send from (default: noreply@updates.aris.pub)
    - `BASE_URL`: Base URL for email links (defaults to https://127.0.0.1:{PORT})
 
-3. **Install dependencies and setup**
+3. **Initialize the project (REQUIRED)**
    ```bash
    just init
    ```
+
+   This command is **essential** for correct setup. It will:
+   - Install all Python dependencies
+   - Build documentation templates from markdown
+   - Run database migrations
+   - Seed the database with sample data
+   - Install git hooks (pre-commit linting)
+
+   **Important**: Always run `just init` when setting up the repository for the first time or after pulling major changes.
 
 4. **Start the development server**
    ```bash

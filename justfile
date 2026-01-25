@@ -119,6 +119,11 @@ gen-certs:
         echo "Use 'just dev-https' to start HTTPS server"
     fi
 
+# Install git hooks
+install-hooks:
+    #!/usr/bin/env bash
+    bash scripts/install-hooks.sh
+
 # Setup project from scratch
-init: install build migrate seed
+init: install build migrate seed install-hooks
     @echo "Project setup complete! Run 'just dev' to start the server."

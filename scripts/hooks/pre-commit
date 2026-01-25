@@ -1,0 +1,11 @@
+#!/bin/bash
+# Pre-commit hook to run linter
+
+echo "Running linter..."
+if ! just lint; then
+    echo "Linting failed. Commit aborted."
+    exit 1
+fi
+
+echo "Linting passed."
+exit 0
