@@ -585,8 +585,8 @@ class StaticFilesCacheMiddleware(BaseHTTPMiddleware):
 
         # Add caching headers for static files
         if request.url.path.startswith("/static"):
-            # Cache static files for 1 year (immutable assets should use versioned filenames)
-            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            # Cache static files for 1 hour
+            response.headers["Cache-Control"] = "public, max-age=3600"
             response.headers["Vary"] = "Accept-Encoding"
         elif request.url.path == "/robots.txt" or request.url.path == "/sitemap.xml":
             # Cache SEO files for 1 day
