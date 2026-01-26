@@ -301,4 +301,6 @@ class TestHTMLValidator:
         </html>
         """
         is_valid, errors = self.validator.validate(html)
-        assert is_valid, f"Tag names in JavaScript should not trigger validation errors. Errors: {errors}"
+        assert is_valid, (
+            f"Tag names in JavaScript should not trigger validation errors. Errors: {errors}"
+        )
