@@ -2,7 +2,7 @@
 {% from "components/form_checkbox.html" import form_checkbox %}
 {% from "components/button.html" import button %}
 
-<div class="upload-header">
+<div class="upload-header" id="upload-header">
     <h1>Upload New Scroll</h1>
     <p>Share your interactive, web-native research with the world</p>
 </div>
@@ -100,7 +100,7 @@
     {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
 
     <div class="form-actions">
-        {{ button("Preview & Publish", type="submit", variant="primary", name="action", value="publish") }}
+        {{ button("Preview Scroll", type="submit", variant="primary", name="action", value="publish") }}
     </div>
 </form>
 
@@ -271,9 +271,14 @@ document.getElementById('upload-form').addEventListener('submit', function(e) {
 });
 })();
 
-// Scroll error into view if present (runs after HTMX swap)
-const errorElement = document.getElementById('form-errors');
-if (errorElement) {
-    errorElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
+// Scroll to top of form if error present (runs after HTMX swap)
+(function() {
+    const errorElement = document.getElementById('form-errors');
+    if (errorElement) {
+        const uploadHeader = document.getElementById('upload-header');
+        if (uploadHeader) {
+            uploadHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+})();
 </script>
