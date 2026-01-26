@@ -490,6 +490,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         "/forgot-password-form",
         "/reset-password-form",
         "/logout",  # Low-risk action, session-protected
+        "/resend-verification",  # Low-risk action, session-protected
     }
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
