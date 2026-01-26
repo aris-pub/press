@@ -128,7 +128,7 @@ class TestHTMLValidator:
     def test_forms_with_safe_actions_allowed(self):
         """Test that forms with safe actions are allowed."""
         test_cases = [
-            '<form>No action</form>',
+            "<form>No action</form>",
             '<form action="#">Hash action</form>',
             '<form action="javascript:handleForm()">JS action</form>',
             '<form action="">Empty action</form>',
