@@ -501,10 +501,14 @@ async def upload_form(
 
             # Dangerous CSS - show brief summary
             if "dangerous_css" in grouped_errors or "css_expression" in grouped_errors:
-                css_errors = grouped_errors["dangerous_css"] + grouped_errors.get("css_expression", [])
+                css_errors = grouped_errors["dangerous_css"] + grouped_errors.get(
+                    "css_expression", []
+                )
                 example_line = css_errors[0].get("line_number")
                 line_info = f" (line {example_line})" if example_line else ""
-                error_parts.append(f"Dangerous CSS properties found{line_info}. Remove CSS with JavaScript or executable code.")
+                error_parts.append(
+                    f"Dangerous CSS properties found{line_info}. Remove CSS with JavaScript or executable code."
+                )
 
             # External resources - group by type and show resource names
             external_scripts = []
