@@ -1,0 +1,275 @@
+{% from "components/form_input.html" import form_input %}
+{% from "components/form_checkbox.html" import form_checkbox %}
+{% from "components/button.html" import button %}
+
+<div class="upload-header">
+    <h1>Upload New Scroll</h1>
+    <p>Share your interactive, web-native research with the world</p>
+</div>
+
+{% if error %}
+<div class="form-errors">
+    <ul>
+        <li>{{ error }}</li>
+    </ul>
+</div>
+{% endif %}
+
+<form id="upload-form" hx-post="/upload-form" hx-target="#upload-container" hx-swap="innerHTML">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research scroll") }}
+
+    {{ form_input("Authors", "authors", "text", form_data.authors if form_data else "", required=true, help_text="Comma-separated list of author names") }}
+
+    <div class="form-group">
+        <label for="subject_id" class="form-label">Subject: <span class="required">*</span></label>
+        <select id="subject_id" name="subject_id" class="form-select" required>
+            <option value="">Select a subject...</option>
+            {% for subject in subjects %}
+            <option value="{{ subject.id }}" {% if form_data and form_data.subject_id == subject.id|string %}selected{% endif %}>
+                {{ subject.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <div class="help-text">Primary academic discipline for your research</div>
+    </div>
+
+    <div class="form-group">
+        <label for="abstract" class="form-label">Abstract: <span class="required">*</span></label>
+        <textarea id="abstract" name="abstract" class="form-textarea" required>{{ form_data.abstract if form_data else '' }}</textarea>
+        <div class="help-text">A concise summary of your research and findings</div>
+    </div>
+
+    {{ form_input("Keywords", "keywords", "text", form_data.keywords if form_data else "", required=false, help_text="Comma-separated keywords to help others discover your work") }}
+
+    <div class="form-group">
+        <label for="html_file" class="form-label">HTML File: <span class="required">*</span></label>
+        <div class="file-upload-zone" id="file-upload-zone">
+            <div class="file-upload-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                    <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                </svg>
+            </div>
+            <div class="file-upload-text">Drop your HTML file here or click to browse</div>
+            <div class="file-upload-subtext">Only .html files are accepted (max 5MB, UTF-8 encoded)</div>
+            <input type="file" id="html_file" name="html_file" class="file-upload-input" accept=".html,text/html" required>
+            <input type="hidden" id="html_content" name="html_content" required>
+        </div>
+        <div id="file-info" class="file-info">
+            <div class="file-info-item">
+                <span class="file-info-label">File name:</span>
+                <span class="file-info-value" id="file-name"></span>
+            </div>
+            <div class="file-info-item">
+                <span class="file-info-label">File size:</span>
+                <span class="file-info-value" id="file-size"></span>
+            </div>
+            <div class="file-info-item">
+                <span class="file-info-label">MIME type:</span>
+                <span class="file-info-value" id="file-type"></span>
+            </div>
+        </div>
+        <div id="file-error" class="file-error" style="display: none;"></div>
+        <div id="file-success" class="file-success" style="display: none;"></div>
+        <div class="help-text">Upload a complete HTML document with embedded CSS and JavaScript for your interactive scroll</div>
+    </div>
+
+    <div class="form-group">
+        <fieldset class="form-fieldset">
+            <legend class="form-label">License: <span class="required">*</span></legend>
+            <div class="form-radio-group">
+                <label for="license-cc-by" class="form-radio-item">
+                    <input type="radio" id="license-cc-by" name="license" value="cc-by-4.0"
+                           {% if form_data and form_data.license == 'cc-by-4.0' %}checked{% elif not form_data %}checked{% endif %} required>
+                    <div class="form-radio-label">
+                        <strong>Open Access (CC BY 4.0)</strong>
+                        <div class="help-text">Anyone can share and adapt with attribution. Recommended for maximum impact.</div>
+                    </div>
+                </label>
+                <label for="license-arr" class="form-radio-item">
+                    <input type="radio" id="license-arr" name="license" value="arr"
+                           {% if form_data and form_data.license == 'arr' %}checked{% endif %} required>
+                    <div class="form-radio-label">
+                        <strong>All Rights Reserved</strong>
+                        <div class="help-text">Standard copyright. Readers need your permission to reuse.</div>
+                    </div>
+                </label>
+            </div>
+        </fieldset>
+    </div>
+
+    {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
+
+    <div class="form-actions">
+        {{ button("Preview & Publish", type="submit", variant="primary", name="action", value="publish") }}
+    </div>
+</form>
+
+<script>
+(function() {
+// File upload handling - wrapped in IIFE to prevent redeclaration errors on HTMX swaps
+const fileUploadZone = document.getElementById('file-upload-zone');
+const fileInput = document.getElementById('html_file');
+const hiddenContent = document.getElementById('html_content');
+const fileInfo = document.getElementById('file-info');
+const fileError = document.getElementById('file-error');
+const fileSuccess = document.getElementById('file-success');
+
+// Skip initialization if already bound
+if (fileUploadZone.dataset.initialized === 'true') {
+    return;
+}
+fileUploadZone.dataset.initialized = 'true';
+
+// Drag and drop handlers
+fileUploadZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    fileUploadZone.classList.add('dragover');
+});
+
+fileUploadZone.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    fileUploadZone.classList.remove('dragover');
+});
+
+fileUploadZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    fileUploadZone.classList.remove('dragover');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFileSelection(files[0]);
+    }
+});
+
+// Click to browse
+fileUploadZone.addEventListener('click', function() {
+    fileInput.click();
+});
+
+// Prevent default behavior on file input click
+fileInput.addEventListener('click', function(e) {
+    e.stopPropagation();
+});
+
+// File selection handler
+fileInput.addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+        handleFileSelection(e.target.files[0]);
+    }
+});
+
+// File validation and processing
+function handleFileSelection(file) {
+    hideMessages();
+
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.html') && file.type !== 'text/html') {
+        showError('Please select an HTML file (.html extension required)');
+        return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        showError('File size cannot exceed 5MB');
+        return;
+    }
+
+    // Read file content
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+
+            // Validate UTF-8 encoding by checking for replacement characters
+            if (content.includes('�')) {
+                showError('File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding.');
+                return;
+            }
+
+            // Basic HTML validation
+            if (!content.trim()) {
+                showError('File content cannot be empty');
+                return;
+            }
+
+            // Check if it looks like HTML
+            const hasHtmlTags = /<html|<head|<body|<title|<div|<p|<h[1-6]|<script|<style/i.test(content);
+            if (!hasHtmlTags) {
+                showError('File does not appear to contain valid HTML content');
+                return;
+            }
+
+            // File is valid - update UI and hidden input
+            hiddenContent.value = content;
+            showFileInfo(file);
+            fileUploadZone.classList.add('has-file');
+            showSuccess('File uploaded successfully and validated');
+
+        } catch (error) {
+            showError('Error reading file: ' + error.message);
+        }
+    };
+
+    reader.onerror = function() {
+        showError('Error reading file. Please try again.');
+    };
+
+    // Read as UTF-8 text
+    reader.readAsText(file, 'UTF-8');
+}
+
+function showFileInfo(file) {
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = formatFileSize(file.size);
+    document.getElementById('file-type').textContent = file.type || 'text/html';
+    fileInfo.classList.add('show');
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function showError(message) {
+    fileError.textContent = message;
+    fileError.style.display = 'block';
+    fileSuccess.style.display = 'none';
+}
+
+function showSuccess(message) {
+    fileSuccess.textContent = message;
+    fileSuccess.style.display = 'block';
+    fileError.style.display = 'none';
+}
+
+function hideMessages() {
+    fileError.style.display = 'none';
+    fileSuccess.style.display = 'none';
+}
+
+// Restore file input name after HTMX request completes (for error cases)
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.pathInfo.requestPath === '/upload-form') {
+        fileInput.setAttribute('name', 'html_file');
+    }
+});
+
+// Form validation before submission
+document.getElementById('upload-form').addEventListener('submit', function(e) {
+    if (!hiddenContent.value.trim()) {
+        e.preventDefault();
+        showError('Please select and upload an HTML file before submitting');
+        return false;
+    }
+
+    // Remove name attribute from file input to prevent it from being submitted
+    // We already have the content in the hidden field
+    fileInput.removeAttribute('name');
+});
+})();
+</script>

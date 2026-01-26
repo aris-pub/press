@@ -570,14 +570,21 @@ async def upload_form(
             get_logger().error(f"Failed to load subjects in error handler: {subject_error}")
             subjects = []
 
-        # Return form with error
+        # Get CSRF token for error response
+        from app.auth.csrf import get_csrf_token
+
+        session_id = request.cookies.get("session_id")
+        csrf_token = await get_csrf_token(session_id) if session_id else None
+
+        # Return form partial with error (not full page)
         return templates.TemplateResponse(
             request,
-            "upload.html",
+            "partials/upload_form.html",
             {
                 "current_user": user_context,
                 "subjects": subjects,
                 "error": error_message,
+                "csrf_token": csrf_token,
                 "form_data": {
                     "title": title,
                     "authors": authors,
