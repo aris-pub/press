@@ -8,10 +8,8 @@
 </div>
 
 {% if error %}
-<div class="form-errors">
-    <ul>
-        <li>{{ error }}</li>
-    </ul>
+<div class="form-errors" id="form-errors">
+    {{ error|safe }}
 </div>
 {% endif %}
 
@@ -272,4 +270,10 @@ document.getElementById('upload-form').addEventListener('submit', function(e) {
     fileInput.removeAttribute('name');
 });
 })();
+
+// Scroll error into view if present (runs after HTMX swap)
+const errorElement = document.getElementById('form-errors');
+if (errorElement) {
+    errorElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
 </script>

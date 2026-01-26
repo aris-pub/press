@@ -558,11 +558,16 @@ async def upload_form(
                     "JavaScript or dangerous URLs found. Remove javascript:, vbscript:, or data:text/html URLs."
                 )
 
-            # Format final message
+            # Format final message with HTML for better rendering
             if error_parts:
+                import html
+
+                # HTML-escape the error parts to prevent tag names from rendering as actual HTML
+                escaped_parts = [html.escape(part) for part in error_parts]
+                error_items = "".join(f"<li>{part}</li>" for part in escaped_parts)
                 error_summary = (
-                    "Your HTML contains security issues that must be fixed:\n\n"
-                    + "\n\n".join(f"• {part}" for part in error_parts)
+                    f"<strong>Your HTML contains security issues that must be fixed:</strong>"
+                    f"<ul style='margin-top: 0.5rem; margin-bottom: 0;'>{error_items}</ul>"
                 )
             else:
                 # Fallback if we can't parse errors
