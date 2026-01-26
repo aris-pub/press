@@ -213,3 +213,32 @@ async def test_nonce_only_on_scroll_pages(client: AsyncClient):
     csp_header = response.headers.get("Content-Security-Policy")
     assert csp_header is not None
     assert "nonce-" in csp_header, "Scroll page should have nonce in CSP"
+
+
+@pytest.mark.asyncio
+async def test_paper_endpoint_csp_no_unsafe_eval(client: AsyncClient, test_db, test_user):
+    """Test that /paper endpoint CSP does not include unsafe-eval."""
+    subject = Subject(name="Test Subject", description="Test description")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    scroll = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
+        title="Test Scroll",
+        authors="Test Author",
+        abstract="Test abstract",
+        html_content="<h1>Test Content</h1>",
+        license="cc-by-4.0",
+    )
+    scroll.publish()
+    await test_db.commit()
+
+    response = await client.get(f"/scroll/{scroll.url_hash}/paper")
+    assert response.status_code == 200
+
+    csp_header = response.headers.get("Content-Security-Policy")
+    assert csp_header is not None
+    assert "unsafe-eval" not in csp_header, "CSP should not include unsafe-eval"
