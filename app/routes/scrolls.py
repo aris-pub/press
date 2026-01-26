@@ -455,18 +455,118 @@ async def upload_form(
         is_html_safe, html_errors = html_validator.validate(html_content.strip())
 
         if not is_html_safe:
-            # Format errors for user display as bulleted list
-            error_messages = []
-            for error in html_errors:
-                if error.get("line_number"):
-                    error_messages.append(f"• Line {error['line_number']}: {error['message']}")
-                else:
-                    error_messages.append(f"• {error['message']}")
+            # Group and summarize errors for better readability
+            from collections import defaultdict
+            import re
 
-            error_summary = (
-                "Your HTML contains content that is not allowed for security reasons:\n\n"
-                + "\n".join(error_messages)
-            )
+            grouped_errors = defaultdict(list)
+            for error in html_errors:
+                grouped_errors[error.get("type", "other")].append(error)
+
+            error_parts = []
+
+            # Forbidden tags - show unique tags with counts
+            if "forbidden_tag" in grouped_errors:
+                tag_counts = defaultdict(int)
+                for err in grouped_errors["forbidden_tag"]:
+                    # Extract tag name from message like "Forbidden tag <input> is not allowed"
+                    match = re.search(r"<(\w+)>", err["message"])
+                    if match:
+                        tag_counts[match.group(1)] += 1
+
+                tag_list = ", ".join(
+                    f"<{tag}>" + (f" ({count}x)" if count > 1 else "")
+                    for tag, count in sorted(tag_counts.items())
+                )
+                error_parts.append(f"Forbidden tags found: {tag_list}")
+
+            # Forbidden attributes - show unique attributes with examples
+            if "forbidden_attribute" in grouped_errors:
+                attr_examples = {}
+                for err in grouped_errors["forbidden_attribute"]:
+                    # Extract attribute name from message
+                    match = re.search(r"'(\w+)'", err["message"])
+                    if match:
+                        attr_name = match.group(1)
+                        if attr_name not in attr_examples:
+                            attr_examples[attr_name] = err.get("line_number")
+
+                attr_list = ", ".join(
+                    f"'{attr}'" + (f" (line {line})" if line else "")
+                    for attr, line in sorted(attr_examples.items())
+                )
+                error_parts.append(
+                    f"Forbidden attributes found: {attr_list}. Remove event handlers and use JavaScript instead."
+                )
+
+            # Dangerous CSS - show brief summary
+            if "dangerous_css" in grouped_errors or "css_expression" in grouped_errors:
+                css_errors = grouped_errors["dangerous_css"] + grouped_errors.get("css_expression", [])
+                example_line = css_errors[0].get("line_number")
+                line_info = f" (line {example_line})" if example_line else ""
+                error_parts.append(f"Dangerous CSS properties found{line_info}. Remove CSS with JavaScript or executable code.")
+
+            # External resources - group by type and show resource names
+            external_scripts = []
+            external_stylesheets = []
+            if "external_script" in grouped_errors:
+                for err in grouped_errors["external_script"]:
+                    # Extract URL from message
+                    match = re.search(r"'([^']+)'", err["message"])
+                    if match:
+                        url = match.group(1)
+                        # Extract just the library name from CDN URL
+                        lib_name = url.split("/")[-1] if "/" in url else url
+                        external_scripts.append(lib_name)
+
+            if "external_stylesheet" in grouped_errors:
+                for err in grouped_errors["external_stylesheet"]:
+                    match = re.search(r"'([^']+)'", err["message"])
+                    if match:
+                        url = match.group(1)
+                        lib_name = url.split("/")[-1] if "/" in url else url
+                        external_stylesheets.append(lib_name)
+
+            if external_scripts or external_stylesheets:
+                resources = []
+                if external_scripts:
+                    resources.append(f"scripts: {', '.join(external_scripts[:3])}")
+                if external_stylesheets:
+                    resources.append(f"stylesheets: {', '.join(external_stylesheets[:3])}")
+
+                error_parts.append(
+                    f"External resources must be embedded: {'; '.join(resources)}. "
+                    f"Download and inline these resources. (MathJax/KaTeX CDNs are allowed)"
+                )
+
+            # Meta tags
+            if "forbidden_meta" in grouped_errors or "dangerous_meta" in grouped_errors:
+                meta_count = len(grouped_errors.get("forbidden_meta", [])) + len(
+                    grouped_errors.get("dangerous_meta", [])
+                )
+                error_parts.append(
+                    f"Forbidden meta tags found ({meta_count}). Only standard meta tags like author, description, viewport are allowed."
+                )
+
+            # JavaScript URLs and dangerous protocols
+            if "javascript_url" in grouped_errors or "dangerous_protocol" in grouped_errors:
+                error_parts.append(
+                    "JavaScript or dangerous URLs found. Remove javascript:, vbscript:, or data:text/html URLs."
+                )
+
+            # Format final message
+            if error_parts:
+                error_summary = (
+                    "Your HTML contains security issues that must be fixed:\n\n"
+                    + "\n\n".join(f"• {part}" for part in error_parts)
+                )
+            else:
+                # Fallback if we can't parse errors
+                error_summary = (
+                    f"Your HTML contains {len(html_errors)} security issues. "
+                    "Please review your HTML for forbidden tags, attributes, or external resources."
+                )
+
             raise ValueError(error_summary)
 
         # Generate content-addressable storage fields

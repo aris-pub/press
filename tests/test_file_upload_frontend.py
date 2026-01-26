@@ -232,11 +232,8 @@ class TestFileUploadFormSubmission:
         response = await authenticated_client.post("/upload-form", data=upload_data)
         assert response.status_code == 422
         # Check that the validation error is displayed in the form
-        assert (
-            "Your HTML contains content that is not allowed for security reasons" in response.text
-        )
-        # The specific error details should be present somewhere in the response
-        assert "script" in response.text.lower()
+        assert "Your HTML contains security issues that must be fixed" in response.text
+        # The specific error details should be present (button tag and onclick attribute)
         assert "button" in response.text.lower()
 
 
