@@ -131,7 +131,9 @@ class TestHTMLValidator:
         assert any(error["type"] == "forbidden_attribute" for error in errors)
         # But should not complain about button/input/select/textarea tags
         forbidden_tag_errors = [e for e in errors if e["type"] == "forbidden_tag"]
-        assert len(forbidden_tag_errors) == 0, "Should not reject button/input/select/textarea tags"
+        assert len(forbidden_tag_errors) == 0, (
+            "Should not reject button/input/select/textarea tags"
+        )
 
     def test_dangerous_protocols_rejected(self):
         """Test that dangerous protocols are rejected."""
