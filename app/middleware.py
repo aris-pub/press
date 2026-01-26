@@ -194,9 +194,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             if nonce:
                 csp = (
                     "default-src 'self'; "
-                    f"script-src 'self' 'strict-dynamic' 'nonce-{nonce}' 'unsafe-inline'; "
-                    "style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; "
-                    "img-src 'self' data:; "
+                    f"script-src 'self' 'strict-dynamic' 'nonce-{nonce}' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; "
+                    "style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+                    "img-src 'self' data: https:; "
                     "font-src 'self' data: https://fonts.gstatic.com; "
                     "connect-src 'self'; "
                     "frame-src 'self';"
@@ -205,9 +205,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 # Fallback for scroll pages without nonce (shouldn't happen)
                 csp = (
                     "default-src 'self'; "
-                    "script-src 'self' 'unsafe-inline'; "
-                    "style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; "
-                    "img-src 'self' data:; "
+                    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; "
+                    "style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+                    "img-src 'self' data: https:; "
                     "font-src 'self' data: https://fonts.gstatic.com; "
                     "connect-src 'self'; "
                     "frame-src 'self';"

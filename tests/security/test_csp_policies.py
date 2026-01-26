@@ -66,9 +66,11 @@ async def test_scroll_page_csp_uses_strict_dynamic(client: AsyncClient, test_db,
     # Should allow unsafe-inline (ignored when nonce present, but good for fallback)
     assert "unsafe-inline" in csp_header
 
-    # Should NOT allow external scripts with strict-dynamic (they'll be blocked)
-    # External scripts would need to be loaded by nonce'd scripts to inherit trust
-    assert "https://unpkg.com" not in csp_header
+    # Should allow CDN domains for visualization libraries
+    # With strict-dynamic, these domains are allowed but scripts still need to be loaded by trusted scripts
+    assert "https://unpkg.com" in csp_header
+    assert "https://cdn.jsdelivr.net" in csp_header
+    assert "https://cdnjs.cloudflare.com" in csp_header
 
 
 @pytest.mark.asyncio

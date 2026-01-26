@@ -39,9 +39,8 @@ class HTMLValidator:
         "object",
         "embed",
         "applet",
-        "form",  # Form submission could be used for phishing
-        # Note: button, input, textarea, select are allowed - they're harmless without form submission
-        # and necessary for interactive research papers (sliders, buttons, etc.)
+        # Note: form, button, input, textarea, select are allowed for interactive research papers
+        # Forms with external actions are validated separately in _check_form_actions()
         "base",  # Base tag can redirect all relative URLs
     ]
 
@@ -135,6 +134,9 @@ class HTMLValidator:
 
         # Check for external resources (CDN links)
         self._check_external_resources(html_content, lines)
+
+        # Check for forms with external actions
+        self._check_form_actions(html_content, lines)
 
         is_valid = len(self.errors) == 0
         error_dicts = [error.to_dict() for error in self.errors]
@@ -362,14 +364,50 @@ class HTMLValidator:
                         )
                     )
 
+    def _check_form_actions(self, content: str, lines: List[str]):
+        """Check for forms with external action URLs."""
+        # Find all form tags with action attributes using regex
+        form_pattern = r'<form[^>]+action\s*=\s*["\']([^"\']+)["\'][^>]*>'
+        matches = re.finditer(form_pattern, content, re.IGNORECASE)
+
+        for match in matches:
+            action_url = match.group(1).strip()
+            line_num = self._get_line_number(content, match.start(), lines)
+
+            # Allow empty actions, "#", or javascript: URLs (client-side handling)
+            if not action_url or action_url == "#" or action_url.lower().startswith("javascript:"):
+                continue
+
+            # Block forms with external URLs (http://, https://, or protocol-relative //)
+            if action_url.startswith(("http://", "https://", "//")):
+                self.errors.append(
+                    HTMLValidationError(
+                        error_type="external_form_action",
+                        message=f"Form with external action '{action_url}' is not allowed. Forms must not submit to external URLs.",
+                        line_number=line_num,
+                        element=match.group(0)[:100],
+                    )
+                )
+
     # Allowed CDN domains for essential rendering libraries
     ALLOWED_CDN_DOMAINS = [
+        # Math rendering
         "cdn.jsdelivr.net/npm/mathjax",
         "cdnjs.cloudflare.com/ajax/libs/mathjax",
         "cdn.jsdelivr.net/npm/katex",
         "cdnjs.cloudflare.com/ajax/libs/KaTeX",
+        # Fonts
         "fonts.googleapis.com",
         "fonts.gstatic.com",
+        # Data visualization libraries
+        "cdn.jsdelivr.net/npm/d3@",
+        "cdn.jsdelivr.net/npm/plotly.js@",
+        "cdn.jsdelivr.net/npm/chart.js@",
+        "cdn.jsdelivr.net/npm/vega@",
+        "cdn.jsdelivr.net/npm/vega-lite@",
+        "cdn.jsdelivr.net/npm/vega-embed@",
+        "unpkg.com/d3@",
+        "unpkg.com/plotly.js@",
     ]
 
     def _check_external_resources(self, content: str, lines: List[str]):

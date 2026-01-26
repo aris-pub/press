@@ -103,7 +103,6 @@ class TestHTMLValidator:
             "object",
             "embed",
             "applet",
-            "form",
             "base",
         ]
 
@@ -112,6 +111,34 @@ class TestHTMLValidator:
             is_valid, errors = self.validator.validate(html)
             assert not is_valid, f"Should reject tag: {tag}"
             assert any(error["type"] == "forbidden_tag" for error in errors)
+
+    def test_forms_with_external_actions_rejected(self):
+        """Test that forms with external action URLs are rejected."""
+        test_cases = [
+            '<form action="https://evil.com/steal">',
+            '<form action="http://phishing.com/data">',
+            '<form action="//external.com/submit">',
+        ]
+
+        for html in test_cases:
+            is_valid, errors = self.validator.validate(html)
+            assert not is_valid, f"Should reject form: {html}"
+            assert any(error["type"] == "external_form_action" for error in errors)
+
+    def test_forms_with_safe_actions_allowed(self):
+        """Test that forms with safe actions are allowed."""
+        test_cases = [
+            '<form>No action</form>',
+            '<form action="#">Hash action</form>',
+            '<form action="javascript:handleForm()">JS action</form>',
+            '<form action="">Empty action</form>',
+        ]
+
+        for html in test_cases:
+            is_valid, errors = self.validator.validate(html)
+            # Filter out any non-form-related errors
+            form_errors = [e for e in errors if e["type"] == "external_form_action"]
+            assert len(form_errors) == 0, f"Should allow form: {html}"
 
     def test_interactive_elements_allowed(self):
         """Test that interactive elements (button, input, select, textarea) are allowed for research papers."""

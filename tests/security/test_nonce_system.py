@@ -91,8 +91,10 @@ async def test_scroll_page_has_nonce_csp(client):
     assert csp_header is not None
     assert "nonce-" in csp_header
     assert "strict-dynamic" in csp_header
-    # Should NOT allow external scripts like HTMX on scroll pages
-    assert "https://unpkg.com" not in csp_header
+    # Should allow CDN domains for visualization libraries
+    assert "https://unpkg.com" in csp_header
+    assert "https://cdn.jsdelivr.net" in csp_header
+    assert "https://cdnjs.cloudflare.com" in csp_header
 
 
 @pytest.mark.asyncio
