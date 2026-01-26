@@ -37,11 +37,9 @@ class HTMLValidator:
         "object",
         "embed",
         "applet",
-        "form",
-        "input",
-        "textarea",
-        "select",
-        "button",
+        "form",  # Form submission could be used for phishing
+        # Note: button, input, textarea, select are allowed - they're harmless without form submission
+        # and necessary for interactive research papers (sliders, buttons, etc.)
         "base",  # Base tag can redirect all relative URLs
     ]
 

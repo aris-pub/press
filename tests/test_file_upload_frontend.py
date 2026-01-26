@@ -233,8 +233,8 @@ class TestFileUploadFormSubmission:
         assert response.status_code == 422
         # Check that the validation error is displayed in the form
         assert "Your HTML contains security issues that must be fixed" in response.text
-        # The specific error details should be present (button tag and onclick attribute)
-        assert "button" in response.text.lower()
+        # The specific error details should be present (onclick attribute)
+        assert "onclick" in response.text.lower()
 
 
 class TestFileUploadUIElements:

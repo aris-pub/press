@@ -104,10 +104,6 @@ class TestHTMLValidator:
             "embed",
             "applet",
             "form",
-            "input",
-            "textarea",
-            "select",
-            "button",
             "base",
         ]
 
@@ -116,6 +112,26 @@ class TestHTMLValidator:
             is_valid, errors = self.validator.validate(html)
             assert not is_valid, f"Should reject tag: {tag}"
             assert any(error["type"] == "forbidden_tag" for error in errors)
+
+    def test_interactive_elements_allowed(self):
+        """Test that interactive elements (button, input, select, textarea) are allowed for research papers."""
+        interactive_html = """
+        <html>
+            <body>
+                <button onclick="runSimulation()">Run Simulation</button>
+                <input type="range" min="0" max="100" value="50">
+                <select><option>Option 1</option></select>
+                <textarea>Notes</textarea>
+            </body>
+        </html>
+        """
+        is_valid, errors = self.validator.validate(interactive_html)
+        # Should only fail on onclick, not on the tags themselves
+        assert not is_valid, "Should reject onclick attribute"
+        assert any(error["type"] == "forbidden_attribute" for error in errors)
+        # But should not complain about button/input/select/textarea tags
+        forbidden_tag_errors = [e for e in errors if e["type"] == "forbidden_tag"]
+        assert len(forbidden_tag_errors) == 0, "Should not reject button/input/select/textarea tags"
 
     def test_dangerous_protocols_rejected(self):
         """Test that dangerous protocols are rejected."""
