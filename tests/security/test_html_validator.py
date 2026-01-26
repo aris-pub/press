@@ -284,3 +284,21 @@ class TestHTMLValidator:
         assert "iframe" in error["message"]
         assert isinstance(error["line_number"], int)
         assert error["element"] is not None
+
+    def test_tag_names_in_javascript_strings_allowed(self):
+        """Test that tag names in JavaScript strings don't trigger false positives (regression test)."""
+        html = """
+        <html>
+            <body>
+                <script>
+                    // Tag names in JS strings should NOT trigger validation errors
+                    var htmlString = "<form><input type='text'></form>";
+                    var createForm = function() { return "<form>"; };
+                    var iframe = "<iframe src='test'>";
+                    var embedded = "javascript:form.submit()";
+                </script>
+            </body>
+        </html>
+        """
+        is_valid, errors = self.validator.validate(html)
+        assert is_valid, f"Tag names in JavaScript should not trigger validation errors. Errors: {errors}"

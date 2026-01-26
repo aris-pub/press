@@ -547,6 +547,7 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
     { name = "asyncpg" },
+    { name = "beautifulsoup4" },
     { name = "bleach" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -569,16 +570,12 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "beautifulsoup4" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.19.0" },
     { name = "alembic", specifier = ">=1.12.1" },
     { name = "asyncpg", specifier = ">=0.29.0" },
+    { name = "beautifulsoup4", specifier = ">=4.14.3" },
     { name = "bleach", specifier = ">=6.1.0" },
     { name = "fastapi", specifier = ">=0.104.1" },
     { name = "httpx", specifier = ">=0.25.2" },
@@ -600,9 +597,6 @@ requires-dist = [
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.23" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "beautifulsoup4", specifier = ">=4.14.3" }]
 
 [[package]]
 name = "psycopg2-binary"

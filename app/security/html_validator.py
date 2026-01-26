@@ -3,6 +3,8 @@
 import re
 from typing import Dict, List, Tuple
 
+from bs4 import BeautifulSoup
+
 
 class HTMLValidationError:
     """Represents a validation error with detailed information."""
@@ -140,74 +142,102 @@ class HTMLValidator:
         return is_valid, error_dicts
 
     def _check_forbidden_tags(self, content: str, lines: List[str]):
-        """Check for forbidden HTML tags."""
-        for tag in self.FORBIDDEN_TAGS:
-            # Match both opening and self-closing tags
-            pattern = rf"<\s*{re.escape(tag)}(?:\s[^>]*)?/?>"
-            matches = list(re.finditer(pattern, content, re.IGNORECASE))
+        """Check for forbidden HTML tags using BeautifulSoup."""
+        soup = BeautifulSoup(content, "html.parser")
 
-            for match in matches:
-                line_num = self._get_line_number(content, match.start(), lines)
+        for tag_name in self.FORBIDDEN_TAGS:
+            # Find all instances of this tag
+            tags = soup.find_all(tag_name)
+
+            for tag in tags:
+                # Get the string representation of the tag
+                tag_str = str(tag)[:100]  # Truncate to 100 chars
+
+                # Find position in original content to get line number
+                # Use the opening tag as search string
+                search_str = f"<{tag.name}"
+                pos = content.find(search_str, 0)
+
+                # If we can't find it simply, try to find by matching the tag string
+                if pos == -1:
+                    pos = content.find(tag_str[:50])
+
+                if pos != -1:
+                    line_num = self._get_line_number(content, pos, lines)
+                else:
+                    line_num = None
+
                 self.errors.append(
                     HTMLValidationError(
                         error_type="forbidden_tag",
-                        message=f"Forbidden tag <{tag}> is not allowed",
+                        message=f"Forbidden tag <{tag_name}> is not allowed",
                         line_number=line_num,
-                        element=match.group(0),
+                        element=tag_str,
                     )
                 )
 
     def _check_meta_tags(self, content: str, lines: List[str]):
         """Check meta tags - allow safe ones, reject dangerous ones."""
-        # Find all meta tags
-        meta_pattern = r"<meta\s+([^>]+)/?>"
-        matches = list(re.finditer(meta_pattern, content, re.IGNORECASE))
+        soup = BeautifulSoup(content, "html.parser")
+        meta_tags = soup.find_all("meta")
 
-        for match in matches:
-            attrs = match.group(1)
-            line_num = self._get_line_number(content, match.start(), lines)
+        for tag in meta_tags:
+            tag_str = str(tag)[:100]
 
-            # Check for http-equiv which can be dangerous
-            if re.search(r'http-equiv\s*=\s*["\']?refresh["\']?', attrs, re.IGNORECASE):
+            # Find position in original content
+            pos = content.find(tag_str[:50])
+            line_num = self._get_line_number(content, pos, lines) if pos != -1 else None
+
+            # Check for http-equiv refresh which can be dangerous
+            http_equiv = tag.get("http-equiv", "").lower()
+            if http_equiv == "refresh":
                 self.errors.append(
                     HTMLValidationError(
                         error_type="dangerous_meta",
                         message="Meta refresh tags are not allowed (security risk)",
                         line_number=line_num,
-                        element=match.group(0),
+                        element=tag_str,
                     )
                 )
                 continue
 
             # Check name attribute for allowed values
-            name_match = re.search(r'name\s*=\s*["\']([^"\']+)["\']', attrs, re.IGNORECASE)
-            if name_match:
-                name_value = name_match.group(1).lower()
-                if name_value not in [name.lower() for name in self.ALLOWED_META_NAMES]:
-                    self.errors.append(
-                        HTMLValidationError(
-                            error_type="forbidden_meta",
-                            message=f"Meta tag with name '{name_value}' is not allowed",
-                            line_number=line_num,
-                            element=match.group(0),
-                        )
+            name_value = tag.get("name", "").lower()
+            if name_value and name_value not in [name.lower() for name in self.ALLOWED_META_NAMES]:
+                self.errors.append(
+                    HTMLValidationError(
+                        error_type="forbidden_meta",
+                        message=f"Meta tag with name '{name_value}' is not allowed",
+                        line_number=line_num,
+                        element=tag_str,
                     )
+                )
 
     def _check_forbidden_attributes(self, content: str, lines: List[str]):
         """Check for forbidden attributes like event handlers."""
-        for attr in self.FORBIDDEN_ATTRIBUTES:
-            # Match attribute="value" or attribute='value' or attribute=value
-            pattern = rf'\s{re.escape(attr)}\s*=\s*["\'][^"\']*["\']'
-            matches = list(re.finditer(pattern, content, re.IGNORECASE))
+        soup = BeautifulSoup(content, "html.parser")
 
-            for match in matches:
-                line_num = self._get_line_number(content, match.start(), lines)
+        for attr in self.FORBIDDEN_ATTRIBUTES:
+            # Find all tags that have this attribute
+            tags = soup.find_all(attrs={attr: True})
+
+            for tag in tags:
+                tag_str = str(tag)[:100]
+
+                # Find position in original content
+                pos = content.find(tag_str[:50])
+                line_num = self._get_line_number(content, pos, lines) if pos != -1 else None
+
+                # Get the attribute value for display
+                attr_value = tag.get(attr, "")
+                element_display = f'{attr}="{attr_value}"'
+
                 self.errors.append(
                     HTMLValidationError(
                         error_type="forbidden_attribute",
                         message=f"Forbidden attribute '{attr}' is not allowed",
                         line_number=line_num,
-                        element=match.group(0).strip(),
+                        element=element_display,
                     )
                 )
 
