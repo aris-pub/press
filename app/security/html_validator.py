@@ -432,6 +432,21 @@ class HTMLValidator:
         "cdn.jsdelivr.net/npm/vega-embed@",
         "unpkg.com/d3@",
         "unpkg.com/plotly.js@",
+        "cdn.bokeh.org/bokeh/release/",
+        "cdn.jsdelivr.net/npm/three@",
+        "cdn.jsdelivr.net/npm/leaflet@",
+        "cdn.jsdelivr.net/npm/cytoscape@",
+        # Core UI libraries
+        "cdn.jsdelivr.net/npm/jquery@",
+        "cdnjs.cloudflare.com/ajax/libs/jquery/",
+        "cdn.jsdelivr.net/npm/bootstrap@",
+        "cdnjs.cloudflare.com/ajax/libs/bootstrap/",
+        # Academic-specific libraries
+        "cdn.jsdelivr.net/npm/tooltipster@",
+        "cdn.jsdelivr.net/npm/pseudocode@",
+        "cdn.jsdelivr.net/npm/popper.js@",
+        # Aris ecosystem
+        "cdn.jsdelivr.net/gh/aris-pub/rsm@",
     ]
 
     def _check_external_resources(self, soup, content: str):
@@ -461,7 +476,7 @@ class HTMLValidator:
                 self.errors.append(
                     HTMLValidationError(
                         error_type="external_script",
-                        message=f"External script '{src}' not allowed. Papers must be self-contained with all resources embedded (MathJax/KaTeX CDNs are allowed).",
+                        message=f"External script '{src}' not allowed. Only whitelisted CDNs are permitted (jQuery, D3, Plotly, MathJax, etc. from jsdelivr/cdnjs). Download and inline this resource.",
                         line_number=line_num,
                         element=script_str,
                     )
@@ -491,7 +506,7 @@ class HTMLValidator:
                 self.errors.append(
                     HTMLValidationError(
                         error_type="external_stylesheet",
-                        message=f"External stylesheet '{href}' not allowed. Papers must be self-contained with all resources embedded (MathJax/KaTeX CDNs are allowed).",
+                        message=f"External stylesheet '{href}' not allowed. Only whitelisted CDNs are permitted (Google Fonts, Bootstrap, etc. from jsdelivr/cdnjs). Download and inline this resource.",
                         line_number=line_num,
                         element=link_str,
                     )

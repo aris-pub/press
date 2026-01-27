@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class ContentValidator:
     """Validates HTML content for spam and basic academic structure."""
 
-    def __init__(self, max_external_links: int = 10, min_word_count: int = 100):
+    def __init__(self, max_external_links: int = 25, min_word_count: int = 100):
         self.max_external_links = max_external_links
         self.min_word_count = min_word_count
         self.spam_keywords = [

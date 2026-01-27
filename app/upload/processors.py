@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class HTMLProcessor:
     """Processes HTML uploads for storage and display."""
 
-    def __init__(self, max_external_links: int = 10):
+    def __init__(self, max_external_links: int = 25):
         self.html_validator = HTMLValidator()
         self.content_validator = ContentValidator(max_external_links=max_external_links)
         self.file_validator = FileValidator()
