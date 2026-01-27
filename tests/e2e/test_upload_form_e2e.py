@@ -81,7 +81,9 @@ async def test_upload_form_submission_with_file(test_server):
 
                 # Verify the content is displayed in iframe
                 iframe = page.frame_locator("#paper-frame")
-                await expect(iframe.locator("body")).to_contain_text("E2E Test Content", timeout=5000)
+                await expect(iframe.locator("body")).to_contain_text(
+                    "E2E Test Content", timeout=5000
+                )
 
             finally:
                 # Clean up temp file
