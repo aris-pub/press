@@ -29,6 +29,7 @@ dependencies = [
     "resend>=2.4.0",
     "beautifulsoup4>=4.14.3",
     "lxml>=5.1.0",
+    "psutil>=7.2.1",
 ]
 
 [tool.pytest.ini_options]

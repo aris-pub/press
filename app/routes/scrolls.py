@@ -414,6 +414,15 @@ async def upload_form(
     )
 
     try:
+        # PROFILING: Track memory usage
+        import os
+
+        import psutil
+
+        process = psutil.Process(os.getpid())
+        mem_start = process.memory_info().rss / 1024 / 1024
+        print(f"[MEMORY PROFILE] Upload start: {mem_start:.1f} MB")
+
         sentry_sdk.set_tag("operation", "scroll_upload")
         sentry_sdk.set_user({"id": str(current_user.id)})
         sentry_sdk.set_context(
@@ -459,6 +468,12 @@ async def upload_form(
 
         html_validator = HTMLValidator()
         is_html_safe, html_errors = html_validator.validate(html_content)
+
+        # PROFILING: Memory after validation
+        mem_after_validation = process.memory_info().rss / 1024 / 1024
+        print(
+            f"[MEMORY PROFILE] After validation: {mem_after_validation:.1f} MB (delta: {mem_after_validation - mem_start:.1f} MB)"
+        )
 
         if not is_html_safe:
             # Group and summarize errors for better readability
@@ -589,6 +604,12 @@ async def upload_form(
 
         url_hash, content_hash, tar_data = await generate_permanent_url(html_content)
 
+        # PROFILING: Memory after generate_permanent_url
+        mem_after_url_gen = process.memory_info().rss / 1024 / 1024
+        print(
+            f"[MEMORY PROFILE] After generate_permanent_url: {mem_after_url_gen:.1f} MB (delta: {mem_after_url_gen - mem_after_validation:.1f} MB)"
+        )
+
         # Check if content already exists (published or preview)
         existing_scroll = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
         existing = existing_scroll.scalar_one_or_none()
@@ -619,6 +640,14 @@ async def upload_form(
         )
 
         db.add(scroll)
+
+        # PROFILING: Memory before commit
+        mem_before_commit = process.memory_info().rss / 1024 / 1024
+        print(
+            f"[MEMORY PROFILE] Before DB commit: {mem_before_commit:.1f} MB (delta: {mem_before_commit - mem_after_url_gen:.1f} MB)"
+        )
+        print(f"[MEMORY PROFILE] TOTAL increase: {mem_before_commit - mem_start:.1f} MB")
+
         await db.commit()
         await db.refresh(scroll)
 
