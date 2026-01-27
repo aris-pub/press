@@ -143,8 +143,8 @@ async def test_login_success_template_has_redirect_attributes(client: AsyncClien
     response = await client.post("/login-form", data=login_data)
     assert response.status_code == 200
 
-    # Verify HTMX attributes for automatic redirect
-    assert 'hx-target="body"' in response.text
+    # Verify HTMX attributes for automatic redirect (targets main content, not body)
+    assert 'hx-target="#main-content"' in response.text
     assert 'hx-push-url="true"' in response.text
 
 
