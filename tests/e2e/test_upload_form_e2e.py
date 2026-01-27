@@ -27,7 +27,8 @@ async def test_upload_form_submission_with_file(test_server):
             await page.fill('input[name="password"]', "testpass")
             await page.click('button[type="submit"]')
 
-            # Wait for login to complete (redirects to dashboard)
+            # Wait for success message then dashboard redirect
+            await expect(page.locator(".success-message")).to_be_visible(timeout=5000)
             await page.wait_for_url(f"{test_server}/dashboard", timeout=5000)
 
             # Go to upload page
@@ -106,6 +107,9 @@ async def test_upload_form_validation_without_file(test_server):
             await page.fill('input[name="email"]', "testuser@example.com")
             await page.fill('input[name="password"]', "testpass")
             await page.click('button[type="submit"]')
+
+            # Wait for success message then dashboard redirect
+            await expect(page.locator(".success-message")).to_be_visible(timeout=5000)
             await page.wait_for_url(f"{test_server}/dashboard", timeout=5000)
 
             # Go to upload page
@@ -145,6 +149,9 @@ async def test_upload_form_file_size_validation(test_server):
             await page.fill('input[name="email"]', "testuser@example.com")
             await page.fill('input[name="password"]', "testpass")
             await page.click('button[type="submit"]')
+
+            # Wait for success message then dashboard redirect
+            await expect(page.locator(".success-message")).to_be_visible(timeout=5000)
             await page.wait_for_url(f"{test_server}/dashboard", timeout=5000)
 
             # Go to upload page
