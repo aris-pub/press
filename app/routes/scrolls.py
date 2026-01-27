@@ -433,7 +433,13 @@ async def upload_form(
 
         # Read HTML content from uploaded file (streaming approach)
         html_content_bytes = await file.read()
-        html_content = html_content_bytes.decode("utf-8").strip()
+
+        # Validate UTF-8 encoding
+        html_content = ""  # Initialize for error handler
+        try:
+            html_content = html_content_bytes.decode("utf-8").strip()
+        except UnicodeDecodeError:
+            raise ValueError("File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding.")
 
         # Strip other inputs once to avoid creating multiple copies in memory
         title = title.strip() if title else ""
@@ -449,6 +455,12 @@ async def upload_form(
             raise ValueError("Abstract is required")
         if not html_content:
             raise ValueError("HTML file is required")
+
+        # Basic HTML structure validation
+        import re
+        has_html_tags = re.search(r'<html|<head|<body|<title|<div|<p|<h[1-6]|<script|<style', html_content, re.IGNORECASE)
+        if not has_html_tags:
+            raise ValueError("File does not appear to contain valid HTML content")
         if not license or license not in ["cc-by-4.0", "arr"]:
             raise ValueError("License must be selected (CC BY 4.0 or All Rights Reserved)")
         if not confirm_rights or confirm_rights.lower() != "true":

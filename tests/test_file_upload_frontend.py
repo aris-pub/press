@@ -237,6 +237,96 @@ class TestFileUploadFormSubmission:
         # The specific error details should be present (onclick attribute)
         assert "onclick" in response.text.lower()
 
+    async def test_upload_form_rejects_non_html_file(
+        self, authenticated_client: AsyncClient, test_db
+    ):
+        """Test form rejects non-HTML file types."""
+        # Create a subject for the test
+        subject = Subject(name="Test Subject", description="Test description")
+        test_db.add(subject)
+        await test_db.commit()
+        await test_db.refresh(subject)
+
+        # Upload a text file instead of HTML
+        text_content = "This is just a plain text file, not HTML."
+
+        upload_data = {
+            "title": "Non-HTML File Test",
+            "authors": "Test Author",
+            "subject_id": str(subject.id),
+            "abstract": "Testing non-HTML file rejection",
+            "keywords": "validation",
+            "license": "cc-by-4.0",
+            "confirm_rights": "true",
+            "action": "publish",
+        }
+        files = {"file": ("document.txt", text_content, "text/plain")}
+
+        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
+        assert response.status_code == 422
+        assert (
+            "does not appear to contain valid HTML" in response.text
+            or "HTML content is required" in response.text
+        )
+
+    async def test_upload_form_rejects_invalid_utf8_encoding(
+        self, authenticated_client: AsyncClient, test_db
+    ):
+        """Test form rejects files with invalid UTF-8 encoding."""
+        # Create a subject for the test
+        subject = Subject(name="Test Subject", description="Test description")
+        test_db.add(subject)
+        await test_db.commit()
+        await test_db.refresh(subject)
+
+        # Create content with invalid UTF-8 bytes
+        invalid_bytes = b"<!DOCTYPE html><html><body><h1>Test</h1><p>Invalid: \xff\xfe</p></body></html>"
+
+        upload_data = {
+            "title": "Invalid Encoding Test",
+            "authors": "Test Author",
+            "subject_id": str(subject.id),
+            "abstract": "Testing invalid UTF-8 rejection",
+            "keywords": "encoding",
+            "license": "cc-by-4.0",
+            "confirm_rights": "true",
+            "action": "publish",
+        }
+        files = {"file": ("invalid.html", invalid_bytes, "text/html")}
+
+        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
+        # Should fail during UTF-8 decode
+        assert response.status_code in [422, 400, 500]
+
+    async def test_upload_form_rejects_empty_file(
+        self, authenticated_client: AsyncClient, test_db
+    ):
+        """Test form rejects empty HTML files."""
+        # Create a subject for the test
+        subject = Subject(name="Test Subject", description="Test description")
+        test_db.add(subject)
+        await test_db.commit()
+        await test_db.refresh(subject)
+
+        # Empty file content
+        empty_content = ""
+
+        upload_data = {
+            "title": "Empty File Test",
+            "authors": "Test Author",
+            "subject_id": str(subject.id),
+            "abstract": "Testing empty file rejection",
+            "keywords": "validation",
+            "license": "cc-by-4.0",
+            "confirm_rights": "true",
+            "action": "publish",
+        }
+        files = {"file": ("empty.html", empty_content, "text/html")}
+
+        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
+        assert response.status_code == 422
+        assert "HTML file is required" in response.text or "HTML content is required" in response.text
+
 
 class TestFileUploadUIElements:
     """Test file upload UI elements are present and functional."""
@@ -281,6 +371,7 @@ class TestFileUploadUIElements:
         assert "handleFileSelection" in response.text
         assert "dragover" in response.text
         assert "dragleave" in response.text
-        assert "FileReader" in response.text
-        assert "readAsText" in response.text
-        assert "UTF-8" in response.text
+        # Check for file validation (no longer using FileReader)
+        assert "file.size" in response.text
+        assert "50 * 1024 * 1024" in response.text  # 50MB size check
+        assert ".html" in response.text  # File type check
