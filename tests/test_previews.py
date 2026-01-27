@@ -37,13 +37,13 @@ async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, tes
         "subject_id": str(subject.id),
         "abstract": "Test abstract",
         "keywords": "test, scroll",
-        "html_content": "<h1>Test Content</h1>",
         "license": "cc-by-4.0",
         "confirm_rights": "true",
         "action": "publish",
     }
 
-    response = await authenticated_client.post("/upload-form", data=upload_data)
+    files = {"file": ("test.html", "<h1>Test Content</h1>", "text/html")}
+    response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
     assert response.status_code == 200
     assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
@@ -68,13 +68,13 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
         "subject_id": str(subject.id),
         "abstract": "Test abstract",
         "keywords": "test, preview",
-        "html_content": "<h1>Published Content</h1>",
         "license": "cc-by-4.0",
         "confirm_rights": "true",
         "action": "publish",
     }
 
-    response = await authenticated_client.post("/upload-form", data=upload_data)
+    files = {"file": ("test.html", "<h1>Published Content</h1>", "text/html")}
+    response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
     assert response.status_code == 200
     assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
@@ -92,13 +92,13 @@ async def test_upload_form_validation_errors(authenticated_client: AsyncClient, 
         "authors": "Test Author",
         "subject_id": "invalid-uuid",
         "abstract": "Test abstract",
-        "html_content": "<h1>Test Content</h1>",
         "license": "cc-by-4.0",
         "confirm_rights": "true",
         "action": "draft",
     }
 
-    response = await authenticated_client.post("/upload-form", data=upload_data)
+    files = {"file": ("test.html", "<h1>Test Content</h1>", "text/html")}
+    response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
     assert response.status_code == 422
     assert "Title is required" in response.text
 
@@ -116,13 +116,13 @@ async def test_upload_form_missing_checkbox(authenticated_client: AsyncClient, t
         "authors": "Test Author",
         "subject_id": str(subject.id),
         "abstract": "Test abstract",
-        "html_content": "<h1>Test Content</h1>",
         "license": "cc-by-4.0",
         # Missing confirm_rights checkbox
         "action": "publish",
     }
 
-    response = await authenticated_client.post("/upload-form", data=upload_data)
+    files = {"file": ("test.html", "<h1>Test Content</h1>", "text/html")}
+    response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
     assert response.status_code == 422
     assert "You must confirm that you have the right to publish this content" in response.text
 
@@ -311,13 +311,13 @@ async def test_upload_form_requires_auth(client: AsyncClient):
         "authors": "Test Author",
         "subject_id": "test-uuid",  # Add required field
         "abstract": "Test abstract",
-        "html_content": "<h1>Test Content</h1>",
         "license": "cc-by-4.0",
         "confirm_rights": "true",
         "action": "draft",
     }
 
-    response = await client.post("/upload-form", data=upload_data, follow_redirects=False)
+    files = {"file": ("test.html", "<h1>Test Content</h1>", "text/html")}
+    response = await client.post("/upload-form", data=upload_data, files=files, follow_redirects=False)
     assert response.status_code == 302
     assert response.headers["location"] == "/login"
 
@@ -395,13 +395,13 @@ async def test_upload_form_with_file_content_integration(
         "subject_id": str(subject.id),
         "abstract": "Novel approaches to research data analysis using ML algorithms with improved accuracy and efficiency.",
         "keywords": "machine learning, data analysis, research, neural networks, ensemble methods",
-        "html_content": file_html_content,  # Content from file upload
         "license": "cc-by-4.0",
         "confirm_rights": "true",
         "action": "publish",
     }
 
-    response = await authenticated_client.post("/upload-form", data=upload_data)
+    files = {"file": ("research.html", file_html_content, "text/html")}
+    response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
     assert response.status_code == 200
     assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
@@ -439,15 +439,15 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
         "subject_id": str(subject.id),
         "abstract": "Testing server-side validation",
         "keywords": "validation, test",
-        "html_content": "   \n\t  \n   ",  # Only whitespace
         "license": "cc-by-4.0",
         "confirm_rights": "true",
         "action": "publish",
     }
 
-    response = await authenticated_client.post("/upload-form", data=invalid_upload_data)
+    invalid_files = {"file": ("empty.html", "   \n\t  \n   ", "text/html")}
+    response = await authenticated_client.post("/upload-form", data=invalid_upload_data, files=invalid_files)
     assert response.status_code == 422
-    assert "HTML content is required" in response.text
+    assert "HTML file is required" in response.text or "HTML content is required" in response.text or "does not appear to contain valid HTML" in response.text
 
     # Test with valid minimal content
     valid_upload_data = {
@@ -456,12 +456,12 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
         "subject_id": str(subject.id),
         "abstract": "Testing valid minimal content",
         "keywords": "minimal, valid",
-        "html_content": "<html><body><h1>Valid</h1></body></html>",
         "license": "cc-by-4.0",
         "confirm_rights": "true",
         "action": "publish",
     }
 
-    response = await authenticated_client.post("/upload-form", data=valid_upload_data)
+    valid_files = {"file": ("valid.html", "<html><body><h1>Valid</h1></body></html>", "text/html")}
+    response = await authenticated_client.post("/upload-form", data=valid_upload_data, files=valid_files)
     assert response.status_code == 200
     assert "PREVIEW MODE" in response.text or "Preview" in response.text

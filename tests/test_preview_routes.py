@@ -26,11 +26,11 @@ async def test_upload_creates_preview_scroll(
             "subject_id": str(test_subject.id),
             "abstract": "This is a test abstract with enough words to pass validation checks.",
             "keywords": "test, paper",
-            "html_content": html_content,
             "license": "cc-by-4.0",
             "confirm_rights": "true",
             "action": "publish",
         },
+        files={"file": ("test_paper.html", html_content, "text/html")},
         follow_redirects=False,
     )
 

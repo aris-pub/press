@@ -58,15 +58,15 @@ class TestLicenseValidation:
             "authors": "Test Author",
             "subject_id": str(subject.id),
             "abstract": "Test abstract",
-            "html_content": "<h1>Test Content</h1>",
             "confirm_rights": "true",
             # Missing license field
         }
 
+        files = {"file": ("test.html", "<h1>Test Content</h1>", "text/html")}
         response = await authenticated_client.post(
             "/upload-form",
             data=upload_data,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            files=files,
         )
         assert response.status_code == 422
         # Check for HTML error response from the form
@@ -88,12 +88,12 @@ class TestLicenseValidation:
                 "authors": "Test Author",
                 "subject_id": str(subject.id),
                 "abstract": "Test abstract",
-                "html_content": f"<h1>Test Content for {license_value}</h1>",  # Make content unique
                 "license": license_value,
                 "confirm_rights": "true",
             }
 
-            response = await authenticated_client.post("/upload-form", data=upload_data)
+            files = {"file": (f"test_{license_value}.html", f"<h1>Test Content for {license_value}</h1>", "text/html")}
+            response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
             assert response.status_code == 200
             assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
