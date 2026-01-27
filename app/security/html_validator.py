@@ -193,11 +193,7 @@ class HTMLValidator:
             # Check for dangerous http-equiv values
             http_equiv = tag.get("http-equiv", "").lower()
 
-            DANGEROUS_HTTP_EQUIV = [
-                "refresh",
-                "set-cookie",
-                "content-security-policy"
-            ]
+            DANGEROUS_HTTP_EQUIV = ["refresh", "set-cookie", "content-security-policy"]
 
             if http_equiv in DANGEROUS_HTTP_EQUIV:
                 self.errors.append(

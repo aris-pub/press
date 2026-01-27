@@ -1,9 +1,10 @@
 """E2E tests for file upload form with CSRF and multipart handling."""
 
+import os
+import tempfile
+
 from playwright.async_api import async_playwright, expect
 import pytest
-import tempfile
-import os
 
 pytestmark = pytest.mark.e2e
 
@@ -144,7 +145,9 @@ async def test_upload_form_file_size_validation(test_server):
             await page.goto(f"{test_server}/upload")
 
             # Create a large HTML file (51MB - over the limit)
-            large_html = "<!DOCTYPE html><html><body>" + ("x" * (51 * 1024 * 1024)) + "</body></html>"
+            large_html = (
+                "<!DOCTYPE html><html><body>" + ("x" * (51 * 1024 * 1024)) + "</body></html>"
+            )
 
             with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:
                 f.write(large_html)
