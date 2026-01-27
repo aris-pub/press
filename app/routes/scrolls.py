@@ -258,15 +258,20 @@ async def get_paper_html(
             raise HTTPException(status_code=404, detail="Paper not found")
 
     # Set security headers for iframe embedding
+    # CSP allows 'unsafe-eval' to support interactive academic visualizations
+    # (Bokeh, Plotly, Observable) that use new Function() for dynamic callbacks.
+    # This does NOT meaningfully increase risk vs 'unsafe-inline' since entire
+    # HTML document is untrusted user content served in isolated iframe.
+    # Upload validation (HTMLValidator) is our primary XSS defense.
     headers = {
         "X-Frame-Options": "SAMEORIGIN",
         "Content-Security-Policy": (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.plot.ly https://unpkg.com; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.plot.ly https://cdn.bokeh.org https://unpkg.com; "
             "style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
             "img-src 'self' data: https:; "
             "font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
-            "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; "
+            "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.bokeh.org https://unpkg.com; "
             "form-action 'self'; "
             "frame-ancestors 'self';"
         ),

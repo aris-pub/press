@@ -123,6 +123,13 @@ app/
 - Test fixtures in `tests/conftest.py`
 - Database isolation per test
 
+### Security: User HTML Isolation & CSP
+- User HTML served in iframe at `/scroll/{url_hash}/paper` endpoint
+- CSP includes `'unsafe-inline'` and `'unsafe-eval'` to support interactive academic libraries (Bokeh, Plotly, Observable)
+- Security model: Treat entire iframe content as untrusted; rely on upload validation (HTMLValidator) as primary XSS defense
+- Defense-in-depth: Cookie HttpOnly flags, same-origin policy, CSP resource restrictions
+- Trade-off rationale: `'unsafe-eval'` does not meaningfully increase risk vs `'unsafe-inline'` when serving fully untrusted user HTML in isolated iframe
+
 ## Dependencies
 - FastAPI + Uvicorn (web framework)
 - SQLAlchemy + asyncpg (database)

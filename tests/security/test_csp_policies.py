@@ -216,8 +216,14 @@ async def test_nonce_only_on_scroll_pages(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_paper_endpoint_csp_no_unsafe_eval(client: AsyncClient, test_db, test_user):
-    """Test that /paper endpoint CSP does not include unsafe-eval."""
+async def test_paper_endpoint_csp_allows_unsafe_eval(client: AsyncClient, test_db, test_user):
+    """Test that /paper endpoint CSP includes unsafe-eval for Bokeh/Plotly support.
+
+    Security rationale: unsafe-eval is required for interactive academic visualizations
+    (Bokeh, Plotly, Observable) that use new Function() for dynamic callbacks. This
+    does not meaningfully increase risk vs unsafe-inline since entire HTML document
+    is untrusted user content served in isolated iframe.
+    """
     subject = Subject(name="Test Subject", description="Test description")
     test_db.add(subject)
     await test_db.commit()
@@ -241,4 +247,5 @@ async def test_paper_endpoint_csp_no_unsafe_eval(client: AsyncClient, test_db, t
 
     csp_header = response.headers.get("Content-Security-Policy")
     assert csp_header is not None
-    assert "unsafe-eval" not in csp_header, "CSP should not include unsafe-eval"
+    assert "unsafe-eval" in csp_header, "CSP should include unsafe-eval for Bokeh/Plotly support"
+    assert "unsafe-inline" in csp_header, "CSP should include unsafe-inline for user scripts"
