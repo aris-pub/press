@@ -317,7 +317,9 @@ async def test_upload_form_requires_auth(client: AsyncClient):
     }
 
     files = {"file": ("test.html", "<h1>Test Content</h1>", "text/html")}
-    response = await client.post("/upload-form", data=upload_data, files=files, follow_redirects=False)
+    response = await client.post(
+        "/upload-form", data=upload_data, files=files, follow_redirects=False
+    )
     assert response.status_code == 302
     assert response.headers["location"] == "/login"
 
@@ -445,9 +447,15 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
     }
 
     invalid_files = {"file": ("empty.html", "   \n\t  \n   ", "text/html")}
-    response = await authenticated_client.post("/upload-form", data=invalid_upload_data, files=invalid_files)
+    response = await authenticated_client.post(
+        "/upload-form", data=invalid_upload_data, files=invalid_files
+    )
     assert response.status_code == 422
-    assert "HTML file is required" in response.text or "HTML content is required" in response.text or "does not appear to contain valid HTML" in response.text
+    assert (
+        "HTML file is required" in response.text
+        or "HTML content is required" in response.text
+        or "does not appear to contain valid HTML" in response.text
+    )
 
     # Test with valid minimal content
     valid_upload_data = {
@@ -462,6 +470,8 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
     }
 
     valid_files = {"file": ("valid.html", "<html><body><h1>Valid</h1></body></html>", "text/html")}
-    response = await authenticated_client.post("/upload-form", data=valid_upload_data, files=valid_files)
+    response = await authenticated_client.post(
+        "/upload-form", data=valid_upload_data, files=valid_files
+    )
     assert response.status_code == 200
     assert "PREVIEW MODE" in response.text or "Preview" in response.text

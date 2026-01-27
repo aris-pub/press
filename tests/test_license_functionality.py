@@ -92,8 +92,16 @@ class TestLicenseValidation:
                 "confirm_rights": "true",
             }
 
-            files = {"file": (f"test_{license_value}.html", f"<h1>Test Content for {license_value}</h1>", "text/html")}
-            response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
+            files = {
+                "file": (
+                    f"test_{license_value}.html",
+                    f"<h1>Test Content for {license_value}</h1>",
+                    "text/html",
+                )
+            }
+            response = await authenticated_client.post(
+                "/upload-form", data=upload_data, files=files
+            )
             assert response.status_code == 200
             assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
