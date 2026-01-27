@@ -119,19 +119,18 @@ class HTMLValidator:
         content_for_parsing = html_content
         script_start = 0
         while True:
-            script_start = content_for_parsing.find('<script', script_start)
+            script_start = content_for_parsing.find("<script", script_start)
             if script_start == -1:
                 break
-            script_tag_end = content_for_parsing.find('>', script_start)
+            script_tag_end = content_for_parsing.find(">", script_start)
             if script_tag_end == -1:
                 break
-            script_close = content_for_parsing.find('</script>', script_tag_end)
+            script_close = content_for_parsing.find("</script>", script_tag_end)
             if script_close == -1:
                 break
             # Replace script contents with empty string, keep opening/closing tags
             content_for_parsing = (
-                content_for_parsing[:script_tag_end + 1] +
-                content_for_parsing[script_close:]
+                content_for_parsing[: script_tag_end + 1] + content_for_parsing[script_close:]
             )
             script_start = script_tag_end + 1
 
@@ -356,7 +355,9 @@ class HTMLValidator:
                         error_type="css_import",
                         message=f"CSS @import statement found in {context} - not allowed",
                         line_number=line_num,
-                        element=css_content[:100] + "..." if len(css_content) > 100 else css_content,
+                        element=css_content[:100] + "..."
+                        if len(css_content) > 100
+                        else css_content,
                     )
                 )
 
@@ -525,4 +526,4 @@ class HTMLValidator:
             return None
 
         # Only compute line number for errors in smaller files
-        return content[:position].count('\n') + 1
+        return content[:position].count("\n") + 1
