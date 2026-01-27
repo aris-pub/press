@@ -372,7 +372,7 @@ async def upload_form(
     subject_id: str = Form(...),
     abstract: str = Form(...),
     keywords: str = Form(""),
-    html_content: str = Form(...),
+    file: UploadFile = File(...),
     license: str = Form(...),
     confirm_rights: str = Form(None),
     action: str = Form("publish"),  # Always publish
@@ -430,8 +430,12 @@ async def upload_form(
         sentry_sdk.set_context(
             "upload", {"title": title, "subject_id": subject_id, "license": license}
         )
-        # Strip inputs once to avoid creating multiple copies in memory
-        html_content = html_content.strip() if html_content else ""
+
+        # Read HTML content from uploaded file (streaming approach)
+        html_content_bytes = await file.read()
+        html_content = html_content_bytes.decode("utf-8").strip()
+
+        # Strip other inputs once to avoid creating multiple copies in memory
         title = title.strip() if title else ""
         authors = authors.strip() if authors else ""
         abstract = abstract.strip() if abstract else ""
@@ -444,7 +448,7 @@ async def upload_form(
         if not abstract:
             raise ValueError("Abstract is required")
         if not html_content:
-            raise ValueError("HTML content is required")
+            raise ValueError("HTML file is required")
         if not license or license not in ["cc-by-4.0", "arr"]:
             raise ValueError("License must be selected (CC BY 4.0 or All Rights Reserved)")
         if not confirm_rights or confirm_rights.lower() != "true":
@@ -653,7 +657,9 @@ async def upload_form(
             f"[MEMORY PROFILE] Before DB commit: {mem_before_commit:.1f} MB (delta: {mem_before_commit - mem_after_url_gen:.1f} MB)",
             flush=True,
         )
-        print(f"[MEMORY PROFILE] TOTAL increase: {mem_before_commit - mem_start:.1f} MB", flush=True)
+        print(
+            f"[MEMORY PROFILE] TOTAL increase: {mem_before_commit - mem_start:.1f} MB", flush=True
+        )
         sys.stdout.flush()
 
         await db.commit()

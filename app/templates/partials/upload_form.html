@@ -51,8 +51,7 @@
             </div>
             <div class="file-upload-text">Drop your HTML file here or click to browse</div>
             <div class="file-upload-subtext">Only .html files are accepted (max 50MB, UTF-8 encoded)</div>
-            <input type="file" id="html_file" name="html_file" class="file-upload-input" accept=".html,text/html" required>
-            <input type="hidden" id="html_content" name="html_content" required>
+            <input type="file" id="html_file" name="file" class="file-upload-input" accept=".html,text/html" required>
         </div>
         <div id="file-info" class="file-info">
             <div class="file-info-item">
@@ -109,7 +108,6 @@
 // File upload handling - wrapped in IIFE to prevent redeclaration errors on HTMX swaps
 const fileUploadZone = document.getElementById('file-upload-zone');
 const fileInput = document.getElementById('html_file');
-const hiddenContent = document.getElementById('html_content');
 const fileInfo = document.getElementById('file-info');
 const fileError = document.getElementById('file-error');
 const fileSuccess = document.getElementById('file-success');
@@ -174,48 +172,10 @@ function handleFileSelection(file) {
         return;
     }
 
-    // Read file content
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const content = e.target.result;
-
-            // Validate UTF-8 encoding by checking for replacement characters
-            if (content.includes('�')) {
-                showError('File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding.');
-                return;
-            }
-
-            // Basic HTML validation
-            if (!content.trim()) {
-                showError('File content cannot be empty');
-                return;
-            }
-
-            // Check if it looks like HTML
-            const hasHtmlTags = /<html|<head|<body|<title|<div|<p|<h[1-6]|<script|<style/i.test(content);
-            if (!hasHtmlTags) {
-                showError('File does not appear to contain valid HTML content');
-                return;
-            }
-
-            // File is valid - update UI and hidden input
-            hiddenContent.value = content;
-            showFileInfo(file);
-            fileUploadZone.classList.add('has-file');
-            showSuccess('File uploaded successfully and validated');
-
-        } catch (error) {
-            showError('Error reading file: ' + error.message);
-        }
-    };
-
-    reader.onerror = function() {
-        showError('Error reading file. Please try again.');
-    };
-
-    // Read as UTF-8 text
-    reader.readAsText(file, 'UTF-8');
+    // File is valid - update UI (no need to read content, server will handle it)
+    showFileInfo(file);
+    fileUploadZone.classList.add('has-file');
+    showSuccess('File ready for upload');
 }
 
 function showFileInfo(file) {
@@ -259,15 +219,11 @@ document.body.addEventListener('htmx:afterRequest', function(evt) {
 
 // Form validation before submission
 document.getElementById('upload-form').addEventListener('submit', function(e) {
-    if (!hiddenContent.value.trim()) {
+    if (!fileInput.files || fileInput.files.length === 0) {
         e.preventDefault();
-        showError('Please select and upload an HTML file before submitting');
+        showError('Please select an HTML file before submitting');
         return false;
     }
-
-    // Remove name attribute from file input to prevent it from being submitted
-    // We already have the content in the hidden field
-    fileInput.removeAttribute('name');
 });
 })();
 

@@ -56,7 +56,7 @@ class TestFileUploadFormSubmission:
     async def test_upload_form_with_valid_html_file(
         self, authenticated_client: AsyncClient, test_db, test_user
     ):
-        """Test successful form submission with valid HTML file content."""
+        """Test successful form submission with actual file upload (UploadFile)."""
         # Create a subject for the test
         subject = Subject(name="Test Subject", description="Test description")
         test_db.add(subject)
@@ -75,26 +75,27 @@ class TestFileUploadFormSubmission:
 </body>
 </html>"""
 
+        # Use files parameter to upload actual file (UploadFile)
         upload_data = {
             "title": "File Upload Test",
             "authors": "Test Author",
             "subject_id": str(subject.id),
             "abstract": "Testing file upload functionality",
             "keywords": "test, file, upload",
-            "html_content": valid_html,  # Simulates populated hidden field
             "license": "cc-by-4.0",
             "confirm_rights": "true",
             "action": "publish",
         }
+        files = {"file": ("test.html", valid_html, "text/html")}
 
-        response = await authenticated_client.post("/upload-form", data=upload_data)
+        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
         assert response.status_code == 200
         assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
-    async def test_upload_form_rejects_empty_html_content(
+    async def test_upload_form_rejects_missing_file(
         self, authenticated_client: AsyncClient, test_db
     ):
-        """Test form rejection when HTML content is empty (file not uploaded)."""
+        """Test form rejection when no file is uploaded."""
         # Create a subject for the test
         subject = Subject(name="Test Subject", description="Test description")
         test_db.add(subject)
@@ -102,20 +103,20 @@ class TestFileUploadFormSubmission:
         await test_db.refresh(subject)
 
         upload_data = {
-            "title": "Empty Content Test",
+            "title": "No File Test",
             "authors": "Test Author",
             "subject_id": str(subject.id),
-            "abstract": "Testing empty content validation",
+            "abstract": "Testing missing file validation",
             "keywords": "test, empty",
-            "html_content": "",  # Empty content (no file uploaded)
             "license": "cc-by-4.0",
             "confirm_rights": "true",
             "action": "publish",
         }
+        # No files parameter = no file uploaded
 
         response = await authenticated_client.post("/upload-form", data=upload_data)
         assert response.status_code == 422
-        assert "HTML content is required" in response.text
+        assert "HTML file is required" in response.text or "Field required" in response.text
 
     async def test_upload_form_with_minimal_html_structure(
         self, authenticated_client: AsyncClient, test_db
@@ -135,13 +136,13 @@ class TestFileUploadFormSubmission:
             "subject_id": str(subject.id),
             "abstract": "Testing minimal HTML structure",
             "keywords": "minimal, html",
-            "html_content": minimal_html,
             "license": "cc-by-4.0",
             "confirm_rights": "true",
             "action": "publish",
         }
+        files = {"file": ("minimal.html", minimal_html, "text/html")}
 
-        response = await authenticated_client.post("/upload-form", data=upload_data)
+        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
         assert response.status_code == 200
         assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
@@ -174,13 +175,13 @@ class TestFileUploadFormSubmission:
             "subject_id": str(subject.id),
             "abstract": "Testing large HTML content handling",
             "keywords": "large, html",
-            "html_content": large_html,
             "license": "cc-by-4.0",
             "confirm_rights": "true",
             "action": "publish",
         }
+        files = {"file": ("large.html", large_html, "text/html")}
 
-        response = await authenticated_client.post("/upload-form", data=upload_data)
+        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
         assert response.status_code == 200
         assert "PREVIEW MODE" in response.text or "Preview" in response.text
 
@@ -223,13 +224,13 @@ class TestFileUploadFormSubmission:
             "subject_id": str(subject.id),
             "abstract": "Testing dangerous HTML rejection",
             "keywords": "security, validation",
-            "html_content": dangerous_html,
             "license": "cc-by-4.0",
             "confirm_rights": "true",
             "action": "publish",
         }
+        files = {"file": ("dangerous.html", dangerous_html, "text/html")}
 
-        response = await authenticated_client.post("/upload-form", data=upload_data)
+        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
         assert response.status_code == 422
         # Check that the validation error is displayed in the form
         assert "Your HTML contains security issues that must be fixed" in response.text

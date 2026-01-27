@@ -111,15 +111,22 @@ class CSRFClient(AsyncClient):
             csrf_token = await get_csrf_token(session_id)
 
             if method in {"POST", "PUT", "PATCH"}:
-                # Add CSRF token to data or create minimal form
-                if "data" in kwargs:
+                # Add CSRF token to data or headers
+                if "files" in kwargs:
+                    # For multipart/form-data requests (file uploads),
+                    # the middleware only checks headers, not form data
+                    if "headers" not in kwargs:
+                        kwargs["headers"] = {}
+                    kwargs["headers"]["X-CSRF-Token"] = csrf_token
+                    # Also add to data if it exists
+                    if "data" in kwargs and isinstance(kwargs["data"], dict):
+                        kwargs["data"] = {**kwargs["data"], "csrf_token": csrf_token}
+                    else:
+                        kwargs["data"] = {"csrf_token": csrf_token}
+                elif "data" in kwargs:
                     if isinstance(kwargs["data"], dict):
                         kwargs["data"] = {**kwargs["data"], "csrf_token": csrf_token}
                     # If data is already form-encoded, user must handle csrf_token manually
-                elif "files" in kwargs:
-                    # File upload - add CSRF token as regular form field
-                    # Create data dict with just the token (files are separate)
-                    kwargs["data"] = {"csrf_token": csrf_token}
                 else:
                     # No data or files, create minimal form with just CSRF token
                     kwargs["data"] = {"csrf_token": csrf_token}
