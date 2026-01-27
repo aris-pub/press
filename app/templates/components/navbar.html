@@ -86,66 +86,65 @@ Navbar Component
 </header>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function initMobileMenu() {
+  // Prevent duplicate initialization if script re-runs
+  if (window.mobileMenuInitialized) return;
+  window.mobileMenuInitialized = true;
+
   const mobileToggle = document.querySelector('.mobile-menu-toggle');
   const mobileNav = document.querySelector('.mobile-nav');
   const mobileBackdrop = document.querySelector('.mobile-nav-backdrop');
-  
-  if (mobileToggle && mobileNav) {
-    function closeMobileMenu() {
-      mobileNav.classList.remove('open');
-      if (mobileBackdrop) mobileBackdrop.classList.remove('open');
-      mobileToggle.classList.remove('open');
-      mobileToggle.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = 'auto';
+
+  if (!mobileToggle || !mobileNav) return;
+
+  function closeMobileMenu() {
+    mobileNav.classList.remove('open');
+    if (mobileBackdrop) mobileBackdrop.classList.remove('open');
+    mobileToggle.classList.remove('open');
+    mobileToggle.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = 'auto';
+  }
+
+  function openMobileMenu() {
+    mobileNav.classList.add('open');
+    if (mobileBackdrop) mobileBackdrop.classList.add('open');
+    mobileToggle.classList.add('open');
+    mobileToggle.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  mobileToggle.addEventListener('click', function() {
+    const isOpen = mobileNav.classList.contains('open');
+    if (isOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
     }
-    
-    function openMobileMenu() {
-      mobileNav.classList.add('open');
-      if (mobileBackdrop) mobileBackdrop.classList.add('open');
-      mobileToggle.classList.add('open');
-      mobileToggle.setAttribute('aria-expanded', 'true');
-      document.body.style.overflow = 'hidden';
-    }
-    
-    mobileToggle.addEventListener('click', function() {
-      const isOpen = mobileNav.classList.contains('open');
-      
-      if (isOpen) {
-        closeMobileMenu();
-      } else {
-        openMobileMenu();
-      }
-    });
-    
-    // Close mobile menu when clicking backdrop
-    if (mobileBackdrop) {
-      mobileBackdrop.addEventListener('click', function() {
-        closeMobileMenu();
-      });
-    }
-    
-    // Close mobile menu when clicking outside
-    document.addEventListener('click', function(e) {
-      if (!mobileToggle.contains(e.target) && !mobileNav.contains(e.target)) {
-        closeMobileMenu();
-      }
-    });
-    
-    // Close mobile menu on escape key
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && mobileNav.classList.contains('open')) {
-        closeMobileMenu();
-      }
-    });
-    
-    // Close mobile menu when clicking any navigation link
-    const mobileNavLinks = mobileNav.querySelectorAll('a, button[type="submit"]');
-    mobileNavLinks.forEach(link => {
-      link.addEventListener('click', function() {
-        closeMobileMenu();
-      });
+  });
+
+  if (mobileBackdrop) {
+    mobileBackdrop.addEventListener('click', function() {
+      closeMobileMenu();
     });
   }
-});
+
+  document.addEventListener('click', function(e) {
+    if (!mobileToggle.contains(e.target) && !mobileNav.contains(e.target)) {
+      closeMobileMenu();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && mobileNav.classList.contains('open')) {
+      closeMobileMenu();
+    }
+  });
+
+  const mobileNavLinks = mobileNav.querySelectorAll('a, button[type="submit"]');
+  mobileNavLinks.forEach(link => {
+    link.addEventListener('click', function() {
+      closeMobileMenu();
+    });
+  });
+})();
 </script>

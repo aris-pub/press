@@ -143,6 +143,125 @@ async def test_theme_persistence_across_navigation(test_server):
             await browser.close()
 
 
+async def test_theme_toggle_after_htmx_navigation(test_server):
+    """Regression test: theme toggle should work after HTMX navigation (e.g., login).
+
+    This test ensures that event listeners are properly attached to dynamically
+    loaded content via HTMX. Previously, theme toggles didn't work after HTMX
+    swapped content because DOMContentLoaded had already fired.
+    """
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        try:
+            # Login to trigger HTMX navigation to dashboard
+            await page.goto(f"{test_server}/login")
+            await page.fill('input[name="email"]', "testuser@example.com")
+            await page.fill('input[name="password"]', "testpass")
+            await page.click('button[type="submit"]')
+
+            # Wait for HTMX to process login and redirect to dashboard
+            await expect(page.locator(".success-message")).to_be_visible(timeout=5000)
+            await page.wait_for_url(f"{test_server}/dashboard", timeout=5000)
+
+            # Dashboard should be loaded via HTMX
+            await expect(page.locator("h2").first).to_contain_text("Your Scrolls")
+
+            # Verify theme toggle button exists in the dynamically loaded content
+            dark_mode_toggle = page.locator(".dark-mode-toggle").first
+            await expect(dark_mode_toggle).to_be_visible()
+
+            # Get initial theme state
+            initial_theme = await page.evaluate("""
+                () => document.documentElement.getAttribute('data-theme')
+            """)
+
+            # Click theme toggle
+            await dark_mode_toggle.click()
+            await page.wait_for_timeout(200)
+
+            # Get theme state after toggle
+            toggled_theme = await page.evaluate("""
+                () => document.documentElement.getAttribute('data-theme')
+            """)
+
+            # Verify theme actually changed (this is the regression test)
+            assert initial_theme != toggled_theme, (
+                "Theme didn't change after clicking toggle on HTMX-loaded content"
+            )
+
+            # Verify the new theme is valid
+            assert toggled_theme in ["dark", "light"], f"Invalid theme: {toggled_theme}"
+
+            # Verify localStorage was updated
+            stored_theme = await page.evaluate("""
+                () => localStorage.getItem('theme')
+            """)
+            assert stored_theme == toggled_theme, "Theme not persisted to localStorage"
+
+        finally:
+            await browser.close()
+
+
+async def test_no_script_redeclaration_errors_after_htmx_navigation(test_server):
+    """Regression test: no JavaScript redeclaration errors after HTMX navigation.
+
+    This test ensures that scripts don't redeclare variables when HTMX re-executes
+    them. Previously, module-level `let`/`const` declarations would throw
+    "identifier already declared" errors when HTMX swapped content.
+    """
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        # Collect console errors
+        console_errors = []
+        page.on("console", lambda msg: (
+            console_errors.append(msg.text) if msg.type == "error" else None
+        ))
+
+        try:
+            # Login to trigger HTMX navigation
+            await page.goto(f"{test_server}/login")
+            await page.fill('input[name="email"]', "testuser@example.com")
+            await page.fill('input[name="password"]', "testpass")
+            await page.click('button[type="submit"]')
+
+            # Wait for HTMX to complete
+            await expect(page.locator(".success-message")).to_be_visible(timeout=5000)
+            await page.wait_for_url(f"{test_server}/dashboard", timeout=5000)
+            await page.wait_for_timeout(500)  # Give time for any errors to appear
+
+            # Filter for redeclaration errors
+            redeclaration_errors = [
+                err for err in console_errors
+                if "already been declared" in err or "Identifier" in err
+            ]
+
+            # Assert no redeclaration errors occurred
+            assert len(redeclaration_errors) == 0, (
+                f"Script redeclaration errors detected after HTMX navigation: {redeclaration_errors}"
+            )
+
+            # Navigate to another page to trigger more HTMX
+            await page.click('a[href="/upload"]')
+            await page.wait_for_timeout(500)
+
+            # Check again for errors after second navigation
+            redeclaration_errors = [
+                err for err in console_errors
+                if "already been declared" in err or "Identifier" in err
+            ]
+
+            assert len(redeclaration_errors) == 0, (
+                f"Script redeclaration errors after multiple navigations: {redeclaration_errors}"
+            )
+
+        finally:
+            await browser.close()
+
+
 @pytest.mark.desktop
 async def test_toggle_functionality_and_css_changes(test_server):
     """Test that dark mode toggle works and CSS variables actually change on desktop."""

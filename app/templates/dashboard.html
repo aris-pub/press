@@ -534,200 +534,188 @@
 </style>
 
 <script>
-function openExportModal() {
-  const btn = document.getElementById('export-data-btn');
-  if (btn && btn.disabled) return;
+(function initDashboard() {
+  // Check if already initialized to prevent duplicate listeners
+  if (window.dashboardInitialized) return;
+  window.dashboardInitialized = true;
 
-  document.getElementById('export-modal').style.display = 'block';
-  document.body.style.overflow = 'hidden';
-}
+  // Modal management functions
+  window.openExportModal = function() {
+    const btn = document.getElementById('export-data-btn');
+    if (btn && btn.disabled) return;
 
-function closeExportModal() {
-  document.getElementById('export-modal').style.display = 'none';
-  document.body.style.overflow = 'auto';
-  // Reset form
-  document.getElementById('export-form').reset();
-  validateExportForm();
-}
+    document.getElementById('export-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
 
-function openDeleteModal() {
-  const btn = document.getElementById('delete-account-btn');
-  if (btn && btn.disabled) return;
+  window.closeExportModal = function() {
+    document.getElementById('export-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('export-form').reset();
+    validateExportForm();
+  };
 
-  document.getElementById('delete-modal').style.display = 'block';
-  document.body.style.overflow = 'hidden';
-}
+  window.openDeleteModal = function() {
+    const btn = document.getElementById('delete-account-btn');
+    if (btn && btn.disabled) return;
 
-function closeDeleteModal() {
-  document.getElementById('delete-modal').style.display = 'none';
-  document.body.style.overflow = 'auto';
-  // Reset form
-  document.getElementById('confirm-delete').value = '';
-  const submitBtn = document.getElementById('confirm-delete-btn');
-  submitBtn.textContent = 'DELETE MY ACCOUNT';
-  validateDeleteForm();
-}
+    document.getElementById('delete-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
 
-function validateDeleteForm() {
-  const input = document.getElementById('confirm-delete');
-  const submitBtn = document.getElementById('confirm-delete-btn');
-  
-  // Enable submit button only if user typed "DELETE" exactly
-  submitBtn.disabled = input.value !== 'DELETE';
-}
-
-async function deleteAccount() {
-  const submitBtn = document.getElementById('confirm-delete-btn');
-
-  // Show loading state
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'DELETING...';
-
-  try {
-    // Fetch CSRF token
-    const csrfResponse = await fetch('/csrf-token');
-    if (!csrfResponse.ok) {
-      // Session expired or invalid - redirect to login
-      if (csrfResponse.status === 401) {
-        window.location.href = '/login?message=session_expired';
-        return;
-      }
-      throw new Error('Failed to get CSRF token');
-    }
-    const { csrf_token } = await csrfResponse.json();
-
-    // Delete account with CSRF token
-    const response = await fetch('/account', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrf_token,
-      }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || 'Account deletion failed');
-    }
-
-    // Redirect to home page with success message
-    window.location.href = '/?message=account_deleted';
-
-  } catch (error) {
-    alert('Account deletion failed: ' + error.message);
-    // Reset button state
-    submitBtn.disabled = false;
+  window.closeDeleteModal = function() {
+    document.getElementById('delete-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('confirm-delete').value = '';
+    const submitBtn = document.getElementById('confirm-delete-btn');
     submitBtn.textContent = 'DELETE MY ACCOUNT';
-  }
-}
+    validateDeleteForm();
+  };
 
-function validateExportForm() {
-  const formatRadios = document.querySelectorAll('input[name="format"]');
-  const includeContentCheckbox = document.querySelector('input[name="include_content"]');
-  const submitBtn = document.getElementById('export-submit-btn');
-  const jsonRadio = document.querySelector('input[name="format"][value="json"]');
-  
-  // Check if any format is selected
-  const selectedFormat = Array.from(formatRadios).find(radio => radio.checked);
-  const includeContent = includeContentCheckbox.checked;
-  
-  // If content is included, automatically select JSON and disable others
-  if (includeContent) {
-    formatRadios.forEach(radio => {
-      if (radio.value === 'csv' || radio.value === 'bibtex') {
-        radio.disabled = true;
-        if (radio.checked) {
-          radio.checked = false;
+  window.validateDeleteForm = function() {
+    const input = document.getElementById('confirm-delete');
+    const submitBtn = document.getElementById('confirm-delete-btn');
+    submitBtn.disabled = input.value !== 'DELETE';
+  };
+
+  window.deleteAccount = async function() {
+    const submitBtn = document.getElementById('confirm-delete-btn');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'DELETING...';
+
+    try {
+      const csrfResponse = await fetch('/csrf-token');
+      if (!csrfResponse.ok) {
+        if (csrfResponse.status === 401) {
+          window.location.href = '/login?message=session_expired';
+          return;
         }
-      } else {
-        radio.disabled = false;
+        throw new Error('Failed to get CSRF token');
       }
-    });
-    
-    // Automatically select JSON if content is included and no format is selected
-    if (!selectedFormat || (selectedFormat && selectedFormat.value !== 'json')) {
-      jsonRadio.checked = true;
-    }
-  } else {
-    // Re-enable all format options when content is not included
-    formatRadios.forEach(radio => {
-      radio.disabled = false;
-    });
-  }
-  
-  // Check for selected format after potential auto-selection
-  const finalSelectedFormat = Array.from(formatRadios).find(radio => radio.checked);
-  
-  // Enable submit button only if format is selected and valid combination
-  const validSelection = finalSelectedFormat && (!includeContent || finalSelectedFormat.value === 'json');
-  submitBtn.disabled = !validSelection;
-}
+      const { csrf_token } = await csrfResponse.json();
 
-// Close modal on ESC key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    if (document.getElementById('export-modal').style.display === 'block') {
-      closeExportModal();
-    }
-    if (document.getElementById('delete-modal').style.display === 'block') {
-      closeDeleteModal();
-    }
-  }
-});
+      const response = await fetch('/account', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrf_token,
+        }
+      });
 
-// Handle form submission
-document.getElementById('export-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-  
-  const formData = new FormData(this);
-  const submitBtn = document.getElementById('export-submit-btn');
-  
-  // Show loading state
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Exporting...';
-  
-  // Submit form data
-  fetch('/export-data', {
-    method: 'POST',
-    body: formData
-  })
-  .then(response => {
-    if (!response.ok) {
-      return response.text().then(text => {
-        throw new Error(text || 'Export failed');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Account deletion failed');
+      }
+
+      window.location.href = '/?message=account_deleted';
+
+    } catch (error) {
+      alert('Account deletion failed: ' + error.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'DELETE MY ACCOUNT';
+    }
+  };
+
+  window.validateExportForm = function() {
+    const formatRadios = document.querySelectorAll('input[name="format"]');
+    const includeContentCheckbox = document.querySelector('input[name="include_content"]');
+    const submitBtn = document.getElementById('export-submit-btn');
+    const jsonRadio = document.querySelector('input[name="format"][value="json"]');
+
+    const selectedFormat = Array.from(formatRadios).find(radio => radio.checked);
+    const includeContent = includeContentCheckbox.checked;
+
+    if (includeContent) {
+      formatRadios.forEach(radio => {
+        if (radio.value === 'csv' || radio.value === 'bibtex') {
+          radio.disabled = true;
+          if (radio.checked) {
+            radio.checked = false;
+          }
+        } else {
+          radio.disabled = false;
+        }
+      });
+
+      if (!selectedFormat || (selectedFormat && selectedFormat.value !== 'json')) {
+        jsonRadio.checked = true;
+      }
+    } else {
+      formatRadios.forEach(radio => {
+        radio.disabled = false;
       });
     }
-    
-    // Handle file download
-    const contentDisposition = response.headers.get('content-disposition');
-    const filename = contentDisposition 
-      ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-      : 'export.txt';
-    
-    return response.blob().then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    });
-  })
-  .then(() => {
-    closeExportModal();
-  })
-  .catch(error => {
-    alert('Export failed: ' + error.message);
-  })
-  .finally(() => {
-    // Reset button state
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Export';
-  });
-});
 
+    const finalSelectedFormat = Array.from(formatRadios).find(radio => radio.checked);
+    const validSelection = finalSelectedFormat && (!includeContent || finalSelectedFormat.value === 'json');
+    submitBtn.disabled = !validSelection;
+  };
+
+  // Escape key handler
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (document.getElementById('export-modal').style.display === 'block') {
+        closeExportModal();
+      }
+      if (document.getElementById('delete-modal').style.display === 'block') {
+        closeDeleteModal();
+      }
+    }
+  });
+
+  // Export form submission
+  const exportForm = document.getElementById('export-form');
+  if (exportForm) {
+    exportForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const submitBtn = document.getElementById('export-submit-btn');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Exporting...';
+
+      fetch('/export-data', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(text || 'Export failed');
+          });
+        }
+
+        const contentDisposition = response.headers.get('content-disposition');
+        const filename = contentDisposition
+          ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+          : 'export.txt';
+
+        return response.blob().then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        });
+      })
+      .then(() => {
+        closeExportModal();
+      })
+      .catch(error => {
+        alert('Export failed: ' + error.message);
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Export';
+      });
+    });
+  }
+})();
 </script>
 {% endblock %}
