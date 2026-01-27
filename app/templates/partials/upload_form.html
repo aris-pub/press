@@ -99,7 +99,7 @@
     {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
 
     <div class="form-actions">
-        {{ button("Preview Scroll", type="submit", variant="primary", name="action", value="publish") }}
+        {{ button("Preview Scroll", type="submit", variant="primary", name="action", value="publish", loading_text="Uploading...") }}
     </div>
 </form>
 
@@ -176,6 +176,10 @@ function handleFileSelection(file) {
     showFileInfo(file);
     fileUploadZone.classList.add('has-file');
     showSuccess('File ready for upload');
+
+    // Store file size for loading indicator
+    const formattedSize = formatFileSize(file.size);
+    document.getElementById('upload-form').setAttribute('data-file-size', formattedSize);
 }
 
 function showFileInfo(file) {
@@ -223,6 +227,21 @@ document.getElementById('upload-form').addEventListener('submit', function(e) {
         e.preventDefault();
         showError('Please select an HTML file before submitting');
         return false;
+    }
+});
+
+// Update loading text with file size before upload
+document.getElementById('upload-form').addEventListener('htmx:beforeRequest', function(e) {
+    const fileSize = this.getAttribute('data-file-size');
+    if (fileSize) {
+        const indicator = this.querySelector('.htmx-indicator');
+        if (indicator) {
+            const spinner = indicator.querySelector('.spinner');
+            indicator.textContent = `Uploading ${fileSize}...`;
+            if (spinner) {
+                indicator.prepend(spinner);
+            }
+        }
     }
 });
 })();

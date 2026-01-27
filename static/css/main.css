@@ -495,8 +495,9 @@ button.btn, a.btn {
 .btn-primary { background: var(--primary-gray); color: var(--white); }
 .btn-primary:hover:not(:disabled) { background: var(--red); }
 .btn-secondary { color: var(--gray-medium); border: 1px solid var(--gray-lighter); background: var(--white); }
-.btn-secondary:hover { background: var(--gray-bg); }
+.btn-secondary:hover:not(:disabled) { background: var(--gray-bg); }
 .btn-primary:disabled { background: var(--gray-lighter); cursor: not-allowed; }
+.btn:disabled:hover { cursor: not-allowed; }
 
 /* Form styles */
 .auth-container {
@@ -739,6 +740,33 @@ button.btn, a.btn {
 }
 .htmx-request .btn-text {
   opacity: 0.6;
+}
+
+/* Disable form during HTMX upload */
+form.htmx-request {
+  pointer-events: none;
+  opacity: 0.7;
+}
+form.htmx-request button {
+  pointer-events: auto;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: 0.5em;
+  vertical-align: middle;
 }
 
 /* Homepage styles */

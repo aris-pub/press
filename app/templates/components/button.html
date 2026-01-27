@@ -23,7 +23,7 @@ Usage:
 >
   <span class="btn-text">{{ text }}</span>
   {% if loading_text %}
-  <span class="htmx-indicator" {{ {"id": hx_indicator.lstrip('#') if hx_indicator else none} | xmlattr }}>{{ loading_text }}</span>
+  <span class="htmx-indicator" {{ {"id": hx_indicator.lstrip('#') if hx_indicator else none} | xmlattr }}><span class="spinner"></span>{{ loading_text }}</span>
   {% endif %}
 </button>
 {% endmacro %}
