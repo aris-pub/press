@@ -407,6 +407,7 @@ class EmailVerificationMiddleware(BaseHTTPMiddleware):
         "/dashboard",
         "/scroll",  # Public scroll viewing
         "/static",
+        "/brand",  # Brand assets (logos, etc.)
         "/favicon.ico",
         "/health",
         "/csrf-token",  # CSRF token endpoint

@@ -400,8 +400,13 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     )
     papers = published_papers.all()
 
+    # Check if this is an HTMX request (for content-only swap)
+    is_htmx = request.headers.get("HX-Request") == "true"
+
     return templates.TemplateResponse(
-        request, "dashboard.html", {"current_user": current_user, "papers": papers}
+        request,
+        "dashboard_content.html" if is_htmx else "dashboard.html",
+        {"current_user": current_user, "papers": papers}
     )
 
 

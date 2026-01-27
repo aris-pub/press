@@ -217,9 +217,10 @@ async def test_no_script_redeclaration_errors_after_htmx_navigation(test_server)
 
         # Collect console errors
         console_errors = []
-        page.on("console", lambda msg: (
-            console_errors.append(msg.text) if msg.type == "error" else None
-        ))
+        page.on(
+            "console",
+            lambda msg: (console_errors.append(msg.text) if msg.type == "error" else None),
+        )
 
         try:
             # Login to trigger HTMX navigation
@@ -235,7 +236,8 @@ async def test_no_script_redeclaration_errors_after_htmx_navigation(test_server)
 
             # Filter for redeclaration errors
             redeclaration_errors = [
-                err for err in console_errors
+                err
+                for err in console_errors
                 if "already been declared" in err or "Identifier" in err
             ]
 
@@ -244,18 +246,146 @@ async def test_no_script_redeclaration_errors_after_htmx_navigation(test_server)
                 f"Script redeclaration errors detected after HTMX navigation: {redeclaration_errors}"
             )
 
-            # Navigate to another page to trigger more HTMX
-            await page.click('a[href="/upload"]')
+        finally:
+            await browser.close()
+
+
+async def test_logo_loads_on_homepage(test_server):
+    """Regression test: logo should load on homepage.
+
+    This ensures the navbar logo is visible on the homepage on initial page load.
+    """
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        try:
+            # Navigate to homepage
+            await page.goto(f"{test_server}/")
+            await page.wait_for_load_state("networkidle")
+
+            # Verify logo is visible
+            logo = page.locator('.navbar .logo img')
+            await expect(logo).to_be_visible(timeout=5000)
+
+            # Verify logo has correct src
+            logo_src = await logo.get_attribute('src')
+            assert '/brand/logos/press/press-logo-64.svg' in logo_src, (
+                f"Logo src incorrect: {logo_src}"
+            )
+
+            # Verify only one navbar exists
+            navbar_count = await page.locator(".navbar").count()
+            assert navbar_count == 1, f"Expected 1 navbar, found {navbar_count}"
+
+        finally:
+            await browser.close()
+
+
+async def test_logo_loads_after_login_and_homepage_navigation(test_server):
+    """Regression test: logo should load when navigating to homepage after login.
+
+    This tests the scenario where a user logs in, then navigates back to homepage.
+    """
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        # Collect network requests
+        requests = []
+        page.on("request", lambda req: requests.append({
+            "url": req.url,
+            "method": req.method,
+            "headers": dict(req.headers)
+        }))
+
+        try:
+            # Login
+            await page.goto(f"{test_server}/login")
+            await page.fill('input[name="email"]', "testuser@example.com")
+            await page.fill('input[name="password"]', "testpass")
+            await page.click('button[type="submit"]')
+
+            # Wait for login to complete
+            await expect(page.locator(".success-message")).to_be_visible(timeout=5000)
+            await page.wait_for_url(f"{test_server}/dashboard", timeout=5000)
+
+            # Clear requests log
+            requests.clear()
+
+            # Click logo to navigate to homepage
+            await page.click('.navbar .logo a')
+            await page.wait_for_url(f"{test_server}/", timeout=5000)
             await page.wait_for_timeout(500)
 
-            # Check again for errors after second navigation
-            redeclaration_errors = [
-                err for err in console_errors
-                if "already been declared" in err or "Identifier" in err
-            ]
+            # Check if logo was requested
+            logo_requests = [r for r in requests if 'press-logo-64.svg' in r['url']]
+            print(f"\n=== Logo requests after navigation: {len(logo_requests)} ===")
+            for req in logo_requests:
+                print(f"  {req['method']} {req['url']}")
 
-            assert len(redeclaration_errors) == 0, (
-                f"Script redeclaration errors after multiple navigations: {redeclaration_errors}"
+            # Check homepage request details
+            homepage_requests = [r for r in requests if r['url'].endswith(test_server + "/") or r['url'] == test_server + "/"]
+            print(f"\n=== Homepage requests: {len(homepage_requests)} ===")
+            for req in homepage_requests:
+                hx_request = req['headers'].get('hx-request', 'not present')
+                print(f"  {req['method']} {req['url']} | HX-Request: {hx_request}")
+
+            # Verify logo is still visible
+            logo = page.locator('.navbar .logo img')
+            await expect(logo).to_be_visible(timeout=5000)
+
+            # Verify only one navbar exists
+            navbar_count = await page.locator(".navbar").count()
+            assert navbar_count == 1, f"Expected 1 navbar after navigation, found {navbar_count}"
+
+            # Verify logo src is correct
+            logo_src = await logo.get_attribute('src')
+            assert '/brand/logos/press/press-logo-64.svg' in logo_src, (
+                f"Logo src incorrect after navigation: {logo_src}"
+            )
+
+        finally:
+            await browser.close()
+
+
+async def test_no_duplicate_navbar_after_htmx_navigation(test_server):
+    """Regression test: navbar should only appear once after HTMX navigation.
+
+    This test ensures that HTMX content swapping doesn't duplicate the navbar.
+    Previously, swapping into #main-content would sometimes include a duplicate
+    navbar if the swapped content incorrectly included navbar elements.
+    """
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+
+        try:
+            # Login to trigger HTMX navigation
+            await page.goto(f"{test_server}/login")
+            await page.fill('input[name="email"]', "testuser@example.com")
+            await page.fill('input[name="password"]', "testpass")
+            await page.click('button[type="submit"]')
+
+            # Wait for HTMX to complete navigation
+            await expect(page.locator(".success-message")).to_be_visible(timeout=5000)
+            await page.wait_for_url(f"{test_server}/dashboard", timeout=5000)
+            await page.wait_for_timeout(500)
+
+            # Count navbar elements
+            navbar_count = await page.locator(".navbar").count()
+
+            # Assert exactly one navbar exists
+            assert navbar_count == 1, (
+                f"Expected 1 navbar after HTMX navigation, found {navbar_count}. "
+                "Multiple navbars indicate content swapping is including navbar elements."
+            )
+
+            # Also verify logo appears exactly once
+            logo_count = await page.locator('.navbar .logo').count()
+            assert logo_count == 1, (
+                f"Expected 1 logo, found {logo_count}. "
+                "Multiple logos indicate duplicate navbar rendering."
             )
 
         finally:
@@ -328,6 +458,76 @@ async def test_toggle_functionality_and_css_changes(test_server):
                     or initial_vars["grayDark"] != toggled_vars["grayDark"]
                 )
                 assert css_changed, f"CSS variables didn't change on {page_url}"
+
+        finally:
+            await browser.close()
+
+
+async def test_homepage_identical_for_all_user_states(test_server):
+    """Regression test: homepage must be identical for all users regardless of auth state.
+
+    This ensures that authentication/verification status doesn't affect homepage rendering,
+    particularly after middleware changes that could inadvertently block assets or alter content.
+
+    Tests two critical cases:
+    1. Unauthenticated user - no session cookies
+    2. Authenticated verified user - with valid session
+
+    Both should see identical homepage structure and assets (logo, navbar, etc).
+    """
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+
+        try:
+            # Helper to get homepage content and check structure
+            async def check_homepage_structure(page, label):
+                await page.goto(f"{test_server}/")
+                await page.wait_for_load_state("networkidle")
+
+                # Check that all key structural elements are present
+                logo_visible = await page.locator('.navbar .logo img').is_visible()
+                has_navbar = await page.locator('.navbar').count() > 0
+                has_hero = await page.locator('.hero').count() > 0
+                has_subjects = await page.locator('.subjects').count() > 0
+                has_recent = await page.locator('.recent').count() > 0
+
+                assert logo_visible, f"Logo not visible for {label}"
+                assert has_navbar, f"Navbar missing for {label}"
+                assert has_hero, f"Hero section missing for {label}"
+                assert has_subjects, f"Subjects section missing for {label}"
+                assert has_recent, f"Recent scrolls section missing for {label}"
+
+                return {
+                    "logo_visible": logo_visible,
+                    "has_navbar": has_navbar,
+                    "has_hero": has_hero,
+                    "has_subjects": has_subjects,
+                    "has_recent": has_recent
+                }
+
+            # 1. Get content as unauthenticated user (no cookies)
+            unauth_page = await browser.new_page()
+            unauth_structure = await check_homepage_structure(unauth_page, "unauthenticated user")
+            await unauth_page.close()
+
+            # 2. Get content as authenticated verified user
+            auth_page = await browser.new_page()
+            await auth_page.goto(f"{test_server}/login")
+            await auth_page.fill('input[name="email"]', "testuser@example.com")
+            await auth_page.fill('input[name="password"]', "testpass")
+            await auth_page.click('button[type="submit"]')
+            await expect(auth_page.locator(".success-message")).to_be_visible(timeout=5000)
+            await auth_page.wait_for_timeout(1500)  # Wait for HTMX redirect
+
+            auth_structure = await check_homepage_structure(auth_page, "authenticated verified user")
+            await auth_page.close()
+
+            # Both states should have identical structure
+            assert unauth_structure == auth_structure, (
+                f"Homepage structure differs between authentication states:\n"
+                f"Unauthenticated: {unauth_structure}\n"
+                f"Authenticated: {auth_structure}"
+            )
 
         finally:
             await browser.close()

@@ -1,0 +1,715 @@
+{% from "components/scroll_card.html" import scroll_card %}
+{% from "components/button.html" import link_button, button %}
+{% from "components/form_input.html" import form_input %}
+<div class="container">
+  {% if not current_user.email_verified %}
+  <div class="verification-warning">
+    <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+    </svg>
+    <div class="warning-content">
+      <h3>Please Verify Your Email</h3>
+      <p>You need to verify your email address before you can upload scrolls or access other features.</p>
+      <div class="warning-actions">
+        <form hx-post="/resend-verification" hx-swap="innerHTML" hx-target="#main-content" style="display: inline;">
+          <button type="submit" class="btn btn-primary">Resend Verification Email</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="recent">
+    <div class="dashboard-header">
+      <h2>Your Scrolls ({{ papers|length }})</h2>
+    </div>
+    
+    {% if papers %}
+      <div class="scrolls-grid">
+        {% for paper_row in papers %}
+        {% set paper = paper_row[0] %}
+        {% set subject_name = paper_row[1] %}
+        {{ scroll_card(
+            paper.title,
+            paper.authors,
+            paper.abstract,
+            paper.keywords,
+            subject_name,
+            "recently",
+            "v" + paper.version|string,
+            paper.url_hash
+        ) }}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-results">
+        <h2>No published papers yet</h2>
+        <p>Ready to share your research with the world?</p>
+        <div class="no-results-suggestions">
+          <p>Upload your first scroll to get started.</p>
+          <div class="suggestion-links">
+            {% if current_user.email_verified %}
+              {{ link_button("Upload Your First Scroll", href="/upload", variant="primary") }}
+            {% else %}
+              <button class="btn btn-primary" disabled>Upload Your First Scroll</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Account Management Section -->
+  <div class="account-management">
+    <h2>Account Management</h2>
+    <div class="account-actions">
+      {% if papers %}
+        <button id="export-data-btn" class="btn btn-danger" onclick="openExportModal()" {% if not current_user.email_verified %}disabled{% endif %}>Export Data</button>
+      {% endif %}
+      <button id="delete-account-btn" class="btn btn-danger" onclick="openDeleteModal()">Delete Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div id="export-modal" class="modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeExportModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Export Your Data</h3>
+      <button class="modal-close" onclick="closeExportModal()" aria-label="Close">&times;</button>
+    </div>
+    <form id="export-form" method="post" action="/export-data">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Export Format:</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="format" value="csv" onchange="validateExportForm()">
+              <span>CSV</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="format" value="json" onchange="validateExportForm()">
+              <span>JSON</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="format" value="bibtex" onchange="validateExportForm()">
+              <span>BibTeX</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="include_content" value="true" onchange="validateExportForm()">
+            <span>Include HTML content</span>
+          </label>
+          <small class="form-help">Note: Only JSON format supports HTML content inclusion</small>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
+        <button type="submit" id="export-submit-btn" class="btn btn-primary" disabled>Export</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div id="delete-modal" class="modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeDeleteModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Delete Account</h3>
+      <button class="modal-close" onclick="closeDeleteModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="warning-message">
+        <p><strong style="color: var(--red);">This action cannot be undone.</strong></p>
+        <p>Deleting your account will permanently remove all your personal information, including:</p>
+        <ul>
+          <li>Your profile and login credentials</li>
+          <li>Your account settings and preferences</li>
+          <li>Your personal data and session information</li>
+        </ul>
+        <p><strong>Your published scrolls will remain available</strong> to preserve the scholarly record and maintain citation links. However, they will no longer be associated with your account.</p>
+      </div>
+      <div class="form-group">
+        <label for="confirm-delete" class="form-label">Type "DELETE" to confirm:</label>
+        <input 
+          class="form-input"
+          type="text"
+          id="confirm-delete"
+          name="confirm_delete"
+          placeholder="Type DELETE here"
+          value=""
+          oninput="validateDeleteForm()"
+          autocomplete="off"
+        >
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      <button type="button" id="confirm-delete-btn" class="btn-delete-account" onclick="deleteAccount()" disabled>DELETE MY ACCOUNT</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.verification-warning {
+  display: flex;
+  gap: var(--space-lg);
+  align-items: flex-start;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-lg);
+}
+
+.warning-icon {
+  width: 32px;
+  height: 32px;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-content h3 {
+  margin: 0 0 var(--space-sm) 0;
+  color: #92400e;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.warning-content p {
+  margin: 0 0 var(--space-md) 0;
+  color: #92400e;
+  font-size: var(--text-base);
+}
+
+.warning-actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.account-management {
+  margin-top: var(--space-xxl);
+  margin-bottom: calc(var(--space-xxl) * 2);
+  padding-top: var(--space-xl);
+  padding-bottom: calc(var(--space-xl) * 2);
+  border-top: 1px solid var(--gray-lightest);
+}
+
+.account-management h2 {
+  margin-bottom: var(--space-lg);
+  font-family: var(--font-serif);
+}
+
+.account-actions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.warning-message {
+  background: var(--gray-bg);
+  border: 1px solid var(--gray-light);
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.warning-message p {
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--text-color);
+}
+
+.warning-message ul {
+  margin: var(--space-sm) 0;
+  padding-left: var(--space-lg);
+}
+
+.warning-message li {
+  margin-bottom: var(--space-xs);
+  color: var(--text-color);
+}
+
+.btn-delete-account {
+  background: var(--gray-light);
+  color: var(--gray);
+  border: 1px solid var(--gray-light);
+  border-radius: var(--border-radius);
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--text-base);
+  font-weight: 500;
+  cursor: not-allowed;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-account:enabled {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+  cursor: pointer;
+}
+
+.btn-delete-account:enabled:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--white);
+  border: 1px solid var(--gray-light);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--gray-lightest);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  color: var(--text-color);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: var(--text-xl);
+  cursor: pointer;
+  color: var(--gray);
+  padding: var(--space-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius);
+}
+
+.modal-close:hover {
+  background: var(--gray-bg);
+  color: var(--text-color);
+}
+
+.modal-body {
+  padding: var(--space-lg);
+}
+
+.form-group {
+  margin-bottom: var(--space-lg);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: 500;
+  color: var(--gray-dark);
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-lg);
+}
+
+.radio-label,
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  font-weight: normal;
+  margin-bottom: 0 !important;
+}
+
+.radio-label input[type="radio"],
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+}
+
+.radio-label:has(input:disabled),
+.radio-label:has(input:disabled) span {
+  color: var(--gray-light);
+  cursor: not-allowed;
+}
+
+.form-help {
+  display: block;
+  margin-top: var(--space-xs);
+  color: var(--gray);
+  font-size: var(--text-sm);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-top: 1px solid var(--gray-lightest);
+}
+
+/* Mobile dashboard and modal styles */
+@media (max-width: 768px) {
+  .verification-warning {
+    flex-direction: column;
+    gap: var(--mobile-space-md);
+    padding: var(--mobile-space-lg);
+    margin-top: var(--mobile-space-xl);
+    margin-bottom: var(--mobile-space-lg);
+  }
+
+  .warning-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .warning-content h3 {
+    font-size: var(--mobile-text-lg);
+  }
+
+  .warning-content p {
+    font-size: var(--mobile-text-base);
+  }
+
+  .warning-actions {
+    flex-direction: column;
+    gap: var(--mobile-space-sm);
+  }
+
+  .warning-actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    gap: var(--mobile-space-lg);
+    align-items: stretch;
+    margin-bottom: var(--mobile-space-xl);
+  }
+  
+  .dashboard-header h2 {
+    font-size: var(--mobile-text-xl);
+    text-align: center;
+  }
+  
+  .account-management {
+    margin-top: var(--mobile-space-xxl);
+    margin-bottom: calc(var(--mobile-space-xxl) * 2);
+    padding-top: var(--mobile-space-xl);
+    padding-bottom: calc(var(--mobile-space-xl) * 2);
+  }
+  
+  .account-management h2 {
+    font-size: var(--mobile-text-xl);
+    text-align: center;
+  }
+  
+  .account-actions {
+    flex-direction: column;
+    gap: var(--mobile-space-md);
+  }
+  
+  .account-actions .btn {
+    width: 100%;
+    padding: var(--mobile-space-lg);
+    font-size: var(--mobile-text-base);
+    min-height: 44px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    max-width: none;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  
+  .modal-header {
+    padding: var(--mobile-space-lg);
+  }
+  
+  .modal-header h3 {
+    font-size: var(--mobile-text-xl);
+  }
+  
+  .modal-body {
+    padding: var(--mobile-space-lg);
+  }
+  
+  .form-group {
+    margin-bottom: var(--mobile-space-lg);
+  }
+  
+  .form-group label {
+    font-size: var(--mobile-text-base);
+    margin-bottom: var(--mobile-space-sm);
+  }
+  
+  .radio-group {
+    flex-direction: column;
+    gap: var(--mobile-space-md);
+  }
+  
+  .radio-label,
+  .checkbox-label {
+    gap: var(--mobile-space-sm);
+    padding: var(--mobile-space-sm) 0;
+    min-height: 44px;
+    align-items: center;
+  }
+  
+  .form-help {
+    font-size: var(--mobile-text-xs);
+    margin-top: var(--mobile-space-xs);
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: var(--mobile-space-sm);
+    padding: var(--mobile-space-lg);
+  }
+  
+  .modal-actions .btn,
+  .modal-actions .btn-delete-account {
+    width: 100%;
+    padding: var(--mobile-space-lg);
+    font-size: var(--mobile-text-base);
+    min-height: 44px;
+  }
+}
+</style>
+
+<script>
+(function initDashboard() {
+  // Check if already initialized to prevent duplicate listeners
+  if (window.dashboardInitialized) return;
+  window.dashboardInitialized = true;
+
+  // Modal management functions
+  window.openExportModal = function() {
+    const btn = document.getElementById('export-data-btn');
+    if (btn && btn.disabled) return;
+
+    document.getElementById('export-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeExportModal = function() {
+    document.getElementById('export-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('export-form').reset();
+    validateExportForm();
+  };
+
+  window.openDeleteModal = function() {
+    const btn = document.getElementById('delete-account-btn');
+    if (btn && btn.disabled) return;
+
+    document.getElementById('delete-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeDeleteModal = function() {
+    document.getElementById('delete-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('confirm-delete').value = '';
+    const submitBtn = document.getElementById('confirm-delete-btn');
+    submitBtn.textContent = 'DELETE MY ACCOUNT';
+    validateDeleteForm();
+  };
+
+  window.validateDeleteForm = function() {
+    const input = document.getElementById('confirm-delete');
+    const submitBtn = document.getElementById('confirm-delete-btn');
+    submitBtn.disabled = input.value !== 'DELETE';
+  };
+
+  window.deleteAccount = async function() {
+    const submitBtn = document.getElementById('confirm-delete-btn');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'DELETING...';
+
+    try {
+      const csrfResponse = await fetch('/csrf-token');
+      if (!csrfResponse.ok) {
+        if (csrfResponse.status === 401) {
+          window.location.href = '/login?message=session_expired';
+          return;
+        }
+        throw new Error('Failed to get CSRF token');
+      }
+      const { csrf_token } = await csrfResponse.json();
+
+      const response = await fetch('/account', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrf_token,
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Account deletion failed');
+      }
+
+      window.location.href = '/?message=account_deleted';
+
+    } catch (error) {
+      alert('Account deletion failed: ' + error.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'DELETE MY ACCOUNT';
+    }
+  };
+
+  window.validateExportForm = function() {
+    const formatRadios = document.querySelectorAll('input[name="format"]');
+    const includeContentCheckbox = document.querySelector('input[name="include_content"]');
+    const submitBtn = document.getElementById('export-submit-btn');
+    const jsonRadio = document.querySelector('input[name="format"][value="json"]');
+
+    const selectedFormat = Array.from(formatRadios).find(radio => radio.checked);
+    const includeContent = includeContentCheckbox.checked;
+
+    if (includeContent) {
+      formatRadios.forEach(radio => {
+        if (radio.value === 'csv' || radio.value === 'bibtex') {
+          radio.disabled = true;
+          if (radio.checked) {
+            radio.checked = false;
+          }
+        } else {
+          radio.disabled = false;
+        }
+      });
+
+      if (!selectedFormat || (selectedFormat && selectedFormat.value !== 'json')) {
+        jsonRadio.checked = true;
+      }
+    } else {
+      formatRadios.forEach(radio => {
+        radio.disabled = false;
+      });
+    }
+
+    const finalSelectedFormat = Array.from(formatRadios).find(radio => radio.checked);
+    const validSelection = finalSelectedFormat && (!includeContent || finalSelectedFormat.value === 'json');
+    submitBtn.disabled = !validSelection;
+  };
+
+  // Escape key handler
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (document.getElementById('export-modal').style.display === 'block') {
+        closeExportModal();
+      }
+      if (document.getElementById('delete-modal').style.display === 'block') {
+        closeDeleteModal();
+      }
+    }
+  });
+
+  // Export form submission
+  const exportForm = document.getElementById('export-form');
+  if (exportForm) {
+    exportForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const submitBtn = document.getElementById('export-submit-btn');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Exporting...';
+
+      fetch('/export-data', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(text || 'Export failed');
+          });
+        }
+
+        const contentDisposition = response.headers.get('content-disposition');
+        const filename = contentDisposition
+          ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+          : 'export.txt';
+
+        return response.blob().then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        });
+      })
+      .then(() => {
+        closeExportModal();
+      })
+      .catch(error => {
+        alert('Export failed: ' + error.message);
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Export';
+      });
+    });
+  }
+})();
+</script>

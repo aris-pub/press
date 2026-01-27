@@ -328,14 +328,14 @@ async def register_form(
         log_auth_event("register", normalized_email, True, request, user_id=str(db_user.id))
 
         # Return success partial with automatic login
+        # Use JavaScript redirect instead of HTMX to avoid nested content bug
         response = templates.TemplateResponse(
             request,
-            "auth/partials/success.html",
+            "auth/partials/success_redirect.html",
             {
                 "title": "Account Created!",
                 "message": f"Welcome to Scroll Press, {db_user.display_name}! Please check your email to verify your account.",
-                "action_text": "Go to Home",
-                "action_url": "/",
+                "redirect_url": "/",
             },
         )
 
@@ -611,14 +611,15 @@ async def resend_verification(
             )
             get_logger().info(f"Resent verification email to {current_user.email}")
 
+        # Show success message briefly, then redirect to homepage
+        # Use JavaScript redirect instead of HTMX to avoid nested content bug
         return templates.TemplateResponse(
             request,
-            "auth/partials/success.html",
+            "auth/partials/success_redirect.html",
             {
                 "title": "Email Sent",
                 "message": "Verification email sent! Please check your inbox.",
-                "action_text": "Back to Home",
-                "action_url": "/",
+                "redirect_url": "/",
             },
         )
 

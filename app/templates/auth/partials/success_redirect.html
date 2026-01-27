@@ -1,0 +1,12 @@
+<div class="success-message">
+    <h2>{{ title }}</h2>
+    <p>{{ message }}</p>
+    <p>Redirecting...</p>
+</div>
+
+<script>
+    // Use full page redirect instead of HTMX to avoid nested content bug
+    setTimeout(() => {
+        window.location.href = "{{ redirect_url }}";
+    }, 1500);
+</script>
