@@ -197,8 +197,8 @@ class TestHTMLProcessorIntegration:
                 of external link limits in our security system.</p>
         """
 
-        # Add 15 external links
-        for i in range(15):
+        # Add 30 external links (exceeds limit of 25)
+        for i in range(30):
             html_content += f'<a href="https://example{i}.com">Reference {i}</a>\n'
 
         html_content += "</body></html>"
@@ -211,7 +211,7 @@ class TestHTMLProcessorIntegration:
         assert not success
         assert data["validation_status"] == "rejected"
 
-        # Check for excessive links error
+        # Check for excessive links error (limit is 25)
         assert any(e["type"] == "excessive_links" for e in errors)
 
     @pytest.mark.asyncio
