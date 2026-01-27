@@ -13,7 +13,7 @@
 </div>
 {% endif %}
 
-<form id="upload-form" hx-post="/upload-form" hx-target="#upload-container" hx-swap="innerHTML" enctype="multipart/form-data">
+<form id="upload-form" hx-post="/upload-form" hx-target="#upload-container" hx-swap="innerHTML" enctype="multipart/form-data" hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'>
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research scroll") }}
 

@@ -73,3 +73,6 @@ seed_papers/graph_traversal_myst.md
 
 # Alembic versions (keep the directory structure but not specific migrations for now)
 # alembic/versions/*.py
+
+# Claude skills symlink
+.claude/skills

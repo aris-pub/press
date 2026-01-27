@@ -266,6 +266,8 @@ async def get_paper_html(
             "style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
             "img-src 'self' data: https:; "
             "font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
+            "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; "
+            "form-action 'self'; "
             "frame-ancestors 'self';"
         ),
     }
@@ -439,7 +441,9 @@ async def upload_form(
         try:
             html_content = html_content_bytes.decode("utf-8").strip()
         except UnicodeDecodeError:
-            raise ValueError("File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding.")
+            raise ValueError(
+                "File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding."
+            )
 
         # Strip other inputs once to avoid creating multiple copies in memory
         title = title.strip() if title else ""
@@ -458,7 +462,10 @@ async def upload_form(
 
         # Basic HTML structure validation
         import re
-        has_html_tags = re.search(r'<html|<head|<body|<title|<div|<p|<h[1-6]|<script|<style', html_content, re.IGNORECASE)
+
+        has_html_tags = re.search(
+            r"<html|<head|<body|<title|<div|<p|<h[1-6]|<script|<style", html_content, re.IGNORECASE
+        )
         if not has_html_tags:
             raise ValueError("File does not appear to contain valid HTML content")
         if not license or license not in ["cc-by-4.0", "arr"]:

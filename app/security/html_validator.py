@@ -43,22 +43,6 @@ class HTMLValidator:
         "base",  # Base tag can redirect all relative URLs
     ]
 
-    # Meta tags that are allowed (others will be rejected)
-    ALLOWED_META_NAMES = [
-        "author",
-        "description",
-        "keywords",
-        "title",
-        "subject",
-        "language",
-        "date",
-        "revised",
-        "generator",
-        "viewport",
-        "charset",
-        "content-type",
-    ]
-
     # Attributes that are never allowed
     FORBIDDEN_ATTRIBUTES = [
         # Event handlers
@@ -206,30 +190,28 @@ class HTMLValidator:
             pos = content.find(tag_str[:50])
             line_num = self._get_line_number(content, pos) if pos != -1 else None
 
-            # Check for http-equiv refresh which can be dangerous
+            # Check for dangerous http-equiv values
             http_equiv = tag.get("http-equiv", "").lower()
-            if http_equiv == "refresh":
+
+            DANGEROUS_HTTP_EQUIV = [
+                "refresh",
+                "set-cookie",
+                "content-security-policy"
+            ]
+
+            if http_equiv in DANGEROUS_HTTP_EQUIV:
                 self.errors.append(
                     HTMLValidationError(
                         error_type="dangerous_meta",
-                        message="Meta refresh tags are not allowed (security risk)",
+                        message=f"Meta tag with http-equiv='{http_equiv}' is not allowed (security risk)",
                         line_number=line_num,
                         element=tag_str,
                     )
                 )
                 continue
 
-            # Check name attribute for allowed values
-            name_value = tag.get("name", "").lower()
-            if name_value and name_value not in [name.lower() for name in self.ALLOWED_META_NAMES]:
-                self.errors.append(
-                    HTMLValidationError(
-                        error_type="forbidden_meta",
-                        message=f"Meta tag with name '{name_value}' is not allowed",
-                        line_number=line_num,
-                        element=tag_str,
-                    )
-                )
+            # All meta tags with name, property, or charset attributes are allowed
+            # These are metadata only and pose no XSS risk
 
     def _check_forbidden_attributes(self, soup, content: str):
         """Check for forbidden attributes like event handlers."""

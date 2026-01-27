@@ -280,7 +280,9 @@ class TestFileUploadFormSubmission:
         await test_db.refresh(subject)
 
         # Create content with invalid UTF-8 bytes
-        invalid_bytes = b"<!DOCTYPE html><html><body><h1>Test</h1><p>Invalid: \xff\xfe</p></body></html>"
+        invalid_bytes = (
+            b"<!DOCTYPE html><html><body><h1>Test</h1><p>Invalid: \xff\xfe</p></body></html>"
+        )
 
         upload_data = {
             "title": "Invalid Encoding Test",
@@ -325,7 +327,9 @@ class TestFileUploadFormSubmission:
 
         response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
         assert response.status_code == 422
-        assert "HTML file is required" in response.text or "HTML content is required" in response.text
+        assert (
+            "HTML file is required" in response.text or "HTML content is required" in response.text
+        )
 
 
 class TestFileUploadUIElements:

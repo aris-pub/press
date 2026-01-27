@@ -287,11 +287,21 @@ class TestHTMLValidator:
         assert not is_valid
         assert any(error["type"] == "dangerous_meta" for error in errors)
 
-        # Unknown meta names should be rejected
-        unknown_html = '<meta name="evil-tracker" content="malicious">'
-        is_valid, errors = self.validator.validate(unknown_html)
+        # Meta tags with name attribute should be allowed (metadata only)
+        metadata_html = '<meta name="dcterms:date" content="2025-01-05"><meta name="og:title" content="Research">'
+        is_valid, errors = self.validator.validate(metadata_html)
+        assert is_valid, "Meta tags with name attribute should be allowed"
+
+        # Dangerous http-equiv values should be rejected
+        csp_override_html = '<meta http-equiv="content-security-policy" content="default-src *">'
+        is_valid, errors = self.validator.validate(csp_override_html)
         assert not is_valid
-        assert any(error["type"] == "forbidden_meta" for error in errors)
+        assert any(error["type"] == "dangerous_meta" for error in errors)
+
+        set_cookie_html = '<meta http-equiv="set-cookie" content="session=evil">'
+        is_valid, errors = self.validator.validate(set_cookie_html)
+        assert not is_valid
+        assert any(error["type"] == "dangerous_meta" for error in errors)
 
     def test_error_details_complete(self):
         """Test that error objects contain all expected details."""
