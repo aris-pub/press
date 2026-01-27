@@ -1,6 +1,5 @@
 """HTML validation module that rejects dangerous content instead of sanitizing."""
 
-import re
 from typing import Dict, List, Tuple
 
 from bs4 import BeautifulSoup
@@ -112,40 +111,59 @@ class HTMLValidator:
             Tuple of (is_valid, list_of_error_dicts)
         """
         self.errors = []
-        lines = html_content.split("\n")
 
-        # Check for forbidden tags
-        self._check_forbidden_tags(html_content, lines)
+        # MEMORY OPTIMIZATION: Strip out script contents before parsing
+        # We validate HTML structure and attributes, not JavaScript code
+        # This prevents BeautifulSoup from building huge DOM trees for minified libs (Plotly, etc)
+        # Keep style contents because we need to validate CSS
+        content_for_parsing = html_content
+        script_start = 0
+        while True:
+            script_start = content_for_parsing.find('<script', script_start)
+            if script_start == -1:
+                break
+            script_tag_end = content_for_parsing.find('>', script_start)
+            if script_tag_end == -1:
+                break
+            script_close = content_for_parsing.find('</script>', script_tag_end)
+            if script_close == -1:
+                break
+            # Replace script contents with empty string, keep opening/closing tags
+            content_for_parsing = (
+                content_for_parsing[:script_tag_end + 1] +
+                content_for_parsing[script_close:]
+            )
+            script_start = script_tag_end + 1
 
-        # Check meta tags specifically (some allowed, some not)
-        self._check_meta_tags(html_content, lines)
+        # Parse HTML once and reuse for all checks (memory optimization)
+        # Use lxml parser if available (faster, more memory efficient)
+        try:
+            soup = BeautifulSoup(content_for_parsing, "lxml")
+        except Exception:
+            # Fall back to html.parser if lxml not available
+            soup = BeautifulSoup(content_for_parsing, "html.parser")
 
-        # Check for forbidden attributes
-        self._check_forbidden_attributes(html_content, lines)
-
-        # Check for dangerous CSS
-        self._check_dangerous_css(html_content, lines)
-
-        # Check for JavaScript URLs
-        self._check_javascript_urls(html_content, lines)
-
-        # Check for dangerous protocols
-        self._check_dangerous_protocols(html_content, lines)
-
-        # Check for external resources (CDN links)
-        self._check_external_resources(html_content, lines)
-
-        # Check for forms with external actions
-        self._check_form_actions(html_content, lines)
+        # Run all validation checks with the same parsed soup
+        # Don't pass lines - we'll compute line numbers on demand to save memory
+        self._check_forbidden_tags(soup, html_content)
+        self._check_meta_tags(soup, html_content)
+        self._check_forbidden_attributes(soup, html_content)
+        self._check_dangerous_css(soup, html_content)
+        self._check_javascript_urls(soup, html_content)
+        self._check_dangerous_protocols(soup, html_content)
+        self._check_external_resources(soup, html_content)
+        self._check_form_actions(soup, html_content)
 
         is_valid = len(self.errors) == 0
         error_dicts = [error.to_dict() for error in self.errors]
 
+        # Explicitly delete soup to free memory immediately
+        del soup
+
         return is_valid, error_dicts
 
-    def _check_forbidden_tags(self, content: str, lines: List[str]):
+    def _check_forbidden_tags(self, soup, content: str):
         """Check for forbidden HTML tags using BeautifulSoup."""
-        soup = BeautifulSoup(content, "html.parser")
 
         for tag_name in self.FORBIDDEN_TAGS:
             # Find all instances of this tag
@@ -165,7 +183,7 @@ class HTMLValidator:
                     pos = content.find(tag_str[:50])
 
                 if pos != -1:
-                    line_num = self._get_line_number(content, pos, lines)
+                    line_num = self._get_line_number(content, pos)
                 else:
                     line_num = None
 
@@ -178,9 +196,8 @@ class HTMLValidator:
                     )
                 )
 
-    def _check_meta_tags(self, content: str, lines: List[str]):
+    def _check_meta_tags(self, soup, content: str):
         """Check meta tags - allow safe ones, reject dangerous ones."""
-        soup = BeautifulSoup(content, "html.parser")
         meta_tags = soup.find_all("meta")
 
         for tag in meta_tags:
@@ -188,7 +205,7 @@ class HTMLValidator:
 
             # Find position in original content
             pos = content.find(tag_str[:50])
-            line_num = self._get_line_number(content, pos, lines) if pos != -1 else None
+            line_num = self._get_line_number(content, pos) if pos != -1 else None
 
             # Check for http-equiv refresh which can be dangerous
             http_equiv = tag.get("http-equiv", "").lower()
@@ -215,9 +232,8 @@ class HTMLValidator:
                     )
                 )
 
-    def _check_forbidden_attributes(self, content: str, lines: List[str]):
+    def _check_forbidden_attributes(self, soup, content: str):
         """Check for forbidden attributes like event handlers."""
-        soup = BeautifulSoup(content, "html.parser")
 
         for attr in self.FORBIDDEN_ATTRIBUTES:
             # Find all tags that have this attribute
@@ -228,7 +244,7 @@ class HTMLValidator:
 
                 # Find position in original content
                 pos = content.find(tag_str[:50])
-                line_num = self._get_line_number(content, pos, lines) if pos != -1 else None
+                line_num = self._get_line_number(content, pos) if pos != -1 else None
 
                 # Get the attribute value for display
                 attr_value = tag.get(attr, "")
@@ -243,136 +259,161 @@ class HTMLValidator:
                     )
                 )
 
-    def _check_dangerous_css(self, content: str, lines: List[str]):
-        """Check for dangerous CSS properties and values."""
-        # Check style attributes
-        style_pattern = r'style\s*=\s*["\']([^"\']*)["\']'
-        style_matches = re.finditer(style_pattern, content, re.IGNORECASE)
+    def _check_dangerous_css(self, soup, content: str):
+        """Check for dangerous CSS properties and values using BeautifulSoup."""
 
-        for match in style_matches:
-            style_content = match.group(1)
-            line_num = self._get_line_number(content, match.start(), lines)
+        # Check style attributes on all tags
+        tags_with_style = soup.find_all(attrs={"style": True})
+        for tag in tags_with_style:
+            style_content = tag.get("style", "")
+            tag_str = str(tag)[:50]
+            pos = content.find(tag_str)
+            line_num = self._get_line_number(content, pos) if pos != -1 else None
             self._validate_css_content(style_content, line_num, "inline style")
 
         # Check <style> tags
-        style_tag_pattern = r"<style[^>]*>(.*?)</style>"
-        style_tag_matches = re.finditer(style_tag_pattern, content, re.IGNORECASE | re.DOTALL)
-
-        for match in style_tag_matches:
-            style_content = match.group(1)
-            line_num = self._get_line_number(content, match.start(), lines)
+        style_tags = soup.find_all("style")
+        for tag in style_tags:
+            style_content = tag.string or ""
+            tag_str = str(tag)[:50]
+            pos = content.find(tag_str)
+            line_num = self._get_line_number(content, pos) if pos != -1 else None
             self._validate_css_content(style_content, line_num, "style tag")
 
     def _validate_css_content(self, css_content: str, line_num: int, context: str):
         """Validate CSS content for dangerous properties."""
-        # Check for dangerous CSS properties (excluding 'expression' which is handled separately)
-        dangerous_props = [prop for prop in self.FORBIDDEN_CSS_PROPERTIES if prop != "expression"]
-        for prop in dangerous_props:
-            if prop.lower() in css_content.lower():
-                self.errors.append(
-                    HTMLValidationError(
-                        error_type="dangerous_css",
-                        message=f"Dangerous CSS property '{prop}' found in {context}",
-                        line_number=line_num,
-                        element=css_content[:100] + "..."
-                        if len(css_content) > 100
-                        else css_content,
-                    )
-                )
+        css_lower = css_content.lower()
 
-        # Check for CSS expression() function calls specifically (not just the word "expression")
-        if re.search(r"expression\s*\(", css_content, re.IGNORECASE):
-            self.errors.append(
-                HTMLValidationError(
-                    error_type="css_expression",
-                    message=f"CSS expression() function found in {context} - not allowed",
-                    line_number=line_num,
-                    element=css_content[:100] + "..." if len(css_content) > 100 else css_content,
-                )
-            )
-
-        # Check for @import statements (including external URLs)
-        # Allow MathJax/KaTeX CDNs
-        import_matches = re.finditer(
-            r"@import\s+(?:url\(['\"](https?://[^'\"]+)['\"]\)|['\"](https?://[^'\"]+)['\"])",
-            css_content,
-            re.IGNORECASE,
-        )
-        for import_match in import_matches:
-            url = import_match.group(1) or import_match.group(2)
-
-            # Check if URL is from allowed CDN
-            if any(allowed in url for allowed in self.ALLOWED_CDN_DOMAINS):
-                continue
-
-            self.errors.append(
-                HTMLValidationError(
-                    error_type="css_import_external",
-                    message=f"CSS @import with external URL '{url}' found in {context} - not allowed. Papers must be self-contained (MathJax/KaTeX CDNs are allowed).",
-                    line_number=line_num,
-                    element=import_match.group(0),
-                )
-            )
-
-        # Check for any other @import statements (local files)
-        if re.search(
-            r"@import\s+(?:url\()?['\"]?(?!https?://)[^'\"]+", css_content, re.IGNORECASE
-        ):
-            self.errors.append(
-                HTMLValidationError(
-                    error_type="css_import",
-                    message=f"CSS @import statement found in {context} - not allowed",
-                    line_number=line_num,
-                    element=css_content[:100] + "..." if len(css_content) > 100 else css_content,
-                )
-            )
-
-    def _check_javascript_urls(self, content: str, lines: List[str]):
-        """Check for javascript: URLs."""
-        js_url_pattern = r'(?:href|src|action)\s*=\s*["\']?\s*javascript:'
-        matches = re.finditer(js_url_pattern, content, re.IGNORECASE)
-
-        for match in matches:
-            line_num = self._get_line_number(content, match.start(), lines)
-            self.errors.append(
-                HTMLValidationError(
-                    error_type="javascript_url",
-                    message="JavaScript URLs (javascript:) are not allowed",
-                    line_number=line_num,
-                    element=match.group(0),
-                )
-            )
-
-    def _check_dangerous_protocols(self, content: str, lines: List[str]):
-        """Check for other dangerous protocols."""
-        dangerous_protocols = ["vbscript:", "livescript:", "mocha:", "data:text/html"]
-
-        for protocol in dangerous_protocols:
-            if protocol.lower() in content.lower():
-                # Find the specific location
-                pattern = rf'(?:href|src|action)\s*=\s*["\']?\s*{re.escape(protocol)}'
-                matches = re.finditer(pattern, content, re.IGNORECASE)
-
-                for match in matches:
-                    line_num = self._get_line_number(content, match.start(), lines)
+        # Check for dangerous CSS properties
+        for prop in self.FORBIDDEN_CSS_PROPERTIES:
+            if prop.lower() in css_lower:
+                # Special handling for "expression" - only flag if it's expression()
+                if prop == "expression":
+                    # Check if "expression" is followed by "(" (with optional whitespace)
+                    if "expression" in css_lower:
+                        idx = css_lower.find("expression")
+                        rest = css_lower[idx + len("expression") :].lstrip()
+                        if rest.startswith("("):
+                            self.errors.append(
+                                HTMLValidationError(
+                                    error_type="css_expression",
+                                    message=f"CSS expression() function found in {context} - not allowed",
+                                    line_number=line_num,
+                                    element=css_content[:100] + "..."
+                                    if len(css_content) > 100
+                                    else css_content,
+                                )
+                            )
+                else:
                     self.errors.append(
                         HTMLValidationError(
-                            error_type="dangerous_protocol",
-                            message=f"Dangerous protocol '{protocol}' is not allowed",
+                            error_type="dangerous_css",
+                            message=f"Dangerous CSS property '{prop}' found in {context}",
                             line_number=line_num,
-                            element=match.group(0),
+                            element=css_content[:100] + "..."
+                            if len(css_content) > 100
+                            else css_content,
                         )
                     )
 
-    def _check_form_actions(self, content: str, lines: List[str]):
-        """Check for forms with external action URLs."""
-        # Find all form tags with action attributes using regex
-        form_pattern = r'<form[^>]+action\s*=\s*["\']([^"\']+)["\'][^>]*>'
-        matches = re.finditer(form_pattern, content, re.IGNORECASE)
+        # Check for @import statements
+        if "@import" in css_lower:
+            # Check for external URLs in @import
+            if "http://" in css_lower or "https://" in css_lower:
+                # Extract URL - simple string search for http(s):// after @import
+                import_idx = css_lower.find("@import")
+                rest = css_content[import_idx:]
+                http_idx = rest.lower().find("http")
+                if http_idx != -1:
+                    # Find the URL by looking for the next quote or paren
+                    url_start = import_idx + http_idx
+                    url_rest = css_content[url_start:]
+                    # Find end of URL (quote, paren, semicolon, or whitespace)
+                    url_end = url_start
+                    for char in ["'", '"', ")", ";", " ", "\n"]:
+                        idx = url_rest.find(char)
+                        if idx != -1:
+                            url_end = url_start + idx
+                            break
+                    url = css_content[url_start:url_end] if url_end > url_start else ""
 
-        for match in matches:
-            action_url = match.group(1).strip()
-            line_num = self._get_line_number(content, match.start(), lines)
+                    # Check if URL is from allowed CDN
+                    if not any(allowed in url for allowed in self.ALLOWED_CDN_DOMAINS):
+                        self.errors.append(
+                            HTMLValidationError(
+                                error_type="css_import_external",
+                                message=f"CSS @import with external URL found in {context} - not allowed. Papers must be self-contained (MathJax/KaTeX CDNs are allowed).",
+                                line_number=line_num,
+                                element=css_content[:100] + "..."
+                                if len(css_content) > 100
+                                else css_content,
+                            )
+                        )
+            else:
+                # Local @import
+                self.errors.append(
+                    HTMLValidationError(
+                        error_type="css_import",
+                        message=f"CSS @import statement found in {context} - not allowed",
+                        line_number=line_num,
+                        element=css_content[:100] + "..." if len(css_content) > 100 else css_content,
+                    )
+                )
+
+    def _check_javascript_urls(self, soup, content: str):
+        """Check for javascript: URLs using BeautifulSoup."""
+
+        # Check all tags for href, src, or action attributes with javascript:
+        url_attributes = ["href", "src", "action"]
+        for attr in url_attributes:
+            tags = soup.find_all(attrs={attr: True})
+            for tag in tags:
+                attr_value = tag.get(attr, "").strip().lower()
+                if attr_value.startswith("javascript:"):
+                    tag_str = str(tag)[:100]
+                    pos = content.find(tag_str[:50])
+                    line_num = self._get_line_number(content, pos) if pos != -1 else None
+
+                    self.errors.append(
+                        HTMLValidationError(
+                            error_type="javascript_url",
+                            message="JavaScript URLs (javascript:) are not allowed",
+                            line_number=line_num,
+                            element=f'{attr}="{tag.get(attr)}"',
+                        )
+                    )
+
+    def _check_dangerous_protocols(self, soup, content: str):
+        """Check for other dangerous protocols using BeautifulSoup."""
+        dangerous_protocols = ["vbscript:", "livescript:", "mocha:", "data:text/html"]
+
+        # Check all tags for href, src, or action attributes with dangerous protocols
+        url_attributes = ["href", "src", "action"]
+        for attr in url_attributes:
+            tags = soup.find_all(attrs={attr: True})
+            for tag in tags:
+                attr_value = tag.get(attr, "").strip().lower()
+                for protocol in dangerous_protocols:
+                    if attr_value.startswith(protocol):
+                        tag_str = str(tag)[:100]
+                        pos = content.find(tag_str[:50])
+                        line_num = self._get_line_number(content, pos) if pos != -1 else None
+
+                        self.errors.append(
+                            HTMLValidationError(
+                                error_type="dangerous_protocol",
+                                message=f"Dangerous protocol '{protocol}' is not allowed",
+                                line_number=line_num,
+                                element=f'{attr}="{tag.get(attr)}"',
+                            )
+                        )
+
+    def _check_form_actions(self, soup, content: str):
+        """Check for forms with external action URLs using BeautifulSoup."""
+        forms = soup.find_all("form", attrs={"action": True})
+
+        for form in forms:
+            action_url = form.get("action", "").strip()
 
             # Allow empty actions, "#", or javascript: URLs (client-side handling)
             if not action_url or action_url == "#" or action_url.lower().startswith("javascript:"):
@@ -380,12 +421,16 @@ class HTMLValidator:
 
             # Block forms with external URLs (http://, https://, or protocol-relative //)
             if action_url.startswith(("http://", "https://", "//")):
+                form_str = str(form)[:100]
+                pos = content.find(form_str[:50])
+                line_num = self._get_line_number(content, pos) if pos != -1 else None
+
                 self.errors.append(
                     HTMLValidationError(
                         error_type="external_form_action",
                         message=f"Form with external action '{action_url}' is not allowed. Forms must not submit to external URLs.",
                         line_number=line_num,
-                        element=match.group(0)[:100],
+                        element=form_str,
                     )
                 )
 
@@ -410,59 +455,74 @@ class HTMLValidator:
         "unpkg.com/plotly.js@",
     ]
 
-    def _check_external_resources(self, content: str, lines: List[str]):
-        """Check for external script and stylesheet resources (reject non-self-contained HTML except for allowed CDNs)."""
+    def _check_external_resources(self, soup, content: str):
+        """Check for external script and stylesheet resources using BeautifulSoup."""
+
         # Check for external script tags (http:// or https://)
         # Allow data: URIs since those are self-contained
         # Allow MathJax/KaTeX CDNs since they're essential for math rendering
-        script_pattern = r'<script[^>]+src\s*=\s*["\'](?!data:)(https?://[^"\']+)["\'][^>]*>'
-        script_matches = re.finditer(script_pattern, content, re.IGNORECASE)
+        scripts = soup.find_all("script", attrs={"src": True})
+        for script in scripts:
+            src = script.get("src", "")
 
-        for match in script_matches:
-            url = match.group(1)
-
-            # Check if URL is from allowed CDN
-            if any(allowed in url for allowed in self.ALLOWED_CDN_DOMAINS):
+            # Skip data: URIs (self-contained)
+            if src.startswith("data:"):
                 continue
 
-            line_num = self._get_line_number(content, match.start(), lines)
-            self.errors.append(
-                HTMLValidationError(
-                    error_type="external_script",
-                    message=f"External script '{url}' not allowed. Papers must be self-contained with all resources embedded (MathJax/KaTeX CDNs are allowed).",
-                    line_number=line_num,
-                    element=match.group(0),
+            # Only check external URLs
+            if src.startswith(("http://", "https://")):
+                # Check if URL is from allowed CDN
+                if any(allowed in src for allowed in self.ALLOWED_CDN_DOMAINS):
+                    continue
+
+                script_str = str(script)[:100]
+                pos = content.find(script_str[:50])
+                line_num = self._get_line_number(content, pos) if pos != -1 else None
+
+                self.errors.append(
+                    HTMLValidationError(
+                        error_type="external_script",
+                        message=f"External script '{src}' not allowed. Papers must be self-contained with all resources embedded (MathJax/KaTeX CDNs are allowed).",
+                        line_number=line_num,
+                        element=script_str,
+                    )
                 )
-            )
 
         # Check for external stylesheet links (http:// or https://)
         # Allow data: URIs since those are self-contained
         # Allow MathJax/KaTeX CDNs since they're essential for math rendering
-        link_pattern = r'<link[^>]+href\s*=\s*["\'](?!data:)(https?://[^"\']+)["\'][^>]*>'
-        link_matches = re.finditer(link_pattern, content, re.IGNORECASE)
+        links = soup.find_all("link", attrs={"href": True})
+        for link in links:
+            href = link.get("href", "")
 
-        for match in link_matches:
-            url = match.group(1)
-
-            # Check if URL is from allowed CDN
-            if any(allowed in url for allowed in self.ALLOWED_CDN_DOMAINS):
+            # Skip data: URIs (self-contained)
+            if href.startswith("data:"):
                 continue
 
-            line_num = self._get_line_number(content, match.start(), lines)
-            self.errors.append(
-                HTMLValidationError(
-                    error_type="external_stylesheet",
-                    message=f"External stylesheet '{url}' not allowed. Papers must be self-contained with all resources embedded (MathJax/KaTeX CDNs are allowed).",
-                    line_number=line_num,
-                    element=match.group(0),
-                )
-            )
+            # Only check external URLs
+            if href.startswith(("http://", "https://")):
+                # Check if URL is from allowed CDN
+                if any(allowed in href for allowed in self.ALLOWED_CDN_DOMAINS):
+                    continue
 
-    def _get_line_number(self, content: str, position: int, lines: List[str]) -> int:
-        """Get line number for a character position in the content."""
-        chars_seen = 0
-        for i, line in enumerate(lines, 1):
-            chars_seen += len(line) + 1  # +1 for newline
-            if chars_seen > position:
-                return i
-        return len(lines)
+                link_str = str(link)[:100]
+                pos = content.find(link_str[:50])
+                line_num = self._get_line_number(content, pos) if pos != -1 else None
+
+                self.errors.append(
+                    HTMLValidationError(
+                        error_type="external_stylesheet",
+                        message=f"External stylesheet '{href}' not allowed. Papers must be self-contained with all resources embedded (MathJax/KaTeX CDNs are allowed).",
+                        line_number=line_num,
+                        element=link_str,
+                    )
+                )
+
+    def _get_line_number(self, content: str, position: int) -> int:
+        """Get line number for a character position in the content (computed on demand)."""
+        # For large files (>1MB), skip line number calculation to save memory
+        if len(content) > 1024 * 1024:
+            return None
+
+        # Only compute line number for errors in smaller files
+        return content[:position].count('\n') + 1

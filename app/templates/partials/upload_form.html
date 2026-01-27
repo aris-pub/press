@@ -50,7 +50,7 @@
                 </svg>
             </div>
             <div class="file-upload-text">Drop your HTML file here or click to browse</div>
-            <div class="file-upload-subtext">Only .html files are accepted (max 5MB, UTF-8 encoded)</div>
+            <div class="file-upload-subtext">Only .html files are accepted (max 50MB, UTF-8 encoded)</div>
             <input type="file" id="html_file" name="html_file" class="file-upload-input" accept=".html,text/html" required>
             <input type="hidden" id="html_content" name="html_content" required>
         </div>
@@ -168,9 +168,9 @@ function handleFileSelection(file) {
         return;
     }
 
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-        showError('File size cannot exceed 5MB');
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+        showError('File size cannot exceed 50MB');
         return;
     }
 

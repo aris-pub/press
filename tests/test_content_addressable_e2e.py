@@ -304,9 +304,9 @@ class TestEdgeCases:
 
     async def test_boundary_file_size(self, client: AsyncClient, test_subject):
         """Test file at boundary of size limit."""
-        # Create content just under 5MB limit
+        # Create content just under 50MB limit
         base_content = "<!DOCTYPE html><html><body><h1>Size Test</h1><p>"
-        padding = "x" * (5 * 1024 * 1024 - len(base_content) - 20)  # Leave room for closing tags
+        padding = "x" * (50 * 1024 * 1024 - len(base_content) - 20)  # Leave room for closing tags
         content = base_content + padding + "</p></body></html>"
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:

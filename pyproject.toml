@@ -28,6 +28,7 @@ dependencies = [
     "sentry-sdk[fastapi]>=1.40.0",
     "resend>=2.4.0",
     "beautifulsoup4>=4.14.3",
+    "lxml>=5.1.0",
 ]
 
 [tool.pytest.ini_options]

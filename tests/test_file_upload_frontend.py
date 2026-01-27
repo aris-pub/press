@@ -155,7 +155,7 @@ class TestFileUploadFormSubmission:
         await test_db.commit()
         await test_db.refresh(subject)
 
-        # Create large but reasonable HTML content (under 5MB)
+        # Create large but reasonable HTML content (under 50MB)
         large_content_parts = [
             "<!DOCTYPE html><html><head><title>Large Document</title></head><body>",
             "<h1>Large HTML Document</h1>",
@@ -266,7 +266,7 @@ class TestFileUploadUIElements:
 
         # Check for validation text
         assert "Only .html files are accepted" in response.text
-        assert "max 5MB" in response.text
+        assert "max 50MB" in response.text
         assert "UTF-8 encoded" in response.text
 
     async def test_upload_page_contains_file_handling_javascript(

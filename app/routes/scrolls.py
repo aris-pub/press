@@ -419,14 +419,20 @@ async def upload_form(
         sentry_sdk.set_context(
             "upload", {"title": title, "subject_id": subject_id, "license": license}
         )
+        # Strip inputs once to avoid creating multiple copies in memory
+        html_content = html_content.strip() if html_content else ""
+        title = title.strip() if title else ""
+        authors = authors.strip() if authors else ""
+        abstract = abstract.strip() if abstract else ""
+
         # Validate required fields
-        if not title or not title.strip():
+        if not title:
             raise ValueError("Title is required")
-        if not authors or not authors.strip():
+        if not authors:
             raise ValueError("Authors are required")
-        if not abstract or not abstract.strip():
+        if not abstract:
             raise ValueError("Abstract is required")
-        if not html_content or not html_content.strip():
+        if not html_content:
             raise ValueError("HTML content is required")
         if not license or license not in ["cc-by-4.0", "arr"]:
             raise ValueError("License must be selected (CC BY 4.0 or All Rights Reserved)")
@@ -452,7 +458,7 @@ async def upload_form(
         from app.security.html_validator import HTMLValidator
 
         html_validator = HTMLValidator()
-        is_html_safe, html_errors = html_validator.validate(html_content.strip())
+        is_html_safe, html_errors = html_validator.validate(html_content)
 
         if not is_html_safe:
             # Group and summarize errors for better readability
@@ -581,7 +587,7 @@ async def upload_form(
         # Generate content-addressable storage fields
         from app.storage.content_processing import generate_permanent_url
 
-        url_hash, content_hash, tar_data = await generate_permanent_url(html_content.strip())
+        url_hash, content_hash, tar_data = await generate_permanent_url(html_content)
 
         # Check if content already exists (published or preview)
         existing_scroll = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
@@ -600,12 +606,12 @@ async def upload_form(
         # Create scroll with preview status (not yet published)
         scroll = Scroll(
             user_id=current_user.id,
-            title=title.strip(),
-            authors=authors.strip(),
+            title=title,
+            authors=authors,
             subject_id=subject.id,
-            abstract=abstract.strip(),
+            abstract=abstract,
             keywords=keyword_list,
-            html_content=html_content.strip(),
+            html_content=html_content,
             license=license,
             content_hash=content_hash,
             url_hash=url_hash,
