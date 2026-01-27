@@ -15,21 +15,25 @@ dependencies = [
     "python-multipart>=0.0.6",
     "python-dotenv>=1.0.0",
     "pydantic[email]>=2.11.7",
-    "pytest>=7.4.3",
-    "pytest-asyncio>=0.26.0",
-    "pytest-xdist>=3.3.1",
-    "httpx>=0.25.2",
-    "aiosqlite>=0.19.0",
     "bleach>=6.1.0",
     "python-magic>=0.4.27",
-    "ruff>=0.1.6",
-    "playwright>=1.40.0",
-    "pytest-playwright>=0.4.3",
     "sentry-sdk[fastapi]>=1.40.0",
     "resend>=2.4.0",
     "beautifulsoup4>=4.14.3",
     "lxml>=5.1.0",
     "psutil>=7.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.26.0",
+    "pytest-xdist>=3.3.1",
+    "httpx>=0.25.2",
+    "aiosqlite>=0.19.0",
+    "ruff>=0.1.6",
+    "playwright>=1.40.0",
+    "pytest-playwright>=0.4.3",
 ]
 
 [tool.pytest.ini_options]
