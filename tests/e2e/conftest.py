@@ -67,63 +67,15 @@ def test_server():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-        # Seed with test data
+        # Use the same seed functions as CI for consistency
+        from scripts.seed import seed_subjects, seed_users, seed_scrolls
+
         TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
         session = TestSessionLocal()
         try:
-            # Manually seed basic data needed for E2E tests
-            from sqlalchemy import text
-
-            from app.auth.utils import get_password_hash
-            from app.models.scroll import Scroll, Subject
-            from app.models.user import User
-
-            # Create subjects
-            subjects_data = [
-                {"name": "Computer Science", "description": "Computing and software"},
-                {"name": "Physics", "description": "Physical sciences"},
-                {"name": "Biology", "description": "Life sciences"},
-            ]
-
-            for subject_data in subjects_data:
-                subject = Subject(**subject_data)
-                session.add(subject)
-
-            await session.commit()
-
-            # Create a test user
-            test_user = User(
-                email="testuser@example.com",
-                password_hash=get_password_hash("testpass"),
-                display_name="Test User",
-                email_verified=True,
-            )
-            session.add(test_user)
-            await session.commit()
-            await session.refresh(test_user)
-
-            # Get first subject for scrolls
-            subjects = await session.execute(text("SELECT * FROM subjects LIMIT 1"))
-            first_subject = subjects.first()
-
-            if first_subject:
-                # Create a test scroll
-                test_scroll = Scroll(
-                    title="Test Research Paper",
-                    authors="Test Author",
-                    abstract="This is a test research paper for E2E testing.",
-                    html_content="<h1>Test Paper</h1><p>Test content</p>",
-                    keywords=["test", "research"],
-                    license="cc-by-4.0",
-                    content_hash="test_hash",
-                    url_hash="test_url_hash",
-                    status="published",
-                    user_id=test_user.id,
-                    subject_id=first_subject.id,
-                )
-                session.add(test_scroll)
-                await session.commit()
-
+            await seed_subjects(session)
+            await seed_users(session)
+            await seed_scrolls(session)
         finally:
             await session.close()
 

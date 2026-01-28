@@ -8,11 +8,20 @@ from app.models.scroll import Scroll, Subject
 from app.models.user import User
 
 
-async def seed_users():
+async def seed_users(session=None):
     """Create mock users with UTC timestamps."""
-    async with AsyncSessionLocal() as session:
+    should_close = session is None
+    if session is None:
+        session = AsyncSessionLocal()
+
+    try:
         # Sample users matching the paper authors
         users_data = [
+            {
+                "email": "testuser@example.com",
+                "display_name": "Test User",
+                "password": "testpass",
+            },
             {
                 "email": "john.smith@university.edu",
                 "display_name": "John Smith",
@@ -72,11 +81,18 @@ async def seed_users():
 
         await session.commit()
         print(f"Created {len(users_data)} seed users with UTC timestamps")
+    finally:
+        if should_close:
+            await session.close()
 
 
-async def seed_subjects():
+async def seed_subjects(session=None):
     """Create academic subject categories."""
-    async with AsyncSessionLocal() as session:
+    should_close = session is None
+    if session is None:
+        session = AsyncSessionLocal()
+
+    try:
         subjects_data = [
             {
                 "name": "Computer Science",
@@ -105,6 +121,9 @@ async def seed_subjects():
 
         await session.commit()
         print(f"Created {len(subjects_data)} academic subjects")
+    finally:
+        if should_close:
+            await session.close()
 
 
 async def delete_existing_data():
@@ -119,7 +138,7 @@ async def delete_existing_data():
         # Then users and subjects
         await session.execute(
             text(
-                "DELETE FROM users WHERE email LIKE '%university.edu' OR email LIKE '%institute.org' OR email LIKE '%lab.com' OR email LIKE '%research.edu' OR email LIKE '%physics.edu' OR email LIKE '%biolab.org' OR email LIKE '%med.edu' OR email LIKE '%research.jp' OR email LIKE '%math.edu'"
+                "DELETE FROM users WHERE email LIKE '%university.edu' OR email LIKE '%institute.org' OR email LIKE '%lab.com' OR email LIKE '%research.edu' OR email LIKE '%physics.edu' OR email LIKE '%biolab.org' OR email LIKE '%med.edu' OR email LIKE '%research.jp' OR email LIKE '%math.edu' OR email = 'testuser@example.com'"
             )
         )
         await session.execute(text("DELETE FROM subjects"))
@@ -127,12 +146,16 @@ async def delete_existing_data():
         print("Existing seed data deleted!")
 
 
-async def seed_scrolls():
+async def seed_scrolls(session=None):
     """Create seed scrolls from real HTML papers."""
     import json
     from pathlib import Path
 
-    async with AsyncSessionLocal() as session:
+    should_close = session is None
+    if session is None:
+        session = AsyncSessionLocal()
+
+    try:
         # Get users and subjects for foreign keys
         users_result = await session.execute(text("SELECT id, display_name FROM users"))
         users = {row[1]: row[0] for row in users_result}
@@ -190,6 +213,9 @@ async def seed_scrolls():
 
         await session.commit()
         print(f"Created {len(scrolls_data)} seed papers from real HTML files")
+    finally:
+        if should_close:
+            await session.close()
 
 
 async def main():
