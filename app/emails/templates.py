@@ -27,7 +27,9 @@ def get_verification_email(name: str, token: str, base_url: str) -> tuple[str, s
 
         <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 30px; border-left: 4px solid #ef4444;">
             <h2 style="margin-top: 0; color: #1f2937;">Hi {name} 👋</h2>
-            <p style="font-size: 16px; margin: 0 0 20px 0;">Thanks for joining Scroll Press! Please verify your email address to start uploading and sharing your research manuscripts.</p>
+            <p style="font-size: 16px; margin: 0 0 20px 0;">Thanks for joining Scroll Press! Please verify your email address to get started.</p>
+
+            <p style="font-size: 16px; margin: 0 0 20px 0;">Scroll Press is a modern preprint server for HTML-native research papers with interactive visualizations, live figures, and permanent DOIs. No more static PDFs—your research comes alive on the web.</p>
 
             <div style="text-align: center; margin: 30px 0;">
                 <a href="{verification_link}" style="background: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Verify Email Address</a>
@@ -54,7 +56,9 @@ Welcome to Scroll Press!
 
 Hi {name} 👋
 
-Thanks for joining Scroll Press! Please verify your email address to start uploading and sharing your research manuscripts.
+Thanks for joining Scroll Press! Please verify your email address to get started.
+
+Scroll Press is a modern preprint server for HTML-native research papers with interactive visualizations, live figures, and permanent DOIs. No more static PDFs—your research comes alive on the web.
 
 Verify your email by clicking this link:
 {verification_link}

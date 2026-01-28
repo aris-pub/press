@@ -9,10 +9,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <h1>Email Verified!</h1>
-                <p>{{ message }}</p>
+                <p>Welcome to Scroll Press! You're all set to publish interactive research papers.</p>
                 <div class="action-buttons">
-                    <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+                    <a href="/docs/quick-start" class="btn btn-primary">📚 Quick Start Guide</a>
+                    <a href="/dashboard" class="btn btn-secondary">Go to Dashboard</a>
                 </div>
+                <p class="help-text">New here? The Quick Start guide will walk you through publishing your first paper in minutes.</p>
             </div>
         {% else %}
             <div class="error-message">
@@ -87,6 +89,13 @@
     color: var(--gray-medium);
     margin-bottom: 2rem;
     font-size: 1.1rem;
+}
+
+.help-text {
+    color: var(--gray-medium);
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0;
 }
 
 .action-buttons {
