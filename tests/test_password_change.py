@@ -4,7 +4,6 @@ import pytest
 
 from app.auth.utils import verify_password
 
-
 # Page Load Tests
 
 
@@ -72,7 +71,9 @@ async def test_change_password_requires_auth(client, test_user, test_db):
 
 
 @pytest.mark.asyncio
-async def test_change_password_incorrect_current_password(authenticated_client, test_user, test_db):
+async def test_change_password_incorrect_current_password(
+    authenticated_client, test_user, test_db
+):
     """Test that incorrect current password is rejected."""
     response = await authenticated_client.post(
         "/change-password-form",
@@ -134,9 +135,7 @@ async def test_change_password_new_password_requires_number(
 
 
 @pytest.mark.asyncio
-async def test_change_password_new_passwords_must_match(
-    authenticated_client, test_user, test_db
-):
+async def test_change_password_new_passwords_must_match(authenticated_client, test_user, test_db):
     """Test that new password and confirmation must match."""
     response = await authenticated_client.post(
         "/change-password-form",
@@ -261,9 +260,7 @@ async def test_new_password_valid_after_change(authenticated_client, test_user, 
 
 
 @pytest.mark.asyncio
-async def test_change_password_preserves_authentication(
-    authenticated_client, test_user, test_db
-):
+async def test_change_password_preserves_authentication(authenticated_client, test_user, test_db):
     """Test that user remains authenticated after password change."""
     # Change password
     await authenticated_client.post(
@@ -321,9 +318,7 @@ async def test_change_password_multiple_times(authenticated_client, test_user, t
 
 
 @pytest.mark.asyncio
-async def test_change_password_with_special_characters(
-    authenticated_client, test_user, test_db
-):
+async def test_change_password_with_special_characters(authenticated_client, test_user, test_db):
     """Test that passwords with special characters are supported."""
     response = await authenticated_client.post(
         "/change-password-form",
