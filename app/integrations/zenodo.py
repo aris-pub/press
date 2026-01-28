@@ -19,7 +19,7 @@ class ZenodoConfig(BaseModel):
     """Configuration for Zenodo API client."""
 
     api_token: str
-    base_url: str = "https://zenodo.org"
+    base_url: str
     timeout: int = 30
     max_retries: int = 3
 
@@ -319,10 +319,13 @@ def get_zenodo_client() -> Optional[ZenodoClient]:
         ZenodoClient if properly configured, None otherwise
     """
     api_token = os.getenv("ZENODO_API_TOKEN")
-    base_url = os.getenv("ZENODO_BASE_URL", "https://zenodo.org")
+    base_url = os.getenv("ZENODO_BASE_URL")
 
-    # Don't initialize client if API token is missing or placeholder
+    # Require both API token and base URL to be explicitly configured
     if not api_token or api_token == "your_zenodo_personal_access_token_here":
+        return None
+
+    if not base_url:
         return None
 
     config = ZenodoConfig(api_token=api_token, base_url=base_url)
