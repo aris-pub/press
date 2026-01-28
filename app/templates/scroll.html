@@ -1,5 +1,6 @@
 {% from "components/scroll_card.html" import scroll_card %}
 {% from "components/google_scholar_meta.html" import google_scholar_meta %}
+{% from "components/doi_badge.html" import doi_badge %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -110,28 +111,7 @@
           version="v" + scroll.version|string
         ) }}
 
-        {% if scroll.doi and scroll.doi_status == 'minted' %}
-        <div class="doi-badge" style="margin: 1rem 0; padding: 0.75rem; background: var(--gray-bg); border-radius: 4px;">
-          <strong>DOI:</strong>
-          <a href="https://doi.org/{{ scroll.doi }}"
-             target="_blank"
-             rel="noopener noreferrer"
-             style="color: var(--red); text-decoration: none; font-family: monospace;">
-            {{ scroll.doi }}
-          </a>
-          <span style="color: var(--gray); font-size: 0.9em; margin-left: 0.5rem;">
-            (Registered via Zenodo)
-          </span>
-        </div>
-        {% elif scroll.doi_status == 'pending' %}
-        <div class="doi-badge" style="margin: 1rem 0; padding: 0.75rem; background: var(--gray-bg); border-radius: 4px;">
-          <span style="color: var(--gray);">DOI registration in progress...</span>
-        </div>
-        {% elif scroll.doi_status == 'failed' %}
-        <div class="doi-badge" style="margin: 1rem 0; padding: 0.75rem; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px;">
-          <span style="color: #92400e;">DOI registration failed. Please contact support.</span>
-        </div>
-        {% endif %}
+        {{ doi_badge(scroll.doi, scroll.doi_status) }}
 
         <div class="license-info">
           <div class="license-label">License:</div>

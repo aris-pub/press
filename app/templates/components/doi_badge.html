@@ -1,0 +1,80 @@
+{#
+DOI Badge Component
+Displays DOI status badge with sandbox indicator
+
+Usage:
+{% from "components/doi_badge.html" import doi_badge %}
+{{ doi_badge(scroll.doi, scroll.doi_status) }}
+{{ doi_badge(scroll.doi, scroll.doi_status, compact=True) }}
+
+Parameters:
+- doi: DOI string (e.g., "10.5281/zenodo.1234567")
+- doi_status: "minted", "pending", "failed", or None
+- compact: Boolean, if True renders compact version for cards (default: False)
+#}
+
+{% macro doi_badge(doi, doi_status, compact=False) %}
+{% if doi_status %}
+  {% set is_sandbox = doi and doi.startswith('10.5072/') %}
+
+  {% if doi_status == 'minted' and doi %}
+    {% if compact %}
+      {# Compact version for dashboard cards #}
+      <div class="doi-badge doi-badge-compact" style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: var(--gray);">
+        <span style="font-weight: 600;">DOI:</span>
+        <a href="https://doi.org/{{ doi }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           style="color: var(--red); text-decoration: none; font-family: monospace; font-size: 0.8rem;">
+          {{ doi }}
+        </a>
+        {% if is_sandbox %}
+        <span style="color: var(--gray); font-size: 0.75rem;">(sandbox)</span>
+        {% endif %}
+      </div>
+    {% else %}
+      {# Full version for scroll detail page #}
+      <div class="doi-badge" style="margin: 1rem 0; padding: 0.75rem; background: var(--gray-bg); border-radius: 4px;">
+        <strong>DOI:</strong>
+        <a href="https://doi.org/{{ doi }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           style="color: var(--red); text-decoration: none; font-family: monospace;">
+          {{ doi }}
+        </a>
+        <span style="color: var(--gray); font-size: 0.9em; margin-left: 0.5rem;">
+          (Registered via Zenodo{% if is_sandbox %} - sandbox{% endif %})
+        </span>
+      </div>
+    {% endif %}
+
+  {% elif doi_status == 'pending' %}
+    {% if compact %}
+      {# Compact pending indicator #}
+      <div class="doi-badge doi-badge-compact doi-badge-pending" style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: var(--gray);">
+        <span style="font-weight: 600;">DOI:</span>
+        <span>pending...</span>
+      </div>
+    {% else %}
+      {# Full pending message #}
+      <div class="doi-badge doi-badge-pending" style="margin: 1rem 0; padding: 0.75rem; background: var(--gray-bg); border-radius: 4px;">
+        <span style="color: var(--gray);">DOI registration in progress...</span>
+      </div>
+    {% endif %}
+
+  {% elif doi_status == 'failed' %}
+    {% if compact %}
+      {# Compact failure indicator #}
+      <div class="doi-badge doi-badge-compact doi-badge-failed" style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #92400e;">
+        <span style="font-weight: 600;">DOI:</span>
+        <span>failed</span>
+      </div>
+    {% else %}
+      {# Full failure message #}
+      <div class="doi-badge doi-badge-failed" style="margin: 1rem 0; padding: 0.75rem; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px;">
+        <span style="color: #92400e;">DOI registration failed. Please contact support.</span>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endif %}
+{% endmacro %}

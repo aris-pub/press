@@ -1,11 +1,13 @@
-{# 
+{#
 Scroll Card Component
-Usage: 
+Usage:
 {% from "components/scroll_card.html" import scroll_card %}
 {{ scroll_card("Title", "Authors", "Abstract", ["tag1", "tag2"], "Computer Science", "2 hours ago", "v1") }}
+{{ scroll_card("Title", "Authors", "Abstract", ["tag1", "tag2"], "Computer Science", "2 hours ago", "v1", url_hash="abc123", doi="10.5281/zenodo.1234567", doi_status="minted") }}
 #}
 
-{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", url_hash="") %}
+{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", url_hash="", doi=None, doi_status=None) %}
+{% from "components/doi_badge.html" import doi_badge %}
 <div class="scroll preview" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
   {% if url_hash %}
   <a href="/scroll/{{ url_hash }}" class="scroll-link">
@@ -16,6 +18,11 @@ Usage:
   {% endif %}
   <div class="scroll-authors">{{ authors }}</div>
   <div class="scroll-abstract">{{ abstract }}</div>
+  {% if doi_status %}
+  <div style="margin-top: 0.75rem;">
+    {{ doi_badge(doi, doi_status, compact=True) }}
+  </div>
+  {% endif %}
   <div class="scroll-footer">
     <div class="scroll-tags">
       {% for tag in tags or [] %}

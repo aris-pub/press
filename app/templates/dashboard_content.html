@@ -37,7 +37,9 @@
             subject_name,
             "recently",
             "v" + paper.version|string,
-            paper.url_hash
+            paper.url_hash,
+            doi=paper.doi,
+            doi_status=paper.doi_status
         ) }}
         {% endfor %}
       </div>
