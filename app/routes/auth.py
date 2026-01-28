@@ -842,8 +842,12 @@ async def change_password_page(request: Request, db: AsyncSession = Depends(get_
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
+    # Get CSRF token for form
+    session_id = request.cookies.get("session_id")
+    csrf_token = await get_csrf_token(session_id)
+
     return templates.TemplateResponse(
-        request, "auth/change_password.html", {"current_user": current_user}
+        request, "auth/change_password.html", {"current_user": current_user, "csrf_token": csrf_token}
     )
 
 
@@ -862,6 +866,10 @@ async def change_password_form(
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
+    # Get CSRF token for error responses
+    session_id = request.cookies.get("session_id")
+    csrf_token = await get_csrf_token(session_id)
+
     try:
         # Verify current password
         if not verify_password(current_password, current_user.password_hash):
@@ -870,6 +878,7 @@ async def change_password_form(
                 "auth/change_password.html",
                 {
                     "current_user": current_user,
+                    "csrf_token": csrf_token,
                     "error": "Current password is incorrect",
                 },
                 status_code=422,
@@ -882,6 +891,7 @@ async def change_password_form(
                 "auth/change_password.html",
                 {
                     "current_user": current_user,
+                    "csrf_token": csrf_token,
                     "error": "New password must be at least 8 characters long",
                 },
                 status_code=422,
@@ -893,6 +903,7 @@ async def change_password_form(
                 "auth/change_password.html",
                 {
                     "current_user": current_user,
+                    "csrf_token": csrf_token,
                     "error": "New password must contain at least one number",
                 },
                 status_code=422,
@@ -905,6 +916,7 @@ async def change_password_form(
                 "auth/change_password.html",
                 {
                     "current_user": current_user,
+                    "csrf_token": csrf_token,
                     "error": "New passwords do not match",
                 },
                 status_code=422,
@@ -917,6 +929,7 @@ async def change_password_form(
                 "auth/change_password.html",
                 {
                     "current_user": current_user,
+                    "csrf_token": csrf_token,
                     "error": "New password must be different from your current password",
                 },
                 status_code=422,
@@ -986,6 +999,7 @@ async def change_password_form(
             "auth/change_password.html",
             {
                 "current_user": current_user,
+                "csrf_token": csrf_token,
                 "error": "An error occurred while changing your password. Please try again.",
             },
             status_code=500,

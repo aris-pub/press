@@ -337,3 +337,71 @@ async def test_change_password_with_special_characters(authenticated_client, tes
         "/login-form", data={"email": test_user.email, "password": "P@ssw0rd!#$%^&*()"}
     )
     assert login_response.status_code == 200
+
+
+# CSRF Protection Tests
+
+
+@pytest.mark.asyncio
+async def test_change_password_page_includes_csrf_token(authenticated_client, test_user, test_db):
+    """Test that change password page includes CSRF token for form submission."""
+    response = await authenticated_client.get("/change-password")
+    assert response.status_code == 200
+
+    # Page should include csrf_token in a hidden input or data attribute
+    content = response.content.decode()
+    assert "csrf_token" in content or "csrf-token" in content.lower()
+
+
+@pytest.mark.asyncio
+async def test_change_password_form_requires_csrf_token(test_user, test_db):
+    """Test that password change form requires valid CSRF token."""
+    from httpx import ASGITransport, AsyncClient
+
+    from app.auth.session import create_session
+    from main import app
+
+    # Create a regular AsyncClient (not authenticated_client) to test without auto-injection
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        # Create session manually
+        session_id = await create_session(test_db, test_user.id)
+        client.cookies.set("session_id", session_id)
+
+        # POST request without CSRF token should fail with 403
+        response = await client.post(
+            "/change-password-form",
+            data={
+                "current_password": "testpassword123",
+                "new_password": "NewSecurePass123!",
+                "confirm_new_password": "NewSecurePass123!",
+                # Missing CSRF token
+            },
+        )
+
+        assert response.status_code == 403
+        assert b"CSRF" in response.content or b"csrf" in response.content.lower()
+
+
+@pytest.mark.asyncio
+async def test_change_password_form_with_valid_csrf_token(authenticated_client, test_user, test_db):
+    """Test that password change form works with valid CSRF token.
+
+    This test uses authenticated_client which automatically includes CSRF tokens,
+    demonstrating that the fix allows the form to work properly with CSRF protection.
+    """
+    # The authenticated_client fixture automatically handles CSRF tokens
+    response = await authenticated_client.post(
+        "/change-password-form",
+        data={
+            "current_password": "testpassword123",
+            "new_password": "NewSecurePass123!",
+            "confirm_new_password": "NewSecurePass123!",
+        },
+    )
+
+    assert response.status_code == 200
+    assert b"success" in response.content.lower() or b"changed" in response.content.lower()
+
+    # Verify password was actually changed
+    await test_db.refresh(test_user)
+    assert verify_password("NewSecurePass123!", test_user.password_hash)
