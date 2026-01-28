@@ -847,7 +847,9 @@ async def change_password_page(request: Request, db: AsyncSession = Depends(get_
     csrf_token = await get_csrf_token(session_id)
 
     return templates.TemplateResponse(
-        request, "auth/change_password.html", {"current_user": current_user, "csrf_token": csrf_token}
+        request,
+        "auth/change_password.html",
+        {"current_user": current_user, "csrf_token": csrf_token},
     )
 
 

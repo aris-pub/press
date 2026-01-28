@@ -383,7 +383,9 @@ async def test_change_password_form_requires_csrf_token(test_user, test_db):
 
 
 @pytest.mark.asyncio
-async def test_change_password_form_with_valid_csrf_token(authenticated_client, test_user, test_db):
+async def test_change_password_form_with_valid_csrf_token(
+    authenticated_client, test_user, test_db
+):
     """Test that password change form works with valid CSRF token.
 
     This test uses authenticated_client which automatically includes CSRF tokens,
