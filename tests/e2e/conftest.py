@@ -68,7 +68,7 @@ def test_server():
             await conn.run_sync(Base.metadata.create_all)
 
         # Use the same seed functions as CI for consistency
-        from scripts.seed import seed_subjects, seed_users, seed_scrolls
+        from scripts.seed import seed_scrolls, seed_subjects, seed_users
 
         TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
         session = TestSessionLocal()
