@@ -249,13 +249,13 @@ async def get_paper_html(
     scroll = result.scalar_one_or_none()
 
     if not scroll:
-        raise HTTPException(status_code=404, detail="Paper not found")
+        raise HTTPException(status_code=404, detail="Scroll not found")
 
     # If preview, verify ownership
     if scroll.status == "preview":
         current_user = await get_current_user_from_session(request, db)
         if not current_user or scroll.user_id != current_user.id:
-            raise HTTPException(status_code=404, detail="Paper not found")
+            raise HTTPException(status_code=404, detail="Scroll not found")
 
     # Set security headers for iframe embedding
     # CSP allows 'unsafe-eval' to support interactive academic visualizations
@@ -649,8 +649,11 @@ async def upload_form(
         existing = existing_scroll.scalar_one_or_none()
         if existing:
             if existing.status == "published":
+                scroll_link = f"{get_base_url()}/scroll/{existing.url_hash}"
                 raise ValueError(
-                    "This content has already been published. Each scroll must have unique content."
+                    f'This content has already been published. Each scroll must have unique content. '
+                    f'<a href="{scroll_link}" target="_blank">View existing scroll</a>. '
+                    f'If this is a mistake, please contact us at hello@aris.pub'
                 )
             else:
                 # There's an abandoned preview with the same content
