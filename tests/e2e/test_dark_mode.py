@@ -265,12 +265,12 @@ async def test_logo_loads_on_homepage(test_server):
             await page.wait_for_load_state("networkidle")
 
             # Verify logo is visible
-            logo = page.locator('.navbar .logo img')
+            logo = page.locator(".navbar .logo img")
             await expect(logo).to_be_visible(timeout=5000)
 
             # Verify logo has correct src
-            logo_src = await logo.get_attribute('src')
-            assert '/brand/logos/press/press-logo-64.svg' in logo_src, (
+            logo_src = await logo.get_attribute("src")
+            assert "/brand/logos/press/press-logo-64.svg" in logo_src, (
                 f"Logo src incorrect: {logo_src}"
             )
 
@@ -293,11 +293,12 @@ async def test_logo_loads_after_login_and_homepage_navigation(test_server):
 
         # Collect network requests
         requests = []
-        page.on("request", lambda req: requests.append({
-            "url": req.url,
-            "method": req.method,
-            "headers": dict(req.headers)
-        }))
+        page.on(
+            "request",
+            lambda req: requests.append(
+                {"url": req.url, "method": req.method, "headers": dict(req.headers)}
+            ),
+        )
 
         try:
             # Login
@@ -314,25 +315,29 @@ async def test_logo_loads_after_login_and_homepage_navigation(test_server):
             requests.clear()
 
             # Click logo to navigate to homepage
-            await page.click('.navbar .logo a')
+            await page.click(".navbar .logo a")
             await page.wait_for_url(f"{test_server}/", timeout=5000)
             await page.wait_for_timeout(500)
 
             # Check if logo was requested
-            logo_requests = [r for r in requests if 'press-logo-64.svg' in r['url']]
+            logo_requests = [r for r in requests if "press-logo-64.svg" in r["url"]]
             print(f"\n=== Logo requests after navigation: {len(logo_requests)} ===")
             for req in logo_requests:
                 print(f"  {req['method']} {req['url']}")
 
             # Check homepage request details
-            homepage_requests = [r for r in requests if r['url'].endswith(test_server + "/") or r['url'] == test_server + "/"]
+            homepage_requests = [
+                r
+                for r in requests
+                if r["url"].endswith(test_server + "/") or r["url"] == test_server + "/"
+            ]
             print(f"\n=== Homepage requests: {len(homepage_requests)} ===")
             for req in homepage_requests:
-                hx_request = req['headers'].get('hx-request', 'not present')
+                hx_request = req["headers"].get("hx-request", "not present")
                 print(f"  {req['method']} {req['url']} | HX-Request: {hx_request}")
 
             # Verify logo is still visible
-            logo = page.locator('.navbar .logo img')
+            logo = page.locator(".navbar .logo img")
             await expect(logo).to_be_visible(timeout=5000)
 
             # Verify only one navbar exists
@@ -340,8 +345,8 @@ async def test_logo_loads_after_login_and_homepage_navigation(test_server):
             assert navbar_count == 1, f"Expected 1 navbar after navigation, found {navbar_count}"
 
             # Verify logo src is correct
-            logo_src = await logo.get_attribute('src')
-            assert '/brand/logos/press/press-logo-64.svg' in logo_src, (
+            logo_src = await logo.get_attribute("src")
+            assert "/brand/logos/press/press-logo-64.svg" in logo_src, (
                 f"Logo src incorrect after navigation: {logo_src}"
             )
 
@@ -382,7 +387,7 @@ async def test_no_duplicate_navbar_after_htmx_navigation(test_server):
             )
 
             # Also verify logo appears exactly once
-            logo_count = await page.locator('.navbar .logo').count()
+            logo_count = await page.locator(".navbar .logo").count()
             assert logo_count == 1, (
                 f"Expected 1 logo, found {logo_count}. "
                 "Multiple logos indicate duplicate navbar rendering."
@@ -485,11 +490,11 @@ async def test_homepage_identical_for_all_user_states(test_server):
                 await page.wait_for_load_state("networkidle")
 
                 # Check that all key structural elements are present
-                logo_visible = await page.locator('.navbar .logo img').is_visible()
-                has_navbar = await page.locator('.navbar').count() > 0
-                has_hero = await page.locator('.hero').count() > 0
-                has_subjects = await page.locator('.subjects').count() > 0
-                has_recent = await page.locator('.recent').count() > 0
+                logo_visible = await page.locator(".navbar .logo img").is_visible()
+                has_navbar = await page.locator(".navbar").count() > 0
+                has_hero = await page.locator(".hero").count() > 0
+                has_subjects = await page.locator(".subjects").count() > 0
+                has_recent = await page.locator(".recent").count() > 0
 
                 assert logo_visible, f"Logo not visible for {label}"
                 assert has_navbar, f"Navbar missing for {label}"
@@ -502,7 +507,7 @@ async def test_homepage_identical_for_all_user_states(test_server):
                     "has_navbar": has_navbar,
                     "has_hero": has_hero,
                     "has_subjects": has_subjects,
-                    "has_recent": has_recent
+                    "has_recent": has_recent,
                 }
 
             # 1. Get content as unauthenticated user (no cookies)
@@ -519,7 +524,9 @@ async def test_homepage_identical_for_all_user_states(test_server):
             await expect(auth_page.locator(".success-message")).to_be_visible(timeout=5000)
             await auth_page.wait_for_timeout(1500)  # Wait for HTMX redirect
 
-            auth_structure = await check_homepage_structure(auth_page, "authenticated verified user")
+            auth_structure = await check_homepage_structure(
+                auth_page, "authenticated verified user"
+            )
             await auth_page.close()
 
             # Both states should have identical structure

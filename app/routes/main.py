@@ -406,7 +406,7 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "dashboard_content.html" if is_htmx else "dashboard.html",
-        {"current_user": current_user, "papers": papers}
+        {"current_user": current_user, "papers": papers},
     )
 
 
