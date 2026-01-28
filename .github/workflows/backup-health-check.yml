@@ -1,0 +1,82 @@
+name: Backup Health Check
+
+on:
+  schedule:
+    # Run twice daily at 9 AM and 9 PM UTC
+    - cron: '0 9,21 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  actions: read
+
+jobs:
+  check-backup-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check last backup timestamp
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "🔍 Checking backup health..."
+
+          # Get the most recent backup artifact
+          LATEST_BACKUP=$(gh api repos/${{ github.repository }}/actions/artifacts \
+            --jq '.artifacts[] | select(.name | startswith("press_backup_")) | {name: .name, created_at: .created_at}' \
+            | jq -s 'sort_by(.created_at) | reverse | .[0]')
+
+          if [ -z "$LATEST_BACKUP" ] || [ "$LATEST_BACKUP" = "null" ]; then
+            echo "❌ No backup artifacts found!"
+            echo "alert=true" >> $GITHUB_OUTPUT
+            echo "reason=No backup artifacts exist" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          BACKUP_NAME=$(echo "$LATEST_BACKUP" | jq -r '.name')
+          CREATED_AT=$(echo "$LATEST_BACKUP" | jq -r '.created_at')
+
+          echo "📦 Latest backup: $BACKUP_NAME"
+          echo "📅 Created at: $CREATED_AT"
+
+          # Calculate age in seconds
+          BACKUP_TIMESTAMP=$(date -d "$CREATED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$CREATED_AT" +%s)
+          CURRENT_TIMESTAMP=$(date +%s)
+          AGE_SECONDS=$((CURRENT_TIMESTAMP - BACKUP_TIMESTAMP))
+          AGE_HOURS=$((AGE_SECONDS / 3600))
+
+          echo "⏱️  Backup age: ${AGE_HOURS} hours"
+
+          # Check if older than 48 hours
+          if [ $AGE_HOURS -gt 48 ]; then
+            echo "❌ Backup is older than 48 hours!"
+            echo "alert=true" >> $GITHUB_OUTPUT
+            echo "reason=Last backup is ${AGE_HOURS} hours old (created: $CREATED_AT)" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Backup is fresh (${AGE_HOURS} hours old)"
+            echo "alert=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send alert email
+        if: steps.check.outputs.alert == 'true'
+        run: |
+          echo "📧 Sending alert email..."
+
+          curl -X POST 'https://api.resend.com/emails' \
+            -H "Authorization: Bearer ${{ secrets.RESEND_API_KEY }}" \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "from": "${{ secrets.FROM_EMAIL }}",
+              "to": ["leo@leotrs.com"],
+              "subject": "⚠️ Scroll Press Database Backup Alert",
+              "html": "<h2>Database Backup Alert</h2><p><strong>Warning:</strong> ${{ steps.check.outputs.reason }}</p><p>Please check the backup workflow status:</p><ul><li><a href=\"https://github.com/${{ github.repository }}/actions/workflows/database-backup.yml\">View workflow</a></li><li><a href=\"https://github.com/${{ github.repository }}/actions\">Recent runs</a></li></ul><p>To manually trigger a backup:</p><pre>gh workflow run database-backup.yml</pre>"
+            }'
+
+          echo "✅ Alert email sent"
+          exit 1  # Fail the workflow to make the alert visible in GitHub
+
+      - name: Health check passed
+        if: steps.check.outputs.alert != 'true'
+        run: |
+          echo "✅ Backup health check passed - no action needed"
