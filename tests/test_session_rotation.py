@@ -16,7 +16,7 @@ async def test_login_rotates_session_id(client: AsyncClient, test_user):
         "/login-form",
         data={
             "email": test_user.email,
-            "password": "testpassword",
+            "password": "testpassword123",
         },
     )
 
@@ -45,15 +45,24 @@ async def test_password_change_rotates_session(
 
     assert initial_session is not None
 
-    # Change password (when we implement this feature)
-    # For now, test the underlying rotate_session function
-    from app.auth.session import rotate_session
+    # Change password
+    response = await authenticated_client.post(
+        "/change-password-form",
+        data={
+            "current_password": "testpassword123",
+            "new_password": "NewSecurePass123!",
+            "confirm_new_password": "NewSecurePass123!",
+        },
+    )
 
-    new_session_id = await rotate_session(test_db, initial_session)
+    assert response.status_code == 200
+
+    # Get new session ID from response cookies
+    new_session = response.cookies.get("session_id")
 
     # Should get a new session ID
-    assert new_session_id is not None
-    assert new_session_id != initial_session
+    assert new_session is not None
+    assert new_session != initial_session
 
 
 @pytest.mark.asyncio
@@ -70,7 +79,7 @@ async def test_email_verification_rotates_session(client: AsyncClient, test_user
         "/login-form",
         data={
             "email": test_user.email,
-            "password": "testpassword",
+            "password": "testpassword123",
         },
     )
 
@@ -98,7 +107,7 @@ async def test_rotated_session_preserves_user_data(client: AsyncClient, test_use
         "/login-form",
         data={
             "email": test_user.email,
-            "password": "testpassword",
+            "password": "testpassword123",
         },
     )
 

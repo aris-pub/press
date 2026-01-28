@@ -28,7 +28,7 @@ async def test_csrf_token_is_unique_per_session(test_db, test_user):
     # Create a second user
     user2 = User(
         email="user2@example.com",
-        password_hash=get_password_hash("testpassword"),
+        password_hash=get_password_hash("testpassword123"),
         display_name="User 2",
         email_verified=True,
     )
@@ -78,7 +78,7 @@ async def test_csrf_token_rejects_token_from_different_session(test_db, test_use
     # Create a second user
     user2 = User(
         email="user2@example.com",
-        password_hash=get_password_hash("testpassword"),
+        password_hash=get_password_hash("testpassword123"),
         display_name="User 2",
         email_verified=True,
     )
@@ -171,7 +171,7 @@ async def test_login_with_valid_csrf_token(client: AsyncClient, test_user, test_
         "/login-form",
         data={
             "email": test_user.email,
-            "password": "testpassword",
+            "password": "testpassword123",
             "csrf_token": csrf_token,
         },
     )

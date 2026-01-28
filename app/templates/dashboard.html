@@ -68,6 +68,7 @@
   <div class="account-management">
     <h2>Account Management</h2>
     <div class="account-actions">
+      <a href="/change-password" class="btn btn-secondary">Change Password</a>
       {% if papers %}
         <button id="export-data-btn" class="btn btn-danger" onclick="openExportModal()" {% if not current_user.email_verified %}disabled{% endif %}>Export Data</button>
       {% endif %}

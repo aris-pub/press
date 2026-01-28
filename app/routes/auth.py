@@ -833,6 +833,165 @@ async def reset_password_form(
         raise HTTPException(status_code=500, detail="An error occurred during password reset")
 
 
+@router.get("/change-password", response_class=HTMLResponse)
+async def change_password_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the change password form for authenticated users."""
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    return templates.TemplateResponse(
+        request, "auth/change_password.html", {"current_user": current_user}
+    )
+
+
+@router.post("/change-password-form", response_class=HTMLResponse)
+async def change_password_form(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_new_password: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Process password change form submission for authenticated users."""
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    try:
+        # Verify current password
+        if not verify_password(current_password, current_user.password_hash):
+            return templates.TemplateResponse(
+                request,
+                "auth/change_password.html",
+                {
+                    "current_user": current_user,
+                    "error": "Current password is incorrect",
+                },
+                status_code=422,
+            )
+
+        # Validate new password strength
+        if len(new_password) < 8:
+            return templates.TemplateResponse(
+                request,
+                "auth/change_password.html",
+                {
+                    "current_user": current_user,
+                    "error": "New password must be at least 8 characters long",
+                },
+                status_code=422,
+            )
+
+        if not any(char.isdigit() for char in new_password):
+            return templates.TemplateResponse(
+                request,
+                "auth/change_password.html",
+                {
+                    "current_user": current_user,
+                    "error": "New password must contain at least one number",
+                },
+                status_code=422,
+            )
+
+        # Validate passwords match
+        if new_password != confirm_new_password:
+            return templates.TemplateResponse(
+                request,
+                "auth/change_password.html",
+                {
+                    "current_user": current_user,
+                    "error": "New passwords do not match",
+                },
+                status_code=422,
+            )
+
+        # Check that new password is different from current
+        if verify_password(new_password, current_user.password_hash):
+            return templates.TemplateResponse(
+                request,
+                "auth/change_password.html",
+                {
+                    "current_user": current_user,
+                    "error": "New password must be different from your current password",
+                },
+                status_code=422,
+            )
+
+        # Update password
+        current_user.password_hash = get_password_hash(new_password)
+        await db.commit()
+
+        get_logger().info(f"Password changed successfully for user {current_user.id}")
+        log_auth_event(
+            "password_change",
+            current_user.email,
+            True,
+            request,
+            user_id=str(current_user.id),
+        )
+
+        # Rotate session for security
+        old_session_id = request.cookies.get("session_id")
+        if old_session_id:
+            from app.auth.session import rotate_session
+
+            new_session_id = await rotate_session(db, old_session_id)
+
+            response = templates.TemplateResponse(
+                request,
+                "auth/change_password.html",
+                {
+                    "success": True,
+                    "message": "Your password has been changed successfully.",
+                    "current_user": current_user,
+                },
+            )
+            response.set_cookie(
+                key="session_id",
+                value=new_session_id,
+                httponly=True,
+                secure=IS_PRODUCTION,
+                samesite="lax",
+                max_age=86400,
+            )
+            return response
+
+        return templates.TemplateResponse(
+            request,
+            "auth/change_password.html",
+            {
+                "success": True,
+                "message": "Your password has been changed successfully.",
+                "current_user": current_user,
+            },
+        )
+
+    except Exception as e:
+        log_error(e, request, context="change_password")
+        log_auth_event(
+            "password_change",
+            current_user.email,
+            False,
+            request,
+            user_id=str(current_user.id),
+            error_message=str(e),
+        )
+        return templates.TemplateResponse(
+            request,
+            "auth/change_password.html",
+            {
+                "current_user": current_user,
+                "error": "An error occurred while changing your password. Please try again.",
+            },
+            status_code=500,
+        )
+
+
 @router.get("/user/export-data")
 async def export_user_data(
     request: Request,

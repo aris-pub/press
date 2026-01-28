@@ -314,7 +314,7 @@ async def test_reset_password_with_used_token(client, test_db, test_user):
 @pytest.mark.asyncio
 async def test_old_password_invalid_after_reset(client, test_db, test_user):
     """Test that old password doesn't work after reset."""
-    old_password = "testpassword"
+    old_password = "testpassword123"
     token = await create_password_reset_token(test_db, test_user.id)
 
     # Reset password

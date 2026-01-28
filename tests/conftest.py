@@ -228,7 +228,7 @@ async def test_user(test_db):
 
     user = User(
         email="test@example.com",
-        password_hash=get_password_hash("testpassword"),
+        password_hash=get_password_hash("testpassword123"),
         display_name="Test User",
         email_verified=True,
     )

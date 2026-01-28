@@ -229,7 +229,7 @@ async def test_resend_verification_creates_new_token(mock_send, client, test_db,
     test_user.email_verified = False
     await test_db.commit()
 
-    await client.post("/login-form", data={"email": test_user.email, "password": "testpassword"})
+    await client.post("/login-form", data={"email": test_user.email, "password": "testpassword123"})
 
     # Create initial token
     await create_verification_token(test_db, test_user.id)
@@ -267,7 +267,7 @@ async def test_resend_verification_invalidates_old_token(mock_send, client, test
     test_user.email_verified = False
     await test_db.commit()
 
-    await client.post("/login-form", data={"email": test_user.email, "password": "testpassword"})
+    await client.post("/login-form", data={"email": test_user.email, "password": "testpassword123"})
 
     # Create initial token
     old_token = await create_verification_token(test_db, test_user.id)
@@ -297,7 +297,7 @@ async def test_resend_verification_sends_email(mock_send, client, test_db, test_
     test_user.email_verified = False
     await test_db.commit()
 
-    await client.post("/login-form", data={"email": test_user.email, "password": "testpassword"})
+    await client.post("/login-form", data={"email": test_user.email, "password": "testpassword123"})
 
     with patch.dict(
         "os.environ",
@@ -386,7 +386,7 @@ async def test_verified_user_can_access_upload(client, test_db, test_user):
     await test_db.commit()
 
     # Login
-    await client.post("/login-form", data={"email": test_user.email, "password": "testpassword"})
+    await client.post("/login-form", data={"email": test_user.email, "password": "testpassword123"})
 
     # Access upload
     response = await client.get("/upload")

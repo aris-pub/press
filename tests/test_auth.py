@@ -33,7 +33,7 @@ async def test_register_page_redirects_authenticated_user(authenticated_client: 
 
 async def test_login_form_valid_credentials(client: AsyncClient, test_user):
     """Test POST /login-form with valid credentials."""
-    login_data = {"email": test_user.email, "password": "testpassword"}
+    login_data = {"email": test_user.email, "password": "testpassword123"}
 
     response = await client.post("/login-form", data=login_data)
     assert response.status_code == 200
@@ -123,7 +123,7 @@ async def test_protected_route_allows_authenticated(authenticated_client: AsyncC
 
 async def test_login_success_redirects_to_dashboard(client: AsyncClient, test_user):
     """Test that successful login shows success message with dashboard redirect."""
-    login_data = {"email": test_user.email, "password": "testpassword"}
+    login_data = {"email": test_user.email, "password": "testpassword123"}
 
     response = await client.post("/login-form", data=login_data)
     assert response.status_code == 200
@@ -138,7 +138,7 @@ async def test_login_success_redirects_to_dashboard(client: AsyncClient, test_us
 
 async def test_login_success_template_has_redirect_attributes(client: AsyncClient, test_user):
     """Test that login success template has correct HTMX redirect attributes."""
-    login_data = {"email": test_user.email, "password": "testpassword"}
+    login_data = {"email": test_user.email, "password": "testpassword123"}
 
     response = await client.post("/login-form", data=login_data)
     assert response.status_code == 200
