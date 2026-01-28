@@ -651,9 +651,9 @@ async def upload_form(
             if existing.status == "published":
                 scroll_link = f"{get_base_url()}/scroll/{existing.url_hash}"
                 raise ValueError(
-                    f'This content has already been published. Each scroll must have unique content. '
+                    f"This content has already been published. Each scroll must have unique content. "
                     f'<a href="{scroll_link}" target="_blank">View existing scroll</a>. '
-                    f'If this is a mistake, please contact us at hello@aris.pub'
+                    f"If this is a mistake, please contact us at hello@aris.pub"
                 )
             else:
                 # There's an abandoned preview with the same content
