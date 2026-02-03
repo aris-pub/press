@@ -200,6 +200,9 @@ app/
 
 ## Testing Best Practices
 - Never try to fix a test by adding a longer wait without making absolutely sure beyond doubt that a longer wait is strictly necessary
+- **ALWAYS use `just test` or `uv run pytest` for running tests** - never use `python -m pytest`
+- For single test files: `uv run pytest tests/test_file.py`
+- For all tests with coverage: `just test-cov`
 
 ## Documentation
 

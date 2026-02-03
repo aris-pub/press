@@ -220,3 +220,136 @@ def test_get_email_service_returns_service_when_configured():
         assert service is not None
         assert isinstance(service, EmailService)
         assert service.config.resend_api_key == "real_api_key"
+
+
+@pytest.mark.asyncio
+@patch("resend.Emails.send")
+async def test_send_admin_signup_notification(mock_send):
+    """Test that admin signup notification is composed correctly."""
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+        admin_email="admin@example.com",
+    )
+    service = EmailService(config)
+
+    result = await service.send_admin_signup_notification(
+        user_email="newuser@example.com", display_name="New User", user_id="user-123"
+    )
+
+    assert result is True
+    mock_send.assert_called_once()
+
+    call_args = mock_send.call_args[0][0]
+    assert call_args["to"] == ["admin@example.com"]
+    assert call_args["from"] == "Scroll Press <noreply@example.com>"
+    assert "New Signup" in call_args["subject"]
+    assert "New User" in call_args["subject"]
+    assert "html" in call_args
+    assert "text" in call_args
+
+    html_content = call_args["html"]
+    text_content = call_args["text"]
+    assert "newuser@example.com" in html_content
+    assert "New User" in html_content
+    assert "user-123" in html_content
+    assert "newuser@example.com" in text_content
+    assert "New User" in text_content
+    assert "user-123" in text_content
+
+
+@pytest.mark.asyncio
+@patch("resend.Emails.send")
+async def test_send_admin_publish_notification(mock_send):
+    """Test that admin publish notification is composed correctly."""
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+        admin_email="admin@example.com",
+    )
+    service = EmailService(config)
+
+    result = await service.send_admin_publish_notification(
+        user_email="author@example.com",
+        display_name="Author Name",
+        scroll_title="Test Paper Title",
+        scroll_url="http://localhost:8000/scroll/abc123",
+        url_hash="abc123",
+    )
+
+    assert result is True
+    mock_send.assert_called_once()
+
+    call_args = mock_send.call_args[0][0]
+    assert call_args["to"] == ["admin@example.com"]
+    assert call_args["from"] == "Scroll Press <noreply@example.com>"
+    assert "New Publication" in call_args["subject"]
+    assert "Test Paper Title" in call_args["subject"]
+    assert "html" in call_args
+    assert "text" in call_args
+
+    html_content = call_args["html"]
+    text_content = call_args["text"]
+    assert "author@example.com" in html_content
+    assert "Author Name" in html_content
+    assert "Test Paper Title" in html_content
+    assert "http://localhost:8000/scroll/abc123" in html_content
+    assert "abc123" in html_content
+    assert "author@example.com" in text_content
+    assert "Author Name" in text_content
+    assert "Test Paper Title" in text_content
+    assert "http://localhost:8000/scroll/abc123" in text_content
+
+
+@pytest.mark.asyncio
+@patch("resend.Emails.send")
+async def test_admin_notification_not_sent_without_admin_email(mock_send):
+    """Test that admin notifications are not sent when admin_email is not configured."""
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+        admin_email=None,
+    )
+    service = EmailService(config)
+
+    result = await service.send_admin_signup_notification(
+        user_email="user@example.com", display_name="User", user_id="123"
+    )
+
+    assert result is False
+    mock_send.assert_not_called()
+
+    result = await service.send_admin_publish_notification(
+        user_email="user@example.com",
+        display_name="User",
+        scroll_title="Title",
+        scroll_url="http://example.com",
+        url_hash="abc",
+    )
+
+    assert result is False
+    mock_send.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("resend.Emails.send")
+async def test_admin_notification_error_handling(mock_send):
+    """Test that admin notification errors are handled gracefully."""
+    mock_send.side_effect = Exception("Resend API error")
+
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+        admin_email="admin@example.com",
+    )
+    service = EmailService(config)
+
+    result = await service.send_admin_signup_notification(
+        user_email="user@example.com", display_name="User", user_id="123"
+    )
+
+    assert result is False

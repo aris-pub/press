@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 from app.auth.session import get_current_user_from_session
 from app.config import get_base_url
 from app.database import get_db
+from app.emails.service import get_email_service
 from app.integrations.doi_service import mint_doi_safe
 from app.logging_config import get_logger, log_error, log_preview_event, log_request
 from app.models.scroll import Scroll, Subject
@@ -124,6 +125,18 @@ async def confirm_preview(request: Request, url_hash: str, db: AsyncSession = De
         request,
         extra_data={"title": scroll.title, "doi_status": "pending"},
     )
+
+    # Send admin notification
+    email_service = get_email_service()
+    if email_service:
+        base_url = get_base_url()
+        await email_service.send_admin_publish_notification(
+            user_email=current_user.email,
+            display_name=current_user.display_name,
+            scroll_title=scroll.title,
+            scroll_url=f"{base_url}/scroll/{scroll.url_hash}",
+            url_hash=scroll.url_hash,
+        )
 
     # Start background task for DOI minting
     asyncio.create_task(mint_doi_safe(str(scroll.id)))
@@ -924,6 +937,18 @@ async def upload_html_paper(
                 "sanitization_count": len(processed_data.get("sanitization_log", [])),
             },
         )
+
+        # Send admin notification
+        email_service = get_email_service()
+        if email_service:
+            base_url = get_base_url()
+            await email_service.send_admin_publish_notification(
+                user_email=current_user.email,
+                display_name=current_user.display_name,
+                scroll_title=scroll.title,
+                scroll_url=f"{base_url}/scroll/{scroll.url_hash}",
+                url_hash=scroll.url_hash,
+            )
 
         # If publishing directly, publish the scroll
         if action == "publish":

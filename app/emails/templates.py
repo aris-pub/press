@@ -148,3 +148,85 @@ Scroll Press - HTML-native preprint server for modern research
     """
 
     return html_content, text_content
+
+
+def get_admin_signup_notification(user_email: str, display_name: str, user_id: str) -> tuple[str, str]:
+    """Generate admin notification for new user signup.
+
+    Args:
+        user_email: New user's email address
+        display_name: New user's display name
+        user_id: New user's ID
+
+    Returns:
+        Tuple of (html_content, text_content)
+    """
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>New Signup - Scroll Press</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #10b981;">New User Signup</h2>
+        <p><strong>Email:</strong> {user_email}</p>
+        <p><strong>Display Name:</strong> {display_name}</p>
+        <p><strong>User ID:</strong> {user_id}</p>
+    </body>
+    </html>
+    """
+
+    text_content = f"""
+New User Signup
+
+Email: {user_email}
+Display Name: {display_name}
+User ID: {user_id}
+    """
+
+    return html_content, text_content
+
+
+def get_admin_publish_notification(
+    user_email: str, display_name: str, scroll_title: str, scroll_url: str, url_hash: str
+) -> tuple[str, str]:
+    """Generate admin notification for new paper publish.
+
+    Args:
+        user_email: User's email address
+        display_name: User's display name
+        scroll_title: Title of the published scroll
+        scroll_url: Full URL to the published scroll
+        url_hash: URL hash of the scroll
+
+    Returns:
+        Tuple of (html_content, text_content)
+    """
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>New Publication - Scroll Press</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #3b82f6;">New Paper Published</h2>
+        <p><strong>User:</strong> {display_name} ({user_email})</p>
+        <p><strong>Title:</strong> {scroll_title}</p>
+        <p><strong>URL:</strong> <a href="{scroll_url}">{scroll_url}</a></p>
+        <p><strong>Hash:</strong> {url_hash}</p>
+    </body>
+    </html>
+    """
+
+    text_content = f"""
+New Paper Published
+
+User: {display_name} ({user_email})
+Title: {scroll_title}
+URL: {scroll_url}
+Hash: {url_hash}
+    """
+
+    return html_content, text_content
