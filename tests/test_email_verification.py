@@ -79,6 +79,7 @@ async def test_register_sends_verification_email(mock_send, client, test_db):
             "RESEND_API_KEY": "test_key",
             "FROM_EMAIL": "test@example.com",
             "BASE_URL": "http://localhost:8000",
+            "ADMIN_EMAIL": "",  # Disable admin notifications for this test
         },
     ):
         response = await client.post(
