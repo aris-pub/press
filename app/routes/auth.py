@@ -324,7 +324,9 @@ async def register_form(
 
             # Send admin notification for new signup
             await email_service.send_admin_signup_notification(
-                user_email=normalized_email, display_name=db_user.display_name, user_id=str(db_user.id)
+                user_email=normalized_email,
+                display_name=db_user.display_name,
+                user_id=str(db_user.id),
             )
 
         # Create session and auto-login user

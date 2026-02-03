@@ -150,7 +150,9 @@ Scroll Press - HTML-native preprint server for modern research
     return html_content, text_content
 
 
-def get_admin_signup_notification(user_email: str, display_name: str, user_id: str) -> tuple[str, str]:
+def get_admin_signup_notification(
+    user_email: str, display_name: str, user_id: str
+) -> tuple[str, str]:
     """Generate admin notification for new user signup.
 
     Args:

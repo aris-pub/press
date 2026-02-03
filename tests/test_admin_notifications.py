@@ -2,8 +2,8 @@
 
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.scroll import Scroll
