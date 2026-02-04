@@ -5,7 +5,15 @@ import os
 from pathlib import Path
 import uuid as uuid_module
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 import sentry_sdk
 from sqlalchemy import select
@@ -79,7 +87,11 @@ async def view_preview(request: Request, url_hash: str, db: AsyncSession = Depen
 
 
 @router.post("/preview/{url_hash}/confirm", response_class=HTMLResponse)
-async def confirm_preview(request: Request, url_hash: str, db: AsyncSession = Depends(get_db)):
+async def confirm_preview(
+    request: Request,
+    url_hash: str,
+    db: AsyncSession = Depends(get_db),
+):
     """Confirm and publish a preview scroll.
 
     Publishes the scroll, sets published timestamp, and initiates DOI minting.

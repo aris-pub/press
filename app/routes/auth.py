@@ -320,8 +320,6 @@ async def register_form(
             await email_service.send_verification_email(
                 to_email=normalized_email, name=db_user.display_name, token=verification_token
             )
-            get_logger().info(f"Sent verification email to {normalized_email}")
-
             # Send admin notification for new signup
             await email_service.send_admin_signup_notification(
                 user_email=normalized_email,
@@ -616,7 +614,6 @@ async def resend_verification(
                 name=current_user.display_name,
                 token=verification_token,
             )
-            get_logger().info(f"Resent verification email to {current_user.email}")
 
         # Show success message briefly, then redirect to homepage
         # Use JavaScript redirect instead of HTMX to avoid nested content bug

@@ -353,3 +353,225 @@ async def test_admin_notification_error_handling(mock_send):
     )
 
     assert result is False
+
+
+# Tests for _send_email() helper method
+
+
+@patch("resend.Emails.send")
+def test_send_email_helper_success(mock_send):
+    """Test that _send_email helper returns True on success."""
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+    )
+    service = EmailService(config)
+
+    params = {
+        "from": "noreply@example.com",
+        "to": ["user@example.com"],
+        "subject": "Test Email",
+        "html": "<p>Test</p>",
+        "text": "Test",
+    }
+
+    result = service._send_email(params, "test", "user@example.com")
+
+    assert result is True
+    mock_send.assert_called_once_with(params)
+
+
+@patch("resend.Emails.send")
+def test_send_email_helper_failure(mock_send):
+    """Test that _send_email helper returns False on failure."""
+    mock_send.side_effect = Exception("API error")
+
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+    )
+    service = EmailService(config)
+
+    params = {
+        "from": "noreply@example.com",
+        "to": ["user@example.com"],
+        "subject": "Test Email",
+        "html": "<p>Test</p>",
+        "text": "Test",
+    }
+
+    result = service._send_email(params, "test", "user@example.com")
+
+    assert result is False
+    mock_send.assert_called_once_with(params)
+
+
+@patch("resend.Emails.send")
+@patch("app.emails.service.get_logger")
+def test_send_email_helper_logs_success(mock_logger, mock_send):
+    """Test that _send_email helper logs success."""
+    mock_log = mock_logger.return_value
+
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+    )
+    service = EmailService(config)
+
+    params = {
+        "from": "noreply@example.com",
+        "to": ["user@example.com"],
+        "subject": "Test Email",
+        "html": "<p>Test</p>",
+        "text": "Test",
+    }
+
+    service._send_email(params, "verification", "user@example.com")
+
+    mock_log.info.assert_called_once_with("Sent verification email to user@example.com")
+
+
+@patch("resend.Emails.send")
+@patch("app.emails.service.get_logger")
+def test_send_email_helper_logs_error(mock_logger, mock_send):
+    """Test that _send_email helper logs errors."""
+    mock_send.side_effect = Exception("API error")
+    mock_log = mock_logger.return_value
+
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+    )
+    service = EmailService(config)
+
+    params = {
+        "from": "noreply@example.com",
+        "to": ["user@example.com"],
+        "subject": "Test Email",
+        "html": "<p>Test</p>",
+        "text": "Test",
+    }
+
+    service._send_email(params, "verification", "user@example.com")
+
+    mock_log.error.assert_called_once_with(
+        "Failed to send verification email to user@example.com: API error"
+    )
+
+
+@patch("resend.Emails.send")
+@patch("sentry_sdk.capture_exception")
+def test_send_email_helper_captures_to_sentry(mock_capture, mock_send):
+    """Test that _send_email helper sends exceptions to Sentry."""
+    error = Exception("API error")
+    mock_send.side_effect = error
+
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+    )
+    service = EmailService(config)
+
+    params = {
+        "from": "noreply@example.com",
+        "to": ["user@example.com"],
+        "subject": "Test Email",
+        "html": "<p>Test</p>",
+        "text": "Test",
+    }
+
+    service._send_email(params, "test", "user@example.com")
+
+    mock_capture.assert_called_once_with(error)
+
+
+@patch("resend.Emails.send")
+@patch("sentry_sdk.capture_exception")
+def test_send_email_helper_does_not_capture_on_success(mock_capture, mock_send):
+    """Test that _send_email helper doesn't send to Sentry on success."""
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+    )
+    service = EmailService(config)
+
+    params = {
+        "from": "noreply@example.com",
+        "to": ["user@example.com"],
+        "subject": "Test Email",
+        "html": "<p>Test</p>",
+        "text": "Test",
+    }
+
+    service._send_email(params, "test", "user@example.com")
+
+    mock_capture.assert_not_called()
+
+
+@patch("resend.Emails.send")
+def test_send_email_helper_handles_different_email_types(mock_send):
+    """Test that _send_email helper works with different email type labels."""
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+    )
+    service = EmailService(config)
+
+    params = {
+        "from": "noreply@example.com",
+        "to": ["user@example.com"],
+        "subject": "Test Email",
+        "html": "<p>Test</p>",
+        "text": "Test",
+    }
+
+    # Test different email types
+    email_types = [
+        "verification",
+        "password reset",
+        "admin signup notification",
+        "admin publish notification",
+    ]
+
+    for email_type in email_types:
+        mock_send.reset_mock()
+        result = service._send_email(params, email_type, "user@example.com")
+        assert result is True
+        mock_send.assert_called_once_with(params)
+
+
+@patch("resend.Emails.send")
+@patch("app.emails.service.get_logger")
+def test_send_email_helper_error_message_format(mock_logger, mock_send):
+    """Test that error messages are formatted correctly with email type and recipient."""
+    mock_send.side_effect = Exception("Connection timeout")
+    mock_log = mock_logger.return_value
+
+    config = EmailConfig(
+        resend_api_key="test_api_key",
+        from_email="noreply@example.com",
+        base_url="http://localhost:8000",
+    )
+    service = EmailService(config)
+
+    params = {
+        "from": "noreply@example.com",
+        "to": ["admin@example.com"],
+        "subject": "Test Email",
+        "html": "<p>Test</p>",
+        "text": "Test",
+    }
+
+    service._send_email(params, "admin publish notification", "admin@example.com")
+
+    expected_message = (
+        "Failed to send admin publish notification email to admin@example.com: Connection timeout"
+    )
+    mock_log.error.assert_called_once_with(expected_message)
