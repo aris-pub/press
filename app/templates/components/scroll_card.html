@@ -10,12 +10,26 @@ Usage:
 {% from "components/doi_badge.html" import doi_badge %}
 <div class="scroll preview" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
   {% if url_hash %}
-  <a href="/scroll/{{ url_hash }}" class="scroll-link">
+  <a href="/scroll/{{ url_hash }}" class="scroll-card-link">
     <div class="scroll-title">{{ title }}</div>
+    <div class="scroll-authors">{{ authors }}</div>
+    <div class="scroll-abstract">{{ abstract }}</div>
+    {% if doi_status %}
+    <div style="margin-top: 0.75rem;">
+      {{ doi_badge(doi, doi_status, compact=True) }}
+    </div>
+    {% endif %}
+    <div class="scroll-footer">
+      <div class="scroll-tags">
+        {% for tag in tags or [] %}
+        <span class="tag">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: var(--red);">{{ version }}</span></div>
+    </div>
   </a>
   {% else %}
   <div class="scroll-title">{{ title }}</div>
-  {% endif %}
   <div class="scroll-authors">{{ authors }}</div>
   <div class="scroll-abstract">{{ abstract }}</div>
   {% if doi_status %}
@@ -31,5 +45,6 @@ Usage:
     </div>
     <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: var(--red);">{{ version }}</span></div>
   </div>
+  {% endif %}
 </div>
 {% endmacro %}

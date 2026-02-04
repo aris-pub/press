@@ -219,19 +219,19 @@
         const timeAgo = 'recently'; // You might want to calculate this properly
 
         div.innerHTML = `
-            <a href="/scroll/${scroll.url_hash}" class="scroll-link">
+            <a href="/scroll/${scroll.url_hash}" class="scroll-card-link">
                 <div class="scroll-title">${scroll.title}</div>
-            </a>
-            <div class="scroll-authors">${scroll.authors}</div>
-            <div class="scroll-abstract">${scroll.abstract}</div>
-            <div class="scroll-footer">
-                <div class="scroll-tags">${tagsHtml}</div>
-                <div class="scroll-meta">
-                    <span class="preview-subject-link" data-subject-name="${scroll.subject_name.toLowerCase().replace(' ', '-')}" data-subject-display="${scroll.subject_name}" style="color: var(--red); cursor: pointer;">${scroll.subject_name}</span> |
-                    Submitted ${timeAgo} |
-                    <span style="color: var(--red);">v${scroll.version}</span>
+                <div class="scroll-authors">${scroll.authors}</div>
+                <div class="scroll-abstract">${scroll.abstract}</div>
+                <div class="scroll-footer">
+                    <div class="scroll-tags">${tagsHtml}</div>
+                    <div class="scroll-meta">
+                        <span class="preview-subject-link" data-subject-name="${scroll.subject_name.toLowerCase().replace(' ', '-')}" data-subject-display="${scroll.subject_name}" style="color: var(--red); cursor: pointer;">${scroll.subject_name}</span> |
+                        Submitted ${timeAgo} |
+                        <span style="color: var(--red);">v${scroll.version}</span>
+                    </div>
                 </div>
-            </div>
+            </a>
         `;
 
         return div;
@@ -315,6 +315,7 @@
     document.addEventListener('click', async function(e) {
         if (e.target.classList.contains('preview-subject-link')) {
             e.preventDefault();
+            e.stopPropagation();
             const subjectName = e.target.dataset.subjectName;
             const subjectDisplay = e.target.dataset.subjectDisplay;
 

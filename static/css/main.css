@@ -1064,18 +1064,38 @@ form.htmx-request .btn-primary {
     padding: 0.2rem 0.4rem;
   }
 }
-.scroll { 
-  padding-bottom: var(--space-xl); 
-  transition: opacity 0.3s ease, transform 0.3s ease;
+.scroll {
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+  transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  border-radius: 8px;
 }
 .scroll.filtered-out {
   opacity: 0.3;
   transform: scale(0.98);
 }
+.scroll:has(.scroll-card-link:hover) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: rgba(239, 68, 68, 0.02);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .scroll:has(.scroll-card-link:hover) {
+    background-color: rgba(248, 113, 113, 0.12);
+  }
+}
+
+[data-theme="dark"] .scroll:has(.scroll-card-link:hover) {
+  background-color: rgba(248, 113, 113, 0.12);
+}
 .scroll-meta { font-size: 0.8rem; color: var(--gray); margin-bottom: 0.75rem; }
 .scroll-title { font-size: var(--text-lg); font-weight: normal; margin-bottom: var(--space-xs); color: var(--black); font-family: var(--font-serif); }
-.scroll-link { text-decoration: none; color: inherit; }
-.scroll-link:hover .scroll-title { color: var(--red); }
+.scroll-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.scroll-card-link:hover .scroll-title { color: var(--red); }
 .scroll-authors { color: var(--gray-medium); margin-bottom: var(--space-md); font-size: var(--text-base); font-family: var(--font-serif); }
 .scroll-abstract { color: var(--gray-dark); margin-bottom: var(--space-md); font-size: var(--text-base); font-family: var(--font-serif); }
 .scroll-footer { display: flex; flex-direction: column; gap: 0.75rem; }
