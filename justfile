@@ -124,6 +124,32 @@ install-hooks:
     #!/usr/bin/env bash
     bash scripts/install-hooks.sh
 
+# Connect to production database with psql (read-only: SELECT queries only)
+db-prod *ARGS:
+    #!/usr/bin/env bash
+    set -a && source .env && set +a
+    if [ -z "$DATABASE_URL_PROD" ]; then
+        echo "Error: DATABASE_URL_PROD not found in .env"
+        exit 1
+    fi
+    if [ -z "{{ARGS}}" ]; then
+        echo "Error: No SQL query provided"
+        echo "Usage: just db-prod \"SELECT ...\""
+        echo "Note: Only SELECT queries are allowed for safety"
+        exit 1
+    else
+        # Check if query starts with SELECT (case-insensitive)
+        QUERY="{{ARGS}}"
+        QUERY_UPPER=$(echo "$QUERY" | tr '[:lower:]' '[:upper:]' | xargs)
+        if [[ ! "$QUERY_UPPER" =~ ^SELECT.* ]]; then
+            echo "Error: Only SELECT queries are allowed on production database"
+            echo "For write operations, use the Supabase dashboard or fly ssh console"
+            exit 1
+        fi
+        # Execute read-only SQL command
+        psql "$DATABASE_URL_PROD" -c "{{ARGS}}"
+    fi
+
 # Setup project from scratch
 init: install build migrate seed install-hooks
     @echo "Project setup complete! Run 'just dev' to start the server."
