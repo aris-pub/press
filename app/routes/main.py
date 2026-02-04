@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only
 
 from app.auth.session import get_current_user_from_session
 from app.database import get_db
@@ -50,11 +51,21 @@ async def landing_page(
     )
     subjects = subjects_result.all()
 
-    # Get recent published scrolls with subjects
+    # Get recent published scrolls with subjects (exclude html_content for performance)
     scrolls_result = await db.execute(
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
         .where(Scroll.status == "published")
+        .options(
+            load_only(
+                Scroll.title,
+                Scroll.authors,
+                Scroll.abstract,
+                Scroll.keywords,
+                Scroll.version,
+                Scroll.url_hash,
+            )
+        )
         .order_by(Scroll.created_at.desc())
         .limit(10)
     )
@@ -83,6 +94,17 @@ async def get_scrolls(
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
         .where(Scroll.status == "published")
+        .options(
+            load_only(
+                Scroll.title,
+                Scroll.authors,
+                Scroll.abstract,
+                Scroll.keywords,
+                Scroll.version,
+                Scroll.url_hash,
+                Scroll.created_at,
+            )
+        )
     )
 
     if subject:
@@ -391,11 +413,23 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
 
     log_request(request, user_id=str(current_user.id))
 
-    # Get user's published papers with subject names
+    # Get user's published papers with subject names (exclude html_content for performance)
     published_papers = await db.execute(
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
         .where(Scroll.user_id == current_user.id, Scroll.status == "published")
+        .options(
+            load_only(
+                Scroll.title,
+                Scroll.authors,
+                Scroll.abstract,
+                Scroll.keywords,
+                Scroll.version,
+                Scroll.url_hash,
+                Scroll.doi,
+                Scroll.doi_status,
+            )
+        )
         .order_by(Scroll.created_at.desc())
     )
     papers = published_papers.all()
@@ -589,12 +623,31 @@ async def export_data(
         raise HTTPException(status_code=400, detail=error_msg)
 
     # Get user's published papers with subject names
-    published_papers = await db.execute(
+    query = (
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
         .where(Scroll.user_id == current_user.id, Scroll.status == "published")
         .order_by(Scroll.created_at.desc())
     )
+
+    # Exclude html_content unless explicitly requested (for performance)
+    if not include_content:
+        query = query.options(
+            load_only(
+                Scroll.title,
+                Scroll.authors,
+                Scroll.abstract,
+                Scroll.keywords,
+                Scroll.license,
+                Scroll.version,
+                Scroll.published_at,
+                Scroll.preview_id,
+                Scroll.created_at,
+                Scroll.updated_at,
+            )
+        )
+
+    published_papers = await db.execute(query)
     papers = published_papers.all()
 
     # Generate timestamp for filename
