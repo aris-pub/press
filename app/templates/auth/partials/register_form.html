@@ -1,9 +1,9 @@
 {% from "components/auth_form.html" import auth_form %}
 
-{{ auth_form("register", "/register-form", "Create Account", "Creating...", 
+{{ auth_form("register", "/register-form", "Create Account", "Creating...",
              fields=[
                {"label": "Email", "name": "email", "type": "email"},
-               {"label": "Display Name", "name": "display_name", "type": "text"},
+               {"label": "Full Name", "name": "display_name", "type": "text"},
                {"label": "Password", "name": "password", "type": "password"},
                {"label": "Confirm Password", "name": "confirm_password", "type": "password"}
              ],
