@@ -47,8 +47,8 @@ if sentry_dsn:
             AsyncioIntegration(),
         ],
         # Performance monitoring - sample rates by environment
-        traces_sample_rate=1.0 if environment == "development" else 0.1,  # 10% in production
-        profiles_sample_rate=1.0 if environment == "development" else 0.1,  # 10% in production
+        traces_sample_rate=1.0 if environment == "development" else 0.05,  # 5% in production
+        profiles_sample_rate=1.0 if environment == "development" else 0.05,  # 5% in production
         # Environment and release tracking
         environment=environment,
         release=os.getenv("GIT_COMMIT", "dev"),
@@ -163,9 +163,63 @@ app.add_exception_handler(Exception, internal_server_error_handler)
 
 # Health check endpoint for monitoring
 @app.get("/health")
-def health_check():
-    """Fast health check endpoint for load balancers and monitoring."""
-    return {"status": "ok", "service": "scroll-press"}
+async def health_check():
+    """Health check endpoint for load balancers and monitoring.
+
+    Includes database connectivity and latency metrics to detect connection issues early.
+    """
+    import time
+
+    from sqlalchemy import func, select, text
+
+    from app.database import AsyncSessionLocal
+    from app.models.scroll import Scroll
+
+    start_time = time.time()
+
+    try:
+        async with AsyncSessionLocal() as db:
+            # Test database connectivity and measure latency
+            db_ping_start = time.time()
+            await db.execute(text("SELECT 1"))
+            db_latency = round((time.time() - db_ping_start) * 1000, 2)
+
+            # Test scrolls table specifically (most critical table)
+            scrolls_check_start = time.time()
+            result = await db.execute(select(func.count(Scroll.id)))
+            scroll_count = result.scalar()
+            scrolls_latency = round((time.time() - scrolls_check_start) * 1000, 2)
+
+            total_time = round((time.time() - start_time) * 1000, 2)
+
+            return {
+                "status": "healthy",
+                "service": "scroll-press",
+                "timestamp": time.time(),
+                "response_time_ms": total_time,
+                "metrics": {
+                    "db_latency_ms": db_latency,
+                    "scrolls_query_latency_ms": scrolls_latency,
+                    "scroll_count": scroll_count,
+                },
+            }
+    except Exception as e:
+        total_time = round((time.time() - start_time) * 1000, 2)
+
+        error_details = {
+            "status": "unhealthy",
+            "service": "scroll-press",
+            "timestamp": time.time(),
+            "response_time_ms": total_time,
+            "error": str(e),
+            "error_type": type(e).__name__,
+        }
+
+        # Include partial metrics if we got that far
+        if "db_latency" in locals():
+            error_details["metrics"] = {"db_latency_ms": db_latency}
+
+        return error_details
 
 
 # Include routers
