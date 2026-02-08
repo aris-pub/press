@@ -416,8 +416,14 @@ async def test_health_check(client: AsyncClient):
     assert response.status_code == 200
 
     data = response.json()
-    assert data["status"] == "ok"
+    assert data["status"] == "healthy"
     assert data["service"] == "scroll-press"
+    assert "timestamp" in data
+    assert "response_time_ms" in data
+    assert "metrics" in data
+    assert "db_latency_ms" in data["metrics"]
+    assert "scrolls_query_latency_ms" in data["metrics"]
+    assert "scroll_count" in data["metrics"]
 
 
 # Dashboard Tests (TDD)

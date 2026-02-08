@@ -38,7 +38,10 @@ async def test_internal_server_error_simulation(client: AsyncClient):
     # For now, we'll test that the health endpoint works correctly
     response = await client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "scroll-press"}
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert data["service"] == "scroll-press"
+    assert "metrics" in data
 
 
 @pytest.mark.skipif(True, reason="Rate limiting disabled in tests - manual test only")
