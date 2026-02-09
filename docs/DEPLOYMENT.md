@@ -105,6 +105,18 @@ fly open
 
 ### 4. Verify Deployment
 
+**Run email health check (recommended after every deployment):**
+```bash
+# After deploying with 'fly deploy', run:
+fly ssh console -C "python scripts/email_health_check.py"
+```
+
+This sends a test email to verify:
+- Resend API key is valid
+- FROM_EMAIL domain is properly configured
+- BASE_URL is correct for email links
+- Email delivery is working
+
 Test these endpoints:
 - `/health` - Health check (should return `{"status": "ok", "service": "scroll-press"}`)
 - `/` - Homepage loads

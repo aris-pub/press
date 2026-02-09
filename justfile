@@ -150,6 +150,31 @@ db-prod *ARGS:
         psql "$DATABASE_URL_PROD" -c "{{ARGS}}"
     fi
 
+# Test email service configuration (sends one test email)
+email-health-check:
+    #!/usr/bin/env bash
+    set -a && source .env && set +a
+    echo "Testing email service configuration..."
+    uv run python scripts/email_health_check.py
+
+# Deploy to production and run email health check
+deploy:
+    #!/usr/bin/env bash
+    set -e
+    echo "🚀 Deploying to production..."
+    fly deploy
+
+    echo ""
+    echo "✅ Deployment complete!"
+    echo "📧 Running email health check..."
+    echo ""
+
+    fly ssh console -C "uv run --frozen --no-dev python scripts/email_health_check.py"
+
+    echo ""
+    echo "🎉 Deployment and health check complete!"
+    echo "📬 Check your admin email for the test message"
+
 # Setup project from scratch
 init: install build migrate seed install-hooks
     @echo "Project setup complete! Run 'just dev' to start the server."
