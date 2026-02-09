@@ -12,6 +12,8 @@ Press accepts HTML files from any source:
 
 You can upload a single HTML file with inlined assets (images, CSS, JavaScript). Maximum file size is 50MB.
 
+**Looking for examples?** Check out our [examples repository](https://github.com/leotrs/examples-press) with working samples from each format.
+
 ## What is a "Scroll"?
 
 A scroll is what we call a preprint on Press. The name reflects how HTML research is meant to be experienced: you scroll through it on your screen, rather than flipping through static pages like a PDF.
