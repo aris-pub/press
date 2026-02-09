@@ -158,7 +158,7 @@ email-health-check:
     uv run python scripts/email_health_check.py
 
 # Deploy to production and run email health check
-deploy:
+deploy: build
     #!/usr/bin/env bash
     set -e
     echo "🚀 Deploying to production..."
