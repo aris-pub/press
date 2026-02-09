@@ -24,7 +24,7 @@ Once logged in, go to your [dashboard](/dashboard) and click "Upload New Scroll.
 - **MyST:** Use MyST-Parser HTML export
 - **Hand-coded:** Write HTML directly
 
-**Need examples?** Check out our [examples repository](https://github.com/leotrs/examples-press) with sample scrolls from Quarto, Typst, Jupyter, and more.
+**Need examples?** Check out our [examples repository](https://github.com/aris-pub/examples-press) with sample scrolls from Quarto, Typst, Jupyter, and more.
 
 ## 3. Add Metadata
 

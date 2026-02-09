@@ -12,7 +12,7 @@ Press accepts HTML files from any source:
 
 You can upload a single HTML file with inlined assets (images, CSS, JavaScript). Maximum file size is 50MB.
 
-**Looking for examples?** Check out our [examples repository](https://github.com/leotrs/examples-press) with working samples from each format.
+**Looking for examples?** Check out our [examples repository](https://github.com/aris-pub/examples-press) with working samples from each format.
 
 ## What is a "Scroll"?
 
