@@ -34,8 +34,8 @@ async def test_upload_creates_preview_scroll(
         follow_redirects=False,
     )
 
-    # Should return 200 (preview page rendered)
-    assert response.status_code == 200
+    # Should redirect to preview page (POST-redirect-GET pattern)
+    assert response.status_code == 303
 
     # Verify scroll was created with preview status
     result = await test_db.execute(select(Scroll).where(Scroll.title == "Test Paper"))

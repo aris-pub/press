@@ -20,7 +20,7 @@ async def create_session(db: AsyncSession, user_id: uuid.UUID) -> str:
     session_id = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
-    db_session = Session(session_id=session_id, user_id=user_id, expires_at=expires_at)
+    db_session = Session(session_id=session_id, user_id=user_id, expires_at=expires_at, data={})
     db.add(db_session)
     await db.commit()
 
@@ -30,6 +30,23 @@ async def create_session(db: AsyncSession, user_id: uuid.UUID) -> str:
     await rotate_csrf_token(session_id)
 
     return session_id
+
+
+# In-memory cache for session data to avoid database hits on every request
+# This is a temporary solution until we migrate to Redis
+_session_cache: dict[str, dict] = {}
+
+
+def get_session(session_id: str) -> dict:
+    """Get session data dict for storing arbitrary session data.
+
+    Returns a mutable dict that can be used to store/retrieve session data.
+    Changes to the dict are cached in memory but NOT persisted to database automatically.
+    Use save_session() to persist changes.
+    """
+    if session_id not in _session_cache:
+        _session_cache[session_id] = {}
+    return _session_cache[session_id]
 
 
 async def _get_user_id_from_session_id(db: AsyncSession, session_id: str) -> uuid.UUID | None:

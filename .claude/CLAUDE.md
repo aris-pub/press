@@ -95,6 +95,7 @@ ruff check . && ruff format .
 - CSS organization: Single `main.css` file (HTMX best practice)
 - Typography: Source Sans 3 + Georgia serif for headers
 - Component styling: Use `scroll-` class prefix (not `paper-`)
+- Icons: All icons use Lucide Icons (https://lucide.dev) - inline SVG with `stroke="currentColor"` for theming
 
 ### Code Organization
 ```

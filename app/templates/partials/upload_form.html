@@ -7,13 +7,36 @@
     <p>Share your interactive, web-native research with the world</p>
 </div>
 
+{% if current_drafts and not form_data and not session.get('dismissed_draft_banner') %}
+<div class="drafts-banner">
+  <div class="drafts-banner-content">
+    <div class="drafts-banner-text">
+      <svg class="drafts-banner-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+      </svg>
+      <span>You have {{ current_drafts|length }} draft{% if current_drafts|length > 1 %}s{% endif %}. Continue "{{ current_drafts[0].title if current_drafts[0].title else 'Untitled' }}" from {{ current_drafts[0].last_accessed_at.strftime('%b %d, %Y') }}?</span>
+    </div>
+    <div class="drafts-banner-actions">
+      <form method="POST" action="/upload/continue-draft/{{ current_drafts[0].url_hash }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn btn-primary btn-sm">Continue</button>
+      </form>
+      <form method="POST" action="/upload/start-fresh" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Start Fresh</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if error %}
 <div class="form-errors" id="form-errors">
     {{ error|safe }}
 </div>
 {% endif %}
 
-<form id="upload-form" hx-post="/upload-form" hx-target="#upload-container" hx-swap="innerHTML" enctype="multipart/form-data" hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'>
+<form id="upload-form" method="POST" action="/upload-form" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research scroll") }}
 
@@ -41,8 +64,10 @@
     {{ form_input("Keywords", "keywords", "text", form_data.keywords if form_data else "", required=false, help_text="Comma-separated keywords to help others discover your work") }}
 
     <div class="form-group">
-        <label for="html_file" class="form-label">HTML File: <span class="required">*</span></label>
-        <div class="file-upload-zone" id="file-upload-zone">
+        <label for="html_file" class="form-label">HTML File:{% if not (form_data and form_data.original_filename) %} <span class="required">*</span>{% endif %}</label>
+
+        <!-- Empty state: file upload zone -->
+        <div class="file-upload-zone" id="file-upload-zone" tabindex="0" role="button" aria-label="Upload HTML file" {% if form_data and form_data.original_filename %}style="display: none;"{% endif %}>
             <div class="file-upload-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
@@ -51,22 +76,28 @@
             </div>
             <div class="file-upload-text">Drop your HTML file here or click to browse</div>
             <div class="file-upload-subtext">Only .html files are accepted (max 50MB, UTF-8 encoded)</div>
-            <input type="file" id="html_file" name="file" class="file-upload-input" accept=".html,text/html" required>
+            <input type="file" id="html_file" name="file" class="file-upload-input" accept=".html,text/html" {% if not (form_data and form_data.original_filename) %}required{% endif %} aria-label="Select HTML file">
         </div>
-        <div id="file-info" class="file-info">
-            <div class="file-info-item">
-                <span class="file-info-label">File name:</span>
-                <span class="file-info-value" id="file-name"></span>
+
+        <!-- Uploaded state: file info with replace button -->
+        <div class="file-uploaded-state" id="file-uploaded-state" {% if not (form_data and form_data.original_filename) %}style="display: none;"{% endif %}>
+            <div class="file-uploaded-info">
+                <div class="file-uploaded-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <div class="file-uploaded-details">
+                    <div class="file-uploaded-name" id="uploaded-file-name">{{ form_data.original_filename if form_data and form_data.original_filename else '' }}</div>
+                    <div class="file-uploaded-subtext">File ready</div>
+                </div>
             </div>
-            <div class="file-info-item">
-                <span class="file-info-label">File size:</span>
-                <span class="file-info-value" id="file-size"></span>
-            </div>
-            <div class="file-info-item">
-                <span class="file-info-label">MIME type:</span>
-                <span class="file-info-value" id="file-type"></span>
-            </div>
+            <button type="button" class="btn-replace-file" id="btn-replace-file" tabindex="0" aria-label="Replace uploaded file">
+                Replace file
+            </button>
         </div>
+
         <div id="file-error" class="file-error" style="display: none;"></div>
         <div id="file-success" class="file-success" style="display: none;"></div>
         <div class="help-text">Upload a complete HTML document with embedded CSS and JavaScript for your interactive scroll. <a href="https://github.com/aris-pub/examples-press" target="_blank" rel="noopener noreferrer">View example scrolls</a> from Quarto, Typst, Jupyter, and more.</div>
@@ -108,7 +139,9 @@
 // File upload handling - wrapped in IIFE to prevent redeclaration errors on HTMX swaps
 const fileUploadZone = document.getElementById('file-upload-zone');
 const fileInput = document.getElementById('html_file');
-const fileInfo = document.getElementById('file-info');
+const fileUploadedState = document.getElementById('file-uploaded-state');
+const uploadedFileName = document.getElementById('uploaded-file-name');
+const btnReplaceFile = document.getElementById('btn-replace-file');
 const fileError = document.getElementById('file-error');
 const fileSuccess = document.getElementById('file-success');
 
@@ -117,6 +150,26 @@ if (fileUploadZone.dataset.initialized === 'true') {
     return;
 }
 fileUploadZone.dataset.initialized = 'true';
+
+// Keyboard accessibility - ENTER key to trigger file browse
+fileUploadZone.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
+    }
+});
+
+// Replace file button - keyboard and click
+btnReplaceFile.addEventListener('click', function() {
+    fileInput.click();
+});
+
+btnReplaceFile.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
+    }
+});
 
 // Drag and drop handlers
 fileUploadZone.addEventListener('dragover', function(e) {
@@ -172,21 +225,24 @@ function handleFileSelection(file) {
         return;
     }
 
-    // File is valid - update UI (no need to read content, server will handle it)
-    showFileInfo(file);
-    fileUploadZone.classList.add('has-file');
-    showSuccess('File ready for upload');
+    // File is valid - show uploaded state
+    showUploadedState(file);
 
     // Store file size for loading indicator
     const formattedSize = formatFileSize(file.size);
     document.getElementById('upload-form').setAttribute('data-file-size', formattedSize);
 }
 
-function showFileInfo(file) {
-    document.getElementById('file-name').textContent = file.name;
-    document.getElementById('file-size').textContent = formatFileSize(file.size);
-    document.getElementById('file-type').textContent = file.type || 'text/html';
-    fileInfo.classList.add('show');
+function showUploadedState(file) {
+    // Update uploaded state with file info
+    uploadedFileName.textContent = file.name;
+
+    // Hide empty state, show uploaded state
+    fileUploadZone.style.display = 'none';
+    fileUploadedState.style.display = 'flex';
+
+    // Remove required attribute when file is uploaded
+    fileInput.removeAttribute('required');
 }
 
 function formatFileSize(bytes) {
@@ -223,7 +279,9 @@ document.body.addEventListener('htmx:afterRequest', function(evt) {
 
 // Form validation before submission
 document.getElementById('upload-form').addEventListener('submit', function(e) {
-    if (!fileInput.files || fileInput.files.length === 0) {
+    // Only require file if not editing (uploaded state not visible means new upload required)
+    const isEditing = fileUploadedState.style.display !== 'none';
+    if (!isEditing && (!fileInput.files || fileInput.files.length === 0)) {
         e.preventDefault();
         showError('Please select an HTML file before submitting');
         return false;

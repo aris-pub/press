@@ -433,6 +433,16 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
 
     log_request(request, user_id=str(current_user.id))
 
+    # Clear preview editing session data when visiting dashboard
+    # This ensures the upload page will show the banner instead of pre-filled form
+    from app.auth.session import get_session
+
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        session = get_session(session_id)
+        session.pop("preview_form_data", None)
+        session.pop("current_preview_url_hash", None)
+
     # Get user's published papers with subject names (exclude html_content for performance)
     published_papers = await db.execute(
         select(Scroll, Subject.name.label("subject_name"))
@@ -454,13 +464,42 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     )
     papers = published_papers.all()
 
+    # Get user's draft scrolls
+    drafts_result = await db.execute(
+        select(Scroll, Subject.name.label("subject_name"))
+        .join(Subject)
+        .where(Scroll.user_id == current_user.id, Scroll.status == "preview")
+        .options(
+            load_only(
+                Scroll.title,
+                Scroll.authors,
+                Scroll.abstract,
+                Scroll.url_hash,
+                Scroll.last_accessed_at,
+            )
+        )
+        .order_by(Scroll.last_accessed_at.desc())
+    )
+    drafts = drafts_result.all()
+
+    # Get CSRF token
+    from app.auth.csrf import get_csrf_token
+
+    session_id = request.cookies.get("session_id")
+    csrf_token = await get_csrf_token(session_id)
+
     # Check if this is an HTMX request (for content-only swap)
     is_htmx = request.headers.get("HX-Request") == "true"
 
     return templates.TemplateResponse(
         request,
         "dashboard_content.html" if is_htmx else "dashboard.html",
-        {"current_user": current_user, "papers": papers},
+        {
+            "current_user": current_user,
+            "papers": papers,
+            "drafts": drafts,
+            "csrf_token": csrf_token,
+        },
     )
 
 

@@ -313,6 +313,9 @@ async def test_registration_duplicate_email(test_server):
                 await page.wait_for_load_state("networkidle")
                 await page.wait_for_timeout(500)  # Extra wait to ensure logout is processed
 
+            # Clear cookies to ensure clean slate for second registration
+            await page.context.clear_cookies()
+
             # Try to register second user with same email
             await page.goto(f"{test_server}/register")
 

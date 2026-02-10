@@ -1,6 +1,7 @@
 """Scroll upload and management routes."""
 
 import asyncio
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 import uuid as uuid_module
@@ -72,6 +73,19 @@ async def view_preview(request: Request, url_hash: str, db: AsyncSession = Depen
         return templates.TemplateResponse(
             request, "404.html", {"message": "Preview not found"}, status_code=404
         )
+
+    # Clear preview editing session data when viewing preview (similar to dashboard)
+    from app.auth.session import get_session
+
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        session = get_session(session_id)
+        session.pop("preview_form_data", None)
+        session.pop("current_preview_url_hash", None)
+
+    # Update last_accessed_at
+    scroll.last_accessed_at = datetime.now(timezone.utc)
+    await db.commit()
 
     # Get CSRF token for forms
     from app.auth.csrf import get_csrf_token
@@ -153,6 +167,15 @@ async def confirm_preview(
     # Start background task for DOI minting
     asyncio.create_task(mint_doi_safe(str(scroll.id)))
 
+    # Clear session data after publishing
+    from app.auth.session import get_session
+
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        session = get_session(session_id)
+        session.pop("preview_form_data", None)
+        session.pop("current_preview_url_hash", None)
+
     # Redirect to published scroll
     return RedirectResponse(url=f"/scroll/{scroll.url_hash}", status_code=303)
 
@@ -202,7 +225,151 @@ async def cancel_preview(request: Request, url_hash: str, db: AsyncSession = Dep
         extra_data={"title": scroll.title},
     )
 
+    # Clear session data after canceling
+    from app.auth.session import get_session
+
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        session = get_session(session_id)
+        session.pop("preview_form_data", None)
+        session.pop("current_preview_url_hash", None)
+
     # Redirect to upload page
+    return RedirectResponse(url="/upload", status_code=303)
+
+
+@router.post("/upload/continue-draft/{url_hash}")
+async def continue_draft(request: Request, url_hash: str, db: AsyncSession = Depends(get_db)):
+    """Load a draft into session and redirect to upload form."""
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    # Find preview scroll
+    result = await db.execute(
+        select(Scroll).where(
+            Scroll.url_hash == url_hash,
+            Scroll.status == "preview",
+            Scroll.user_id == current_user.id,
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Load into session
+    from app.auth.session import get_session
+
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        session = get_session(session_id)
+        session["preview_form_data"] = {
+            "title": scroll.title,
+            "authors": scroll.authors,
+            "subject_id": str(scroll.subject_id),
+            "abstract": scroll.abstract,
+            "keywords": ", ".join(scroll.keywords) if scroll.keywords else "",
+            "license": scroll.license,
+            "original_filename": scroll.original_filename,
+        }
+        session["current_preview_url_hash"] = url_hash
+
+    # Update last_accessed_at
+    scroll.last_accessed_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    return RedirectResponse(url="/upload", status_code=303)
+
+
+@router.post("/upload/start-fresh")
+async def start_fresh(request: Request, db: AsyncSession = Depends(get_db)):
+    """Clear session to start a fresh upload and dismiss draft banner."""
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    # Clear session data and set dismissed flag
+    from app.auth.session import get_session
+
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        session = get_session(session_id)
+        session["dismissed_draft_banner"] = True  # Dismiss banner for this session
+        session.pop("preview_form_data", None)
+        session.pop("current_preview_url_hash", None)
+
+    return RedirectResponse(url="/upload", status_code=303)
+
+
+@router.post("/preview/{url_hash}/edit")
+async def edit_preview(request: Request, url_hash: str, db: AsyncSession = Depends(get_db)):
+    """Edit a preview scroll - redirects to upload page with form data pre-filled.
+
+    Allows the user to go back and modify the metadata/content of a preview
+    before publishing. Form data is already in session from preview creation.
+    """
+    current_user = await get_current_user_from_session(request, db)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    log_request(
+        request,
+        user_id=str(current_user.id),
+        extra_data={"url_hash": url_hash, "action": "edit"},
+    )
+
+    # Verify the preview exists and belongs to the user
+    result = await db.execute(
+        select(Scroll).where(
+            Scroll.url_hash == url_hash,
+            Scroll.status == "preview",
+            Scroll.user_id == current_user.id,
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Preview not found or not authorized to edit")
+
+    # Form data should already be in session from preview creation
+    # If not, populate it from the scroll
+    from app.auth.session import get_session
+
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        session = get_session(session_id)
+
+        if "preview_form_data" not in session:
+            session["preview_form_data"] = {
+                "title": scroll.title,
+                "authors": scroll.authors,
+                "subject_id": str(scroll.subject_id),
+                "abstract": scroll.abstract,
+                "keywords": ", ".join(scroll.keywords) if scroll.keywords else "",
+                "license": scroll.license,
+                "original_filename": scroll.original_filename,
+            }
+
+        # Keep the current preview in session to prevent cleanup
+        session["current_preview_url_hash"] = url_hash
+
+    # Update last_accessed_at
+    scroll.last_accessed_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    log_preview_event(
+        "edit_preview",
+        url_hash,
+        str(current_user.id),
+        request,
+        extra_data={"title": scroll.title},
+    )
+
+    # Redirect to upload page (form will be pre-filled from session)
     return RedirectResponse(url="/upload", status_code=303)
 
 
@@ -328,23 +495,8 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
 
     log_request(request, user_id=str(current_user.id))
 
-    # Clean up any abandoned previews from this user
-    # (User closed window/lost session without confirming or canceling)
-    try:
-        abandoned_previews = await db.execute(
-            select(Scroll).where(Scroll.user_id == current_user.id, Scroll.status == "preview")
-        )
-        abandoned = abandoned_previews.scalars().all()
-        if abandoned:
-            for preview in abandoned:
-                await db.delete(preview)
-            await db.commit()
-            get_logger().info(
-                f"Cleaned up {len(abandoned)} abandoned preview(s) for user {current_user.id}"
-            )
-    except Exception as e:
-        get_logger().error(f"Failed to clean up abandoned previews: {e}")
-        await db.rollback()
+    # Eagerly load user ID to avoid lazy-load issues
+    user_id = current_user.id
 
     # Load available subjects
     get_logger().info("Loading subjects for upload form...")
@@ -385,14 +537,65 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
 
     # Get CSRF token for form
     from app.auth.csrf import get_csrf_token
+    from app.auth.session import get_session
 
     session_id = request.cookies.get("session_id")
     csrf_token = await get_csrf_token(session_id)
 
+    # Pre-fill form ONLY if explicitly editing (session data present from Edit Details or Continue)
+    form_data = None
+    current_preview_hash = None
+
+    # Get user's drafts for banner display (always query, regardless of session state)
+    drafts_result = await db.execute(
+        select(Scroll)
+        .where(Scroll.user_id == user_id, Scroll.status == "preview")
+        .order_by(Scroll.last_accessed_at.desc())
+        .limit(5)
+    )
+    current_drafts = drafts_result.scalars().all()
+
+    if session_id:
+        session = get_session(session_id)
+        form_data = session.get("preview_form_data")
+        current_preview_hash = session.get("current_preview_url_hash")
+
+        # Validate form_data preview still exists
+        if form_data and current_preview_hash:
+            result = await db.execute(
+                select(Scroll).where(
+                    Scroll.url_hash == current_preview_hash, Scroll.status == "preview"
+                )
+            )
+            preview_exists = result.scalar_one_or_none()
+
+            if not preview_exists:
+                session.pop("preview_form_data", None)
+                session.pop("current_preview_url_hash", None)
+                form_data = None
+
+    # Re-query user to ensure it's attached to session (cleanup commit may have expired it)
+    from app.models.user import User
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    current_user = result.scalar_one()
+
+    # Get session for template (to check dismissed_draft_banner flag)
+    session_data = {}
+    if session_id:
+        session_data = dict(session)  # Convert to dict for template
+
     return templates.TemplateResponse(
         request,
         "upload.html",
-        {"current_user": current_user, "subjects": subjects, "csrf_token": csrf_token},
+        {
+            "current_user": current_user,
+            "subjects": subjects,
+            "csrf_token": csrf_token,
+            "form_data": form_data,
+            "current_drafts": current_drafts,
+            "session": session_data,
+        },
     )
 
 
@@ -404,7 +607,7 @@ async def upload_form(
     subject_id: str = Form(...),
     abstract: str = Form(...),
     keywords: str = Form(""),
-    file: UploadFile = File(...),
+    file: UploadFile = File(None),
     license: str = Form(...),
     confirm_rights: str = Form(None),
     action: str = Form("publish"),  # Always publish
@@ -463,17 +666,52 @@ async def upload_form(
             "upload", {"title": title, "subject_id": subject_id, "license": license}
         )
 
-        # Read HTML content from uploaded file (streaming approach)
-        html_content_bytes = await file.read()
-
-        # Validate UTF-8 encoding
+        # Read HTML content from uploaded file or use existing preview content
         html_content = ""  # Initialize for error handler
-        try:
-            html_content = html_content_bytes.decode("utf-8").strip()
-        except UnicodeDecodeError:
-            raise ValueError(
-                "File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding."
-            )
+        original_filename = None
+
+        if file and file.filename:
+            # New file uploaded - use it
+            html_content_bytes = await file.read()
+            original_filename = file.filename
+
+            # Validate UTF-8 encoding
+            try:
+                html_content = html_content_bytes.decode("utf-8").strip()
+            except UnicodeDecodeError:
+                raise ValueError(
+                    "File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding."
+                )
+        else:
+            # No file uploaded - check if editing existing preview
+            from app.auth.session import get_session
+
+            session_id = request.cookies.get("session_id")
+            if session_id:
+                session = get_session(session_id)
+                current_preview_url_hash = session.get("current_preview_url_hash")
+
+                if current_preview_url_hash:
+                    # Fetch existing preview scroll
+                    result = await db.execute(
+                        select(Scroll).where(
+                            Scroll.url_hash == current_preview_url_hash,
+                            Scroll.status == "preview",
+                            Scroll.user_id == current_user.id,
+                        )
+                    )
+                    existing_scroll = result.scalar_one_or_none()
+
+                    if existing_scroll:
+                        html_content = existing_scroll.html_content
+                        # Keep existing filename (will be used when creating/updating scroll)
+                        original_filename = existing_scroll.original_filename
+                    else:
+                        raise ValueError("HTML file is required")
+                else:
+                    raise ValueError("HTML file is required")
+            else:
+                raise ValueError("HTML file is required")
 
         # Strip other inputs once to avoid creating multiple copies in memory
         title = title.strip() if title else ""
@@ -672,6 +910,14 @@ async def upload_form(
         # Check if content already exists (published or preview)
         existing_scroll = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
         existing = existing_scroll.scalar_one_or_none()
+
+        # Check if user is editing an existing preview
+        from app.auth.session import get_session
+
+        session_id = request.cookies.get("session_id")
+        if session_id:
+            session = get_session(session_id)
+
         if existing:
             if existing.status == "published":
                 scroll_link = f"{get_base_url()}/scroll/{existing.url_hash}"
@@ -680,28 +926,46 @@ async def upload_form(
                     f'<a href="{scroll_link}" target="_blank">View existing scroll</a>. '
                     f"If this is a mistake, please contact us at hello@aris.pub"
                 )
+            elif existing.user_id == current_user.id and existing.status == "preview":
+                # User is resubmitting their own preview - update it instead of creating new
+                existing.title = title
+                existing.authors = authors
+                existing.subject_id = subject.id
+                existing.abstract = abstract
+                existing.keywords = keyword_list
+                existing.license = license
+                # Update original_filename if new file was uploaded
+                if original_filename:
+                    existing.original_filename = original_filename
+                await db.commit()
+                await db.refresh(existing)
+                scroll = existing
+                get_logger().info(
+                    f"Updated existing preview {url_hash} for user {current_user.id}"
+                )
             else:
-                # There's an abandoned preview with the same content
+                # There's a preview from another user
                 raise ValueError(
                     "A preview with identical content already exists. Please cancel or confirm the existing preview before uploading again, or modify your content to make it unique."
                 )
+        else:
+            # Create scroll with preview status (not yet published)
+            scroll = Scroll(
+                user_id=current_user.id,
+                title=title,
+                authors=authors,
+                subject_id=subject.id,
+                abstract=abstract,
+                keywords=keyword_list,
+                html_content=html_content,
+                license=license,
+                content_hash=content_hash,
+                url_hash=url_hash,
+                status="preview",
+                original_filename=original_filename if original_filename else "document.html",
+            )
 
-        # Create scroll with preview status (not yet published)
-        scroll = Scroll(
-            user_id=current_user.id,
-            title=title,
-            authors=authors,
-            subject_id=subject.id,
-            abstract=abstract,
-            keywords=keyword_list,
-            html_content=html_content,
-            license=license,
-            content_hash=content_hash,
-            url_hash=url_hash,
-            status="preview",
-        )
-
-        db.add(scroll)
+            db.add(scroll)
 
         # PROFILING: Memory before commit
         mem_before_commit = process.memory_info().rss / 1024 / 1024
@@ -717,6 +981,10 @@ async def upload_form(
         await db.commit()
         await db.refresh(scroll)
 
+        # Update last_accessed_at
+        scroll.last_accessed_at = datetime.now(timezone.utc)
+        await db.commit()
+
         # Load the subject relationship for preview display
         result = await db.execute(
             select(Scroll).options(selectinload(Scroll.subject)).where(Scroll.id == scroll.id)
@@ -731,22 +999,25 @@ async def upload_form(
             extra_data={"title": scroll.title, "status": "preview", "url_hash": scroll.url_hash},
         )
 
-        # Get CSRF token for preview page forms
-        from app.auth.csrf import get_csrf_token
+        # Store form data in session for edit functionality
+        from app.auth.session import get_session
 
         session_id = request.cookies.get("session_id")
-        csrf_token = await get_csrf_token(session_id)
+        if session_id:
+            session = get_session(session_id)
+            session["preview_form_data"] = {
+                "title": title,
+                "authors": authors,
+                "subject_id": subject_id,
+                "abstract": abstract,
+                "keywords": keywords,
+                "license": license,
+                "original_filename": scroll.original_filename,
+            }
+            session["current_preview_url_hash"] = scroll.url_hash
 
-        # Return preview page for user to review before publishing
-        return templates.TemplateResponse(
-            request,
-            "preview.html",
-            {
-                "scroll": scroll,
-                "current_user": current_user,
-                "csrf_token": csrf_token,
-            },
-        )
+        # Redirect to preview page (real navigation, not HTMX swap)
+        return RedirectResponse(url=f"/preview/{scroll.url_hash}", status_code=303)
 
     except Exception as e:
         error_message = str(e) if str(e) else "Upload failed. Please try again."
@@ -786,10 +1057,10 @@ async def upload_form(
         session_id = request.cookies.get("session_id")
         csrf_token = await get_csrf_token(session_id) if session_id else None
 
-        # Return form partial with error (not full page)
+        # Return full page with error (not partial - need full page for navbar, CSS, etc.)
         return templates.TemplateResponse(
             request,
-            "partials/upload_form.html",
+            "upload.html",
             {
                 "current_user": user_context,
                 "subjects": subjects,

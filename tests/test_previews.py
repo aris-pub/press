@@ -43,9 +43,10 @@ async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, tes
     }
 
     files = {"file": ("test.html", "<h1>Test Content</h1>", "text/html")}
-    response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
-    assert response.status_code == 200
-    assert "PREVIEW MODE" in response.text or "Preview" in response.text
+    response = await authenticated_client.post(
+        "/upload-form", data=upload_data, files=files, follow_redirects=False
+    )
+    assert response.status_code == 303
 
     # Verify scroll was created with preview status
     result = await test_db.execute(select(Scroll).where(Scroll.title == "Test Scroll"))
@@ -74,9 +75,10 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
     }
 
     files = {"file": ("test.html", "<h1>Published Content</h1>", "text/html")}
-    response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
-    assert response.status_code == 200
-    assert "PREVIEW MODE" in response.text or "Preview" in response.text
+    response = await authenticated_client.post(
+        "/upload-form", data=upload_data, files=files, follow_redirects=False
+    )
+    assert response.status_code == 303
 
     # Verify preview was created
     result = await test_db.execute(select(Scroll).where(Scroll.title == "Published Scroll"))
@@ -403,9 +405,10 @@ async def test_upload_form_with_file_content_integration(
     }
 
     files = {"file": ("research.html", file_html_content, "text/html")}
-    response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
-    assert response.status_code == 200
-    assert "PREVIEW MODE" in response.text or "Preview" in response.text
+    response = await authenticated_client.post(
+        "/upload-form", data=upload_data, files=files, follow_redirects=False
+    )
+    assert response.status_code == 303
 
     # Verify the scroll was created with file content in preview status
     result = await test_db.execute(
@@ -471,7 +474,6 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
 
     valid_files = {"file": ("valid.html", "<html><body><h1>Valid</h1></body></html>", "text/html")}
     response = await authenticated_client.post(
-        "/upload-form", data=valid_upload_data, files=valid_files
+        "/upload-form", data=valid_upload_data, files=valid_files, follow_redirects=False
     )
-    assert response.status_code == 200
-    assert "PREVIEW MODE" in response.text or "Preview" in response.text
+    assert response.status_code == 303

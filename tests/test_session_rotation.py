@@ -117,3 +117,65 @@ async def test_rotated_session_preserves_user_data(client: AsyncClient, test_use
 
     # User should still be authenticated after session rotation
     # (The login itself rotates the session)
+
+
+# Unit tests for get_session()
+
+
+def test_get_session_creates_new_session_dict():
+    """Test that get_session() creates a new dict for new session IDs."""
+    from app.auth.session import get_session
+
+    session_id = "test_session_123"
+    session = get_session(session_id)
+
+    assert session is not None
+    assert isinstance(session, dict)
+    assert len(session) == 0
+
+
+def test_get_session_returns_same_dict_for_same_id():
+    """Test that get_session() returns the same dict for the same session ID."""
+    from app.auth.session import get_session
+
+    session_id = "test_session_456"
+    session1 = get_session(session_id)
+    session1["test_key"] = "test_value"
+
+    session2 = get_session(session_id)
+
+    assert session2 is session1
+    assert session2["test_key"] == "test_value"
+
+
+def test_get_session_isolates_different_sessions():
+    """Test that different session IDs get different dicts."""
+    from app.auth.session import get_session
+
+    session_a = get_session("session_a")
+    session_b = get_session("session_b")
+
+    session_a["data"] = "session_a_data"
+    session_b["data"] = "session_b_data"
+
+    assert session_a["data"] == "session_a_data"
+    assert session_b["data"] == "session_b_data"
+    assert session_a is not session_b
+
+
+def test_get_session_stores_complex_data():
+    """Test that get_session() can store complex nested data structures."""
+    from app.auth.session import get_session
+
+    session_id = "test_complex_session"
+    session = get_session(session_id)
+
+    session["form_data"] = {
+        "title": "Test Title",
+        "authors": "Test Author",
+        "nested": {"key": "value", "list": [1, 2, 3]},
+    }
+
+    retrieved_session = get_session(session_id)
+    assert retrieved_session["form_data"]["title"] == "Test Title"
+    assert retrieved_session["form_data"]["nested"]["list"] == [1, 2, 3]

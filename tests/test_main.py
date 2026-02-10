@@ -550,17 +550,17 @@ async def test_dashboard_shows_empty_state_when_no_published_papers(
     assert "Upload Your First Scroll" in response.text
 
 
-async def test_dashboard_does_not_show_draft_papers(
+async def test_dashboard_shows_drafts_and_published_separately(
     authenticated_client: AsyncClient, test_db, test_user
 ):
-    """Test 6: Dashboard does not show draft papers, only published ones."""
+    """Test: Dashboard shows drafts in 'My Drafts' section and published in 'Your Scrolls' section."""
     # Create test subject
     subject = Subject(name="Mathematics", description="Math research")
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
 
-    # Create draft preview (should not appear)
+    # Create draft preview (should appear in "My Drafts" section)
     draft_preview = Scroll(
         title="Draft Mathematics Paper",
         authors="Test Author",
@@ -570,9 +570,11 @@ async def test_dashboard_does_not_show_draft_papers(
         user_id=test_user.id,
         subject_id=subject.id,
         status="preview",  # Draft status
+        url_hash="draft123",
+        content_hash="drafthash123",
     )
 
-    # Create published preview (should appear)
+    # Create published paper (should appear in "Your Scrolls" section)
     published_preview = await create_content_addressable_scroll(
         test_db,
         test_user,
@@ -591,12 +593,21 @@ async def test_dashboard_does_not_show_draft_papers(
 
     response = await authenticated_client.get("/dashboard")
     assert response.status_code == 200
-    # Should show published paper
-    assert "Published Mathematics Paper" in response.text
-    assert "This is a published paper" in response.text
-    # Should NOT show draft paper
-    assert "Draft Mathematics Paper" not in response.text
-    assert "This is a draft paper" not in response.text
+    html = response.text
+
+    # Verify "My Drafts" section exists and shows draft
+    assert "My Drafts" in html, "Should have 'My Drafts' section"
+    assert "Draft Mathematics Paper" in html, "Draft should appear in My Drafts section"
+    assert "draft-card" in html, "Should have draft card styling"
+
+    # Verify "Your Scrolls" section exists and shows published paper
+    assert "Your Scrolls" in html, "Should have 'Your Scrolls' section"
+    assert "Published Mathematics Paper" in html, "Published paper should appear"
+    assert "This is a published paper" in html, "Published abstract should appear"
+
+    # Verify drafts have correct styling/metadata
+    assert "DRAFT" in html, "Should have draft badge"
+    assert "Last edited" in html, "Should show last edited date for drafts"
 
 
 async def test_dashboard_papers_ordered_by_created_at_descending(

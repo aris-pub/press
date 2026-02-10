@@ -66,7 +66,7 @@ async def test_upload_form_submission_with_file(test_server):
                 await page.set_input_files('input[type="file"]', temp_file_path)
 
                 # Wait for file info to appear
-                await expect(page.locator("#file-name")).to_contain_text(".html")
+                await expect(page.locator("#uploaded-file-name")).to_contain_text(".html")
 
                 # Select license
                 await page.check('input[value="cc-by-4.0"]')

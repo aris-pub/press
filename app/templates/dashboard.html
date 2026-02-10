@@ -24,6 +24,41 @@
   </div>
   {% endif %}
 
+  {% if drafts %}
+  <div class="drafts-section">
+    <div class="dashboard-header">
+      <h2>My Drafts ({{ drafts|length }})</h2>
+    </div>
+
+    <div class="scrolls-grid">
+      {% for draft_row in drafts %}
+      {% set draft = draft_row[0] %}
+      {% set subject_name = draft_row[1] %}
+      <div class="draft-card">
+        <div class="draft-card-header">
+          <span class="draft-badge">DRAFT</span>
+          <span class="draft-date">Last edited {{ draft.last_accessed_at.strftime('%b %d, %Y') }}</span>
+        </div>
+        <h3 class="draft-title">{{ draft.title }}</h3>
+        <p class="draft-authors">{{ draft.authors }} • {{ subject_name }}</p>
+        <p class="draft-abstract">{{ draft.abstract[:150] }}{% if draft.abstract|length > 150 %}...{% endif %}</p>
+        <div class="draft-actions">
+          <form method="POST" action="/upload/continue-draft/{{ draft.url_hash }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-primary btn-sm">Continue Editing</button>
+          </form>
+          <a href="/preview/{{ draft.url_hash }}" class="btn btn-secondary btn-sm">View Preview</a>
+          <form method="POST" action="/preview/{{ draft.url_hash }}/cancel" style="display: inline;" onsubmit="return confirm('Delete this draft? This cannot be undone.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <div class="recent">
     <div class="dashboard-header">
       <h2>Your Scrolls ({{ papers|length }})</h2>
@@ -533,6 +568,76 @@
     font-size: var(--mobile-text-base);
     min-height: 44px;
   }
+}
+
+/* Drafts section styles */
+.drafts-section {
+  margin-bottom: var(--space-xxl);
+  padding-bottom: var(--space-xl);
+  border-bottom: 1px solid var(--gray-lightest);
+}
+
+.draft-card {
+  background: var(--gray-bg);
+  border: 1px solid var(--gray-light);
+  border-left: 4px solid var(--orange);
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.draft-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.draft-badge {
+  background: var(--orange);
+  color: white;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--border-radius);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.draft-date {
+  color: var(--gray);
+  font-size: var(--text-sm);
+}
+
+.draft-title {
+  margin: 0 0 var(--space-sm) 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.draft-authors {
+  margin: 0 0 var(--space-md) 0;
+  color: var(--gray);
+  font-size: var(--text-sm);
+}
+
+.draft-abstract {
+  margin: 0 0 var(--space-lg) 0;
+  color: var(--text-color);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.draft-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-sm);
 }
 </style>
 

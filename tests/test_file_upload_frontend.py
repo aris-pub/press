@@ -88,9 +88,10 @@ class TestFileUploadFormSubmission:
         }
         files = {"file": ("test.html", valid_html, "text/html")}
 
-        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
-        assert response.status_code == 200
-        assert "PREVIEW MODE" in response.text or "Preview" in response.text
+        response = await authenticated_client.post(
+            "/upload-form", data=upload_data, files=files, follow_redirects=False
+        )
+        assert response.status_code == 303
 
     async def test_upload_form_rejects_missing_file(
         self, authenticated_client: AsyncClient, test_db
@@ -142,9 +143,10 @@ class TestFileUploadFormSubmission:
         }
         files = {"file": ("minimal.html", minimal_html, "text/html")}
 
-        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
-        assert response.status_code == 200
-        assert "PREVIEW MODE" in response.text or "Preview" in response.text
+        response = await authenticated_client.post(
+            "/upload-form", data=upload_data, files=files, follow_redirects=False
+        )
+        assert response.status_code == 303
 
     async def test_upload_form_handles_large_html_content(
         self, authenticated_client: AsyncClient, test_db
@@ -181,9 +183,10 @@ class TestFileUploadFormSubmission:
         }
         files = {"file": ("large.html", large_html, "text/html")}
 
-        response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
-        assert response.status_code == 200
-        assert "PREVIEW MODE" in response.text or "Preview" in response.text
+        response = await authenticated_client.post(
+            "/upload-form", data=upload_data, files=files, follow_redirects=False
+        )
+        assert response.status_code == 303
 
     async def test_upload_form_rejects_dangerous_html(
         self, authenticated_client: AsyncClient, test_db
@@ -354,15 +357,14 @@ class TestFileUploadUIElements:
         response = await authenticated_client.get("/upload")
         assert response.status_code == 200
 
-        # Check for validation message containers
-        assert 'id="file-info"' in response.text
+        # Check for file upload UI elements
+        assert 'id="uploaded-file-name"' in response.text
         assert 'id="file-error"' in response.text
         assert 'id="file-success"' in response.text
 
-        # Check for validation text
-        assert "Only .html files are accepted" in response.text
-        assert "max 50MB" in response.text
-        assert "UTF-8 encoded" in response.text
+        # Check for help text
+        assert "Upload a complete HTML document" in response.text
+        assert "View example scrolls" in response.text
 
     async def test_upload_page_contains_file_handling_javascript(
         self, authenticated_client: AsyncClient

@@ -142,6 +142,11 @@ class Scroll(Base):
         nullable=False,
     )
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_accessed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # DOI fields
     doi: Mapped[Optional[str]] = mapped_column(String(100), unique=True, nullable=True, index=True)

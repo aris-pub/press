@@ -100,10 +100,9 @@ class TestLicenseValidation:
                 )
             }
             response = await authenticated_client.post(
-                "/upload-form", data=upload_data, files=files
+                "/upload-form", data=upload_data, files=files, follow_redirects=False
             )
-            assert response.status_code == 200
-            assert "PREVIEW MODE" in response.text or "Preview" in response.text
+            assert response.status_code == 303
 
 
 class TestLicenseDisplay:

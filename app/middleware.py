@@ -528,9 +528,27 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 content_type_header = request.headers.get("Content-Type", "")
 
                 if "multipart/form-data" in content_type_header:
-                    # For multipart forms, we can't easily re-parse
-                    # So we'll just check headers for now
-                    csrf_token = request.headers.get("X-CSRF-Token")
+                    # Extract CSRF token from multipart body using regex
+                    # This is a simple extraction that looks for the csrf_token field
+                    import re
+
+                    try:
+                        # Look for pattern: name="csrf_token"\r\n\r\n<token_value>\r\n
+                        body_str = body.decode("utf-8", errors="ignore")
+                        csrf_pattern = r'name="csrf_token"[^\r\n]*\r\n\r\n([^\r\n]+)'
+                        match = re.search(csrf_pattern, body_str)
+
+                        if match:
+                            csrf_token = match.group(1).strip()
+
+                        # Make body readable again
+                        request._body = body
+                    except Exception as parse_error:
+                        get_logger().warning(
+                            f"Failed to extract CSRF from multipart: {parse_error}"
+                        )
+                        # Fallback to header check
+                        csrf_token = request.headers.get("X-CSRF-Token")
                 elif "application/x-www-form-urlencoded" in content_type_header:
                     # Parse URL-encoded form to extract CSRF token
                     from urllib.parse import parse_qs

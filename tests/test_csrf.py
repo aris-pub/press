@@ -228,3 +228,123 @@ async def test_delete_account_requires_csrf_token(test_user, test_db):
         response = await client.delete("/account")
 
         assert response.status_code == 403
+
+
+# Unit tests for CSRF multipart form extraction
+
+
+@pytest.mark.asyncio
+async def test_csrf_extracted_from_multipart_form_data(
+    authenticated_client: AsyncClient, test_db, test_user
+):
+    """Test that CSRF token is extracted from multipart form body."""
+    from app.models.scroll import Subject
+
+    # Create a subject for the form
+    subject = Subject(name="Test Subject", description="Test")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Upload form is a multipart form that requires CSRF
+    # The authenticated_client automatically injects CSRF tokens
+    response = await authenticated_client.post(
+        "/upload-form",
+        data={
+            "title": "Test",
+            "authors": "Author",
+            "subject_id": str(subject.id),
+            "abstract": "Abstract",
+            "license": "cc-by-4.0",
+            "confirm_rights": "true",
+        },
+        files={"file": ("test.html", b"<html><body>Test</body></html>", "text/html")},
+    )
+
+    # Should succeed (redirect or return preview), not fail with 403 CSRF error
+    assert response.status_code in [200, 303]
+
+
+@pytest.mark.asyncio
+async def test_csrf_multipart_rejects_missing_token(test_user, test_db):
+    """Test that multipart form without CSRF token is rejected."""
+    from httpx import ASGITransport, AsyncClient
+
+    from app.models.scroll import Subject
+    from main import app
+
+    # Create a subject
+    subject = Subject(name="Test Subject", description="Test")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Mark user as verified
+    test_user.email_verified = True
+    await test_db.commit()
+
+    # Create client without auto CSRF injection
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        # Create session
+        session_id = await create_session(test_db, test_user.id)
+        client.cookies.set("session_id", session_id)
+
+        # Try to upload without CSRF token
+        response = await client.post(
+            "/upload-form",
+            data={
+                "title": "Test",
+                "authors": "Author",
+                "subject_id": str(subject.id),
+                "abstract": "Abstract",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+            },
+            files={"file": ("test.html", b"<html><body>Test</body></html>", "text/html")},
+        )
+
+        # Should be rejected with 403 CSRF error
+        assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_csrf_multipart_rejects_invalid_token(test_user, test_db):
+    """Test that multipart form with invalid CSRF token is rejected."""
+    from httpx import ASGITransport, AsyncClient
+
+    from app.models.scroll import Subject
+    from main import app
+
+    # Create a subject
+    subject = Subject(name="Test Subject", description="Test")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    # Mark user as verified
+    test_user.email_verified = True
+    await test_db.commit()
+
+    # Create client without auto CSRF injection
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+        # Create session
+        session_id = await create_session(test_db, test_user.id)
+        client.cookies.set("session_id", session_id)
+
+        # Try to upload with invalid CSRF token
+        response = await client.post(
+            "/upload-form",
+            data={
+                "title": "Test",
+                "authors": "Author",
+                "subject_id": str(subject.id),
+                "abstract": "Abstract",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "csrf_token": "invalid_token_12345",
+            },
+            files={"file": ("test.html", b"<html><body>Test</body></html>", "text/html")},
+        )
+
+        # Should be rejected with 403 CSRF error
+        assert response.status_code == 403

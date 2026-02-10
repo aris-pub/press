@@ -63,17 +63,24 @@
 
   <!-- Preview Action Buttons -->
   <section class="preview-actions">
-    <form method="POST" action="/preview/{{ scroll.url_hash }}/confirm" style="display: inline;">
+    <form method="POST" action="/preview/{{ scroll.url_hash }}/edit" style="display: inline;">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="btn btn-publish">
-        Confirm & Publish
+      <button type="submit" class="btn btn-secondary">
+        Edit Details
       </button>
     </form>
 
     <form method="POST" action="/preview/{{ scroll.url_hash }}/cancel" style="display: inline;">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="btn btn-cancel" onclick="return confirm('Are you sure? This will delete the preview.');">
-        Cancel
+      <button type="submit" class="btn btn-cancel">
+        Cancel & Discard
+      </button>
+    </form>
+
+    <form method="POST" action="/preview/{{ scroll.url_hash }}/confirm" style="display: inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-publish">
+        Confirm & Publish
       </button>
     </form>
   </section>

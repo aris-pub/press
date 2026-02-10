@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -22,6 +23,7 @@ class Session(Base):
         nullable=False,
         index=True,  # Index for efficient cleanup queries
     )
+    data = Column(JSON, nullable=False, default=dict)  # For storing arbitrary session data
 
     # Relationship
     user = relationship("User", back_populates="sessions")
