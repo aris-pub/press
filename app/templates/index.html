@@ -3,95 +3,13 @@
 {% from "components/scroll_card.html" import scroll_card %}
 {% from "components/subject_card.html" import subject_card %}
 {% from "components/search_form.html" import search_form %}
+{% from "components/verification_banner.html" import verification_banner %}
 
 {% block title %}Home - Scroll Press{% endblock %}
 
 {% block content %}
 {% if show_verification_notice %}
-<div class="verification-notice">
-  <div class="verification-notice-content">
-    <svg class="verification-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-    </svg>
-    <div>
-      <strong>Email Verification Required</strong>
-      <p>Please check your email and click the verification link to access all features. Didn't receive it? <a href="/resend-verification" class="resend-link">Resend verification email</a></p>
-    </div>
-  </div>
-</div>
-
-<style>
-.verification-notice {
-  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-  border-left: 4px solid #F59E0B;
-  margin: 1.5rem auto;
-  max-width: 1200px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.verification-notice-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1.25rem;
-}
-
-.verification-icon {
-  width: 32px;
-  height: 32px;
-  color: #F59E0B;
-  flex-shrink: 0;
-  margin-top: 0.125rem;
-}
-
-.verification-notice strong {
-  display: block;
-  color: #92400E;
-  font-size: 1.125rem;
-  margin-bottom: 0.5rem;
-}
-
-.verification-notice p {
-  color: #78350F;
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
-.resend-link {
-  color: #D97706;
-  text-decoration: underline;
-  font-weight: 600;
-}
-
-.resend-link:hover {
-  color: #B45309;
-}
-
-@media (max-width: 768px) {
-  .verification-notice {
-    margin: 1rem;
-  }
-
-  .verification-notice-content {
-    gap: 0.75rem;
-  }
-
-  .verification-icon {
-    width: 24px;
-    height: 24px;
-  }
-
-  .verification-notice strong {
-    font-size: 1rem;
-  }
-
-  .verification-notice p {
-    font-size: 0.875rem;
-  }
-}
-</style>
+{{ verification_banner() }}
 {% endif %}
 <div class="hero">
   <div class="hero-title">

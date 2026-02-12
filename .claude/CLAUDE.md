@@ -11,7 +11,9 @@ share research manuscripts written in web-native formats (HTML/CSS/JS).
 
 ## Development Commands
 
-### Using Just (Recommended)
+### Using Just (REQUIRED)
+**CRITICAL: Always use justfile commands for development tasks. Do NOT use direct commands unless absolutely necessary.**
+
 The project includes a `justfile` with common development tasks:
 
 ```bash
@@ -21,7 +23,7 @@ just init
 # Run development server (checks if already running)
 just dev
 
-# Run tests
+# Run tests - ALWAYS USE THIS, NOT `uv run pytest` or `python -m pytest`
 just test
 just test-cov  # with coverage
 
@@ -36,7 +38,7 @@ just lint      # Format and check code
 just check     # Run both lint and tests
 ```
 
-### Direct Commands
+### Direct Commands (Avoid - Use Just Instead)
 ```bash
 # Install dependencies
 uv sync
@@ -200,10 +202,11 @@ app/
 - Do not be sycophantic, a yes-man, or attempt to validate everything said
 
 ## Testing Best Practices
+- **CRITICAL: ALWAYS use `just test` for running tests** - NEVER use `uv run pytest` or `python -m pytest` directly
+- For all tests: `just test`
+- For tests with coverage: `just test-cov`
+- For specific test files, you may use: `uv run pytest tests/test_file.py` (only when targeting a single file)
 - Never try to fix a test by adding a longer wait without making absolutely sure beyond doubt that a longer wait is strictly necessary
-- **ALWAYS use `just test` or `uv run pytest` for running tests** - never use `python -m pytest`
-- For single test files: `uv run pytest tests/test_file.py`
-- For all tests with coverage: `just test-cov`
 
 ## Documentation
 

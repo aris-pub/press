@@ -2,26 +2,14 @@
 {% from "components/scroll_card.html" import scroll_card %}
 {% from "components/button.html" import link_button, button %}
 {% from "components/form_input.html" import form_input %}
+{% from "components/verification_banner.html" import verification_banner %}
 
 {% block title %}Dashboard - Scroll Press{% endblock %}
 
 {% block content %}
 <div class="container">
   {% if not current_user.email_verified %}
-  <div class="verification-warning">
-    <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-    </svg>
-    <div class="warning-content">
-      <h3>Please Verify Your Email</h3>
-      <p>You need to verify your email address before you can upload scrolls or access other features.</p>
-      <div class="warning-actions">
-        <form hx-post="/resend-verification" hx-swap="innerHTML" hx-target="#main-content" style="display: inline;">
-          <button type="submit" class="btn btn-primary">Resend Verification Email</button>
-        </form>
-      </div>
-    </div>
-  </div>
+  {{ verification_banner() }}
   {% endif %}
 
   {% if drafts %}
@@ -200,48 +188,6 @@
 </div>
 
 <style>
-.verification-warning {
-  display: flex;
-  gap: var(--space-lg);
-  align-items: flex-start;
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  border-left: 4px solid #f59e0b;
-  border-radius: var(--border-radius);
-  padding: var(--space-lg);
-  margin-top: var(--space-xl);
-  margin-bottom: var(--space-lg);
-}
-
-.warning-icon {
-  width: 32px;
-  height: 32px;
-  color: #f59e0b;
-  flex-shrink: 0;
-}
-
-.warning-content {
-  flex: 1;
-}
-
-.warning-content h3 {
-  margin: 0 0 var(--space-sm) 0;
-  color: #92400e;
-  font-size: var(--text-lg);
-  font-weight: 600;
-}
-
-.warning-content p {
-  margin: 0 0 var(--space-md) 0;
-  color: #92400e;
-  font-size: var(--text-base);
-}
-
-.warning-actions {
-  display: flex;
-  gap: var(--space-md);
-}
-
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -442,37 +388,6 @@
 
 /* Mobile dashboard and modal styles */
 @media (max-width: 768px) {
-  .verification-warning {
-    flex-direction: column;
-    gap: var(--mobile-space-md);
-    padding: var(--mobile-space-lg);
-    margin-top: var(--mobile-space-xl);
-    margin-bottom: var(--mobile-space-lg);
-  }
-
-  .warning-icon {
-    width: 28px;
-    height: 28px;
-  }
-
-  .warning-content h3 {
-    font-size: var(--mobile-text-lg);
-  }
-
-  .warning-content p {
-    font-size: var(--mobile-text-base);
-  }
-
-  .warning-actions {
-    flex-direction: column;
-    gap: var(--mobile-space-sm);
-  }
-
-  .warning-actions .btn {
-    width: 100%;
-    min-height: 44px;
-  }
-
   .dashboard-header {
     flex-direction: column;
     gap: var(--mobile-space-lg);
