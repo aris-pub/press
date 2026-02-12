@@ -71,24 +71,34 @@ async def test_footer_dark_mode(test_server):
         await first_scroll_link.click()
         await page.wait_for_load_state("networkidle")
 
-        # Enable dark mode by setting data-theme attribute
-        await page.evaluate("document.documentElement.setAttribute('data-theme', 'dark')")
-
-        # Wait for theme to apply
-        await page.wait_for_timeout(100)
-
         # Check that footer sections are still visible
         article_metadata = page.locator(".scroll-metadata")
         platform_attribution = page.locator(".scroll-platform")
 
+        await article_metadata.scroll_into_view_if_needed()
+
         assert await article_metadata.is_visible()
         assert await platform_attribution.is_visible()
 
-        # Verify text is readable (not hidden or invisible)
+        # Get the metadata title element
         metadata_title = article_metadata.locator(".metadata-title")
+
+        # Enable dark mode by setting data-theme attribute
+        await page.evaluate("document.documentElement.setAttribute('data-theme', 'dark')")
+
+        # Wait for the color to change from black (indicating dark mode CSS was applied)
+        await page.wait_for_function(
+            """() => {
+                const el = document.querySelector('.metadata-title');
+                if (!el) return false;
+                const color = window.getComputedStyle(el).color;
+                return color !== 'rgb(0, 0, 0)';
+            }"""
+        )
+
+        # Verify the color is not black
         title_color = await metadata_title.evaluate("el => window.getComputedStyle(el).color")
-        # In dark mode, text should not be black (rgb(0, 0, 0))
-        assert title_color != "rgb(0, 0, 0)"
+        assert title_color != "rgb(0, 0, 0)", f"Expected non-black color in dark mode, got {title_color}"
 
         await browser.close()
 
@@ -108,10 +118,13 @@ async def test_footer_mobile_responsive(test_server):
         await first_scroll_link.click()
         await page.wait_for_load_state("networkidle")
 
-        # Check footer sections are visible on mobile
+        # Scroll to footer sections
         article_metadata = page.locator(".scroll-metadata")
         platform_attribution = page.locator(".scroll-platform")
 
+        await article_metadata.scroll_into_view_if_needed()
+
+        # Check footer sections are visible on mobile
         assert await article_metadata.is_visible()
         assert await platform_attribution.is_visible()
 

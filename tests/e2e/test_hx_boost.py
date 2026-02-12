@@ -30,9 +30,7 @@ async def test_hx_boost_navigation_prevents_full_page_reload(test_server):
 
                 # Check if the marker still exists (proves no full reload)
                 marker = await page.evaluate("window.testMarker")
-                assert marker == "initial", (
-                    "Full page reload detected - hx-boost not working"
-                )
+                assert marker == "initial", "Full page reload detected - hx-boost not working"
 
                 # Verify URL changed
                 assert "browse" in page.url or page.url != test_server
@@ -44,9 +42,7 @@ async def test_hx_boost_navigation_prevents_full_page_reload(test_server):
                     await page.wait_for_timeout(500)
 
                     marker = await page.evaluate("window.testMarker")
-                    assert marker == "initial", (
-                        "Full page reload detected - hx-boost not working"
-                    )
+                    assert marker == "initial", "Full page reload detected - hx-boost not working"
 
         finally:
             await browser.close()
@@ -165,9 +161,9 @@ async def test_hx_boost_preserves_page_content_on_navigation(test_server):
                 new_url = page.url
 
                 # At least one should have changed
-                assert (
-                    new_title != initial_title or new_url != test_server
-                ), "Page content did not update after navigation"
+                assert new_title != initial_title or new_url != test_server, (
+                    "Page content did not update after navigation"
+                )
 
         finally:
             await browser.close()
@@ -193,9 +189,9 @@ async def test_hx_boost_does_not_affect_external_links(test_server):
                 href = await first_external.get_attribute("href")
 
                 # Verify it's actually external
-                assert (
-                    href.startswith("http://") or href.startswith("https://")
-                ), "Link is not external"
+                assert href.startswith("http://") or href.startswith("https://"), (
+                    "Link is not external"
+                )
                 assert test_server not in href, "Link is not external"
 
                 # External links should not trigger HTMX

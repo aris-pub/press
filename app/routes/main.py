@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import load_only, selectinload
 
 from app.auth.session import get_current_user_from_session
 from app.database import get_db
@@ -83,11 +83,46 @@ async def landing_page(
     )
 
 
+@router.get("/partials/scrolls")
+async def get_scrolls_partial(
+    request: Request, subject: str = None, db: AsyncSession = Depends(get_db)
+):
+    """HTMX partial endpoint to get scrolls grid, optionally filtered by subject.
+
+    Returns HTML partial for subject filtering on homepage.
+    """
+    log_request(request)
+
+    # Query scrolls with subject join
+    query = (
+        select(Scroll, Subject.name)
+        .join(Subject, Scroll.subject_id == Subject.id)
+        .where(Scroll.status == "published")
+        .options(selectinload(Scroll.subject))
+    )
+
+    if subject:
+        query = query.where(Subject.name == subject)
+
+    query = query.order_by(Scroll.created_at.desc()).limit(10)
+
+    scrolls_result = await db.execute(query)
+    scrolls = scrolls_result.all()
+
+    return templates.TemplateResponse(
+        request, "partials/scrolls_grid.html", {"scrolls": scrolls, "subject_filter": subject}
+    )
+
+
 @router.get("/api/scrolls")
 async def get_scrolls(
     request: Request, subject: str = None, limit: int = 10, db: AsyncSession = Depends(get_db)
 ):
-    """API endpoint to get scrolls, optionally filtered by subject."""
+    """API endpoint to get scrolls, optionally filtered by subject.
+
+    DEPRECATED: Use /partials/scrolls for HTMX requests.
+    Kept for backwards compatibility.
+    """
     log_request(request)
 
     query = (

@@ -1,0 +1,22 @@
+{% from "components/scroll_card.html" import scroll_card %}
+{# HTMX partial for scrolls section - used by subject filtering #}
+<div id="scrolls-section">
+  <h2 id="recent-submissions-heading">{% if subject_filter %}Recent {{ subject_filter }} Scrolls{% else %}Recent Scrolls{% endif %}</h2>
+
+  <div id="scrolls-grid" class="scrolls-grid">
+    {% for preview_row in scrolls %}
+    {% set preview = preview_row[0] %}
+    {% set subject_name = preview_row[1] %}
+    {{ scroll_card(
+        preview.title,
+        preview.authors,
+        preview.abstract,
+        preview.keywords,
+        subject_name,
+        "recently",
+        "v" + preview.version|string,
+        preview.url_hash
+    ) }}
+    {% endfor %}
+  </div>
+</div>
