@@ -26,7 +26,7 @@ async def test_export_data_returns_user_data(
 
     # Create a scroll for the user
     url_hash, content_hash, _ = await generate_permanent_url(
-        "<html><body>Test Export</body></html>"
+        test_db, "<html><body>Test Export</body></html>"
     )
     scroll = Scroll(
         user_id=test_user.id,
@@ -95,7 +95,7 @@ async def test_export_data_only_returns_own_data(
 
     # Create scroll for other user
     url_hash, content_hash, _ = await generate_permanent_url(
-        "<html><body>Other Content</body></html>"
+        test_db, "<html><body>Other Content</body></html>"
     )
     other_scroll = Scroll(
         user_id=other_user.id,
@@ -140,7 +140,7 @@ async def test_export_data_includes_all_scroll_fields(
     session_id = await create_session(test_db, test_user.id)
 
     # Create scroll with all fields populated
-    url_hash, content_hash, _ = await generate_permanent_url("<html><body>Complete</body></html>")
+    url_hash, content_hash, _ = await generate_permanent_url(test_db, "<html><body>Complete</body></html>")
     scroll = Scroll(
         user_id=test_user.id,
         subject_id=test_subject.id,

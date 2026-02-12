@@ -197,7 +197,7 @@ async def create_content_addressable_scroll(
         keywords = []
 
     # Generate content-addressable storage fields
-    url_hash, content_hash, tar_data = await generate_permanent_url(html_content)
+    url_hash, content_hash, tar_data = await generate_permanent_url(test_db, html_content)
 
     scroll = Scroll(
         title=title,

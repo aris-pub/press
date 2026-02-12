@@ -26,7 +26,7 @@ async def test_sitemap_xml(client, test_db, test_user, test_subject):
     from app.storage.content_processing import generate_permanent_url
 
     # Create a published scroll for testing
-    url_hash, content_hash, _ = await generate_permanent_url("<html><body>Test</body></html>")
+    url_hash, content_hash, _ = await generate_permanent_url(test_db, "<html><body>Test</body></html>")
     scroll = Scroll(
         user_id=test_user.id,
         subject_id=test_subject.id,
@@ -82,7 +82,7 @@ async def test_scroll_page_has_article_meta_tags(client, test_db, test_user, tes
     from app.storage.content_processing import generate_permanent_url
 
     # Create a published scroll for testing
-    url_hash, content_hash, _ = await generate_permanent_url("<html><body>Test</body></html>")
+    url_hash, content_hash, _ = await generate_permanent_url(test_db, "<html><body>Test</body></html>")
     scroll = Scroll(
         user_id=test_user.id,
         subject_id=test_subject.id,

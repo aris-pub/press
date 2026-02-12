@@ -4,7 +4,7 @@ import hashlib
 import os
 import tempfile
 
-from app.database import AsyncSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def normalize_line_endings(content: str) -> str:
@@ -114,11 +114,12 @@ def generate_url_from_hash(hash_value: str, length: int = 12) -> str:
     return hash_value[:length]
 
 
-async def check_hash_collision(hash_prefix: str) -> bool:
+async def check_hash_collision(session: AsyncSession, hash_prefix: str) -> bool:
     """
     Check if a hash prefix already exists in the database (for different content).
 
     Args:
+        session: Database session
         hash_prefix: Hash prefix to check for collision
 
     Returns:
@@ -129,18 +130,20 @@ async def check_hash_collision(hash_prefix: str) -> bool:
 
     from app.models.scroll import Scroll
 
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(Scroll).where(Scroll.url_hash == hash_prefix).limit(1)
-        )
-        return result.scalar_one_or_none() is not None
+    result = await session.execute(
+        select(Scroll).where(Scroll.url_hash == hash_prefix).limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
-async def resolve_hash_collision(hash_value: str, start_length: int = 12) -> str:
+async def resolve_hash_collision(
+    session: AsyncSession, hash_value: str, start_length: int = 12
+) -> str:
     """
     Resolve hash collision by extending hash length until unique or matching content found.
 
     Args:
+        session: Database session
         hash_value: Full SHA-256 hash
         start_length: Starting length to try
 
@@ -152,23 +155,22 @@ async def resolve_hash_collision(hash_value: str, start_length: int = 12) -> str
 
     from app.models.scroll import Scroll
 
-    async with AsyncSessionLocal() as session:
-        for length in range(start_length, len(hash_value) + 1):
-            hash_prefix = generate_url_from_hash(hash_value, length)
+    for length in range(start_length, len(hash_value) + 1):
+        hash_prefix = generate_url_from_hash(hash_value, length)
 
-            # Check if this prefix is already used
-            result = await session.execute(
-                select(Scroll).where(Scroll.url_hash == hash_prefix).limit(1)
-            )
-            existing_scroll = result.scalar_one_or_none()
+        # Check if this prefix is already used
+        result = await session.execute(
+            select(Scroll).where(Scroll.url_hash == hash_prefix).limit(1)
+        )
+        existing_scroll = result.scalar_one_or_none()
 
-            if not existing_scroll:
-                # No conflict, use this prefix
-                return hash_prefix
-            elif existing_scroll.content_hash == hash_value:
-                # Same content, can reuse the same prefix
-                return hash_prefix
-            # else: different content with same prefix, try longer
+        if not existing_scroll:
+            # No conflict, use this prefix
+            return hash_prefix
+        elif existing_scroll.content_hash == hash_value:
+            # Same content, can reuse the same prefix
+            return hash_prefix
+        # else: different content with same prefix, try longer
 
     # This should never happen with SHA-256, but just in case
     raise ValueError("Unable to resolve hash collision - this should not occur with SHA-256")
@@ -201,11 +203,12 @@ def process_html_content(content: str) -> tuple[str, bytes]:
         os.unlink(temp_file_path)
 
 
-async def generate_permanent_url(content: str) -> tuple[str, str, bytes]:
+async def generate_permanent_url(session: AsyncSession, content: str) -> tuple[str, str, bytes]:
     """
     Generate permanent URL for HTML content.
 
     Args:
+        session: Database session
         content: HTML content string
 
     Returns:
@@ -221,7 +224,7 @@ async def generate_permanent_url(content: str) -> tuple[str, str, bytes]:
     url_hash = generate_url_from_hash(content_hash, 12)
 
     # Only resolve collisions if there's actually a collision
-    if await check_hash_collision(url_hash):
-        url_hash = await resolve_hash_collision(content_hash)
+    if await check_hash_collision(session, url_hash):
+        url_hash = await resolve_hash_collision(session, content_hash)
 
     return url_hash, content_hash, tar_data

@@ -193,7 +193,7 @@ async def seed_scrolls(session=None):
             # Generate content-addressable storage fields
             from app.storage.content_processing import generate_permanent_url
 
-            url_hash, content_hash, tar_data = await generate_permanent_url(html_content)
+            url_hash, content_hash, tar_data = await generate_permanent_url(session, html_content)
 
             db_scroll = Scroll(
                 title=scroll_data["title"],

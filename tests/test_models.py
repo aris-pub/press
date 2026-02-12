@@ -135,7 +135,7 @@ class TestScrollModel:
 
         # Generate content hash
         html_content = "<h1>Test Content</h1>"
-        url_hash, content_hash, _ = await generate_permanent_url(html_content)
+        url_hash, content_hash, _ = await generate_permanent_url(test_db, html_content)
 
         # Create a preview scroll
         scroll = Scroll(

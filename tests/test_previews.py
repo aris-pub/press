@@ -170,7 +170,7 @@ async def test_paper_route_renders_html(client: AsyncClient, test_db, test_user)
     await test_db.refresh(subject)
 
     html_content = "<h1>Test Paper Content</h1>"
-    url_hash, content_hash, _ = await generate_permanent_url(html_content)
+    url_hash, content_hash, _ = await generate_permanent_url(test_db, html_content)
 
     preview = Scroll(
         title="Test Paper",
@@ -211,7 +211,7 @@ async def test_paper_route_security_headers(client: AsyncClient, test_db, test_u
     await test_db.refresh(subject)
 
     html_content = "<h1>Test</h1>"
-    url_hash, content_hash, _ = await generate_permanent_url(html_content)
+    url_hash, content_hash, _ = await generate_permanent_url(test_db, html_content)
 
     preview = Scroll(
         title="Test Paper",
@@ -251,7 +251,7 @@ async def test_paper_route_unpublished_404(client: AsyncClient, test_db, test_us
     await test_db.refresh(subject)
 
     html_content = "<h1>Test Draft</h1>"
-    url_hash, content_hash, _ = await generate_permanent_url(html_content)
+    url_hash, content_hash, _ = await generate_permanent_url(test_db, html_content)
 
     preview = Scroll(
         title="Test Draft Paper",

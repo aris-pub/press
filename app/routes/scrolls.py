@@ -897,7 +897,7 @@ async def upload_form(
         # Generate content-addressable storage fields
         from app.storage.content_processing import generate_permanent_url
 
-        url_hash, content_hash, tar_data = await generate_permanent_url(html_content)
+        url_hash, content_hash, tar_data = await generate_permanent_url(db, html_content)
 
         # PROFILING: Memory after generate_permanent_url
         mem_after_url_gen = process.memory_info().rss / 1024 / 1024
@@ -1329,7 +1329,7 @@ async def upload_content_addressable(
             raise HTTPException(status_code=422, detail="File content cannot be empty")
 
         # Generate permanent URL using content-addressable storage
-        url_hash, content_hash, tar_data = await generate_permanent_url(content_str)
+        url_hash, content_hash, tar_data = await generate_permanent_url(db, content_str)
 
         # Check if content already exists
         result = await db.execute(select(Scroll).where(Scroll.content_hash == content_hash))

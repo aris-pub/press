@@ -319,7 +319,7 @@ class TestContentDeterminism:
         # Generate hash multiple times
         results = []
         for _ in range(5):
-            url_hash, content_hash, tar_data = await generate_permanent_url(content)
+            url_hash, content_hash, tar_data = await generate_permanent_url(test_db, content)
             results.append((url_hash, content_hash, tar_data))
 
         # All results should be identical
@@ -335,9 +335,9 @@ class TestContentDeterminism:
         content_with_spaces = "<html><body><h1>Test</h1>   </body></html>"
         content_with_tabs = "<html><body><h1>Test</h1>\t</body></html>"
 
-        hash1 = (await generate_permanent_url(base_content))[1]
-        hash2 = (await generate_permanent_url(content_with_spaces))[1]
-        hash3 = (await generate_permanent_url(content_with_tabs))[1]
+        hash1 = (await generate_permanent_url(test_db, base_content))[1]
+        hash2 = (await generate_permanent_url(test_db, content_with_spaces))[1]
+        hash3 = (await generate_permanent_url(test_db, content_with_tabs))[1]
 
         # Different whitespace should produce different hashes
         assert hash1 != hash2
