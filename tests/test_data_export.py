@@ -140,7 +140,9 @@ async def test_export_data_includes_all_scroll_fields(
     session_id = await create_session(test_db, test_user.id)
 
     # Create scroll with all fields populated
-    url_hash, content_hash, _ = await generate_permanent_url(test_db, "<html><body>Complete</body></html>")
+    url_hash, content_hash, _ = await generate_permanent_url(
+        test_db, "<html><body>Complete</body></html>"
+    )
     scroll = Scroll(
         user_id=test_user.id,
         subject_id=test_subject.id,

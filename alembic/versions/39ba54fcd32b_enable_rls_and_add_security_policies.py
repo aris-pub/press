@@ -5,15 +5,14 @@ Revises: 3f51169c08c8
 Create Date: 2026-02-12 13:53:23.954509
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
-revision: str = '39ba54fcd32b'
-down_revision: Union[str, Sequence[str], None] = '3f51169c08c8'
+revision: str = "39ba54fcd32b"
+down_revision: Union[str, Sequence[str], None] = "3f51169c08c8"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

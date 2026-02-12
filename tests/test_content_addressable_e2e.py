@@ -130,8 +130,8 @@ class TestURLPermanence:
             assert "Original content should match exactly" in served_content
 
             # Verify raw content hash by re-processing
-            from app.storage.content_processing import generate_permanent_url
             from app.database import AsyncSessionLocal
+            from app.storage.content_processing import generate_permanent_url
 
             async with AsyncSessionLocal() as session:
                 _, recalculated_hash, _ = await generate_permanent_url(session, original_content)

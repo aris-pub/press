@@ -130,9 +130,7 @@ async def check_hash_collision(session: AsyncSession, hash_prefix: str) -> bool:
 
     from app.models.scroll import Scroll
 
-    result = await session.execute(
-        select(Scroll).where(Scroll.url_hash == hash_prefix).limit(1)
-    )
+    result = await session.execute(select(Scroll).where(Scroll.url_hash == hash_prefix).limit(1))
     return result.scalar_one_or_none() is not None
 
 
