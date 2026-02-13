@@ -31,11 +31,12 @@
   <div class="subjects-header">
     <h2>Browse by Subject</h2>
     <button
+      type="button"
       id="show-all-btn"
       class="show-all-btn active"
       hx-get="/partials/scrolls"
       hx-target="#scrolls-section"
-      hx-swap="outerHTML"
+      hx-swap="innerHTML"
       hx-push-url="/"
     >
       Show All

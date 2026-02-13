@@ -7,10 +7,11 @@ Usage:
 
 {% macro subject_card(name, count) %}
 <button
+  type="button"
   class="subject-card"
   hx-get="/partials/scrolls?subject={{ name }}"
   hx-target="#scrolls-section"
-  hx-swap="outerHTML"
+  hx-swap="innerHTML"
   hx-push-url="?subject={{ name }}"
 >
   <div class="subject-link">

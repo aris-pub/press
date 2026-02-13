@@ -413,6 +413,8 @@ class EmailVerificationMiddleware(BaseHTTPMiddleware):
         "/csrf-token",  # CSRF token endpoint
         "/user/export-data",  # GDPR data export
         "/account",  # Account deletion
+        "/partials",  # HTMX partials for dynamic content
+        "/api",  # Public API endpoints
     }
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
