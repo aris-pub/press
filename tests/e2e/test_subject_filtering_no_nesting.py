@@ -73,8 +73,7 @@ async def test_subject_filtering_does_not_duplicate_page(test_server):
         # 1. Must make XHR request to /partials/scrolls
         partial_requests = [url for url in requests if "/partials/scrolls" in url]
         assert len(partial_requests) > 0, (
-            "REGRESSION: No request to /partials/scrolls! "
-            "HTMX is not making the expected request."
+            "REGRESSION: No request to /partials/scrolls! HTMX is not making the expected request."
         )
 
         # 2. Response must be 200, not redirect
@@ -91,12 +90,10 @@ async def test_subject_filtering_does_not_duplicate_page(test_server):
                 "Server is returning full page instead of partial."
             )
             assert "<html" not in resp["text"].lower(), (
-                "REGRESSION: Partial response contains <html> tag! "
-                "This will cause page nesting."
+                "REGRESSION: Partial response contains <html> tag! This will cause page nesting."
             )
             assert 'class="navbar"' not in resp["text"], (
-                "REGRESSION: Partial response contains navbar! "
-                "Full page is being returned."
+                "REGRESSION: Partial response contains navbar! Full page is being returned."
             )
 
             # 4. Response should be small
@@ -116,8 +113,7 @@ async def test_subject_filtering_does_not_duplicate_page(test_server):
             f"This means the partial endpoint returned full page HTML."
         )
         assert heroes_after == 1, (
-            f"REGRESSION: Found {heroes_after} hero sections after click! "
-            f"The page is duplicating."
+            f"REGRESSION: Found {heroes_after} hero sections after click! The page is duplicating."
         )
 
         # Body should not double in size (would indicate full page nesting)
@@ -156,8 +152,7 @@ async def test_show_all_button_does_not_duplicate_page(test_server):
         navbars_after = await page.locator("header.navbar").count()
 
         assert navbars_after == 1, (
-            f"REGRESSION: Found {navbars_after} navbars after Show All! "
-            f"Page nesting occurred."
+            f"REGRESSION: Found {navbars_after} navbars after Show All! Page nesting occurred."
         )
 
         await browser.close()

@@ -20,8 +20,7 @@ async def test_show_all_button_disabled_when_no_filter(test_server):
         classes = await button.get_attribute("class")
 
         assert "active" in classes, (
-            "Show All button should be disabled (have 'active' class) "
-            "when no filter is active"
+            "Show All button should be disabled (have 'active' class) when no filter is active"
         )
 
         await browser.close()
@@ -74,8 +73,7 @@ async def test_show_all_button_becomes_disabled_after_clicking(test_server):
         classes = await button.get_attribute("class")
 
         assert "active" in classes, (
-            "Show All button should be disabled after clicking it "
-            "(filter is cleared)"
+            "Show All button should be disabled after clicking it (filter is cleared)"
         )
 
         await browser.close()

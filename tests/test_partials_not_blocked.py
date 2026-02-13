@@ -36,25 +36,19 @@ async def test_partials_scrolls_returns_partial_not_full_page(client: AsyncClien
         "This means it's returning the full page, not a partial."
     )
     assert "<html" not in html.lower(), (
-        "REGRESSION: Partial contains <html> tag! "
-        "This will cause page nesting during HTMX swap."
+        "REGRESSION: Partial contains <html> tag! This will cause page nesting during HTMX swap."
     )
     assert 'class="navbar"' not in html, (
         "REGRESSION: Partial contains navbar! "
         "The entire page is being returned instead of just the partial."
     )
-    assert '<head>' not in html.lower(), (
-        "REGRESSION: Partial contains <head> section! "
-        "Full page is being returned."
+    assert "<head>" not in html.lower(), (
+        "REGRESSION: Partial contains <head> section! Full page is being returned."
     )
 
     # Must contain expected partial content
-    assert 'id="recent-submissions-heading"' in html, (
-        "Partial missing expected heading element"
-    )
-    assert 'id="scrolls-grid"' in html, (
-        "Partial missing expected scrolls grid element"
-    )
+    assert 'id="recent-submissions-heading"' in html, "Partial missing expected heading element"
+    assert 'id="scrolls-grid"' in html, "Partial missing expected scrolls grid element"
 
 
 @pytest.mark.asyncio
@@ -111,12 +105,10 @@ async def test_partials_no_redirect_headers(client: AsyncClient):
     response = await client.get("/partials/scrolls", follow_redirects=False)
 
     assert response.status_code == 200, (
-        f"Got {response.status_code} instead of 200. "
-        "Partial endpoint is redirecting!"
+        f"Got {response.status_code} instead of 200. Partial endpoint is redirecting!"
     )
     assert "Location" not in response.headers, (
-        "REGRESSION: Partial endpoint is setting Location header! "
-        "This will cause a redirect."
+        "REGRESSION: Partial endpoint is setting Location header! This will cause a redirect."
     )
 
 
