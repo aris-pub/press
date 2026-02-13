@@ -276,9 +276,7 @@ async def test_partials_scrolls_returns_html(client: AsyncClient, test_db, test_
 
 
 @pytest.mark.asyncio
-async def test_partials_scrolls_filters_by_subject(
-    client: AsyncClient, test_db, test_user
-):
+async def test_partials_scrolls_filters_by_subject(client: AsyncClient, test_db, test_user):
     """Test that /partials/scrolls filters by subject and returns HTML."""
     # Create subjects
     physics = Subject(name="Physics", description="Physics research")

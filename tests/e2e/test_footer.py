@@ -98,7 +98,9 @@ async def test_footer_dark_mode(test_server):
 
         # Verify the color is not black
         title_color = await metadata_title.evaluate("el => window.getComputedStyle(el).color")
-        assert title_color != "rgb(0, 0, 0)", f"Expected non-black color in dark mode, got {title_color}"
+        assert title_color != "rgb(0, 0, 0)", (
+            f"Expected non-black color in dark mode, got {title_color}"
+        )
 
         await browser.close()
 
