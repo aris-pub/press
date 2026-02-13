@@ -9,6 +9,18 @@ this repository.
 academic research documents. Built with FastAPI, it allows researchers to upload and
 share research manuscripts written in web-native formats (HTML/CSS/JS).
 
+## CRITICAL RULES
+
+### Port Configuration
+**YOU MUST NEVER HARDCODE PORTS ANYWHERE IN THE APPLICATION OR SCRIPTS.**
+
+- **NEVER** use hardcoded ports like `localhost:8000` or `localhost:7999`
+- **ALWAYS** read the port from environment variables (`PORT` or similar)
+- **SCRIPTS/TESTS**: Use environment variables or configuration files to determine the port
+- **REASON**: Hardcoded ports cause failures when the app runs on different ports in different environments
+
+If you hardcode a port, bad things will happen.
+
 ## Development Commands
 
 ### Using Just (REQUIRED)
