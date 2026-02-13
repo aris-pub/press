@@ -37,7 +37,7 @@
   <link rel="license" href="https://creativecommons.org/licenses/by/4.0/">
   {% endif %}
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Source Sans 3', sans-serif; background: var(--white); color: var(--black);">
+<body>
 
   <!-- Store user HTML content as JSON data for strict-dynamic processing -->
   <div class="scroll-container">
@@ -135,6 +135,14 @@
     </div>
 
 <style>
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--white);
+  color: var(--black);
+}
+
 .scroll-container {
   padding: 0;
   position: relative;
@@ -293,45 +301,50 @@
 }
 
 /* Dark mode support */
-[data-theme="dark"] .scroll-metadata {
+html[data-theme="dark"] body {
+  background: #0f172a !important;
+  color: #e5e7eb !important;
+}
+
+html[data-theme="dark"] .scroll-metadata {
   background: var(--gray-darker);
   border-top-color: var(--border-dark);
 }
 
-[data-theme="dark"] .metadata-title {
-  color: var(--white);
+html[data-theme="dark"] .metadata-title {
+  color: #e5e7eb !important;
 }
 
-[data-theme="dark"] .metadata-authors {
-  color: var(--gray-lighter);
+html[data-theme="dark"] .metadata-authors {
+  color: #9ca3af;
 }
 
-[data-theme="dark"] .metadata-info {
-  color: var(--gray-lighter);
+html[data-theme="dark"] .metadata-info {
+  color: #9ca3af;
 }
 
-[data-theme="dark"] .open-access-badge {
+html[data-theme="dark"] .open-access-badge {
   color: #4ade80;
 }
 
-[data-theme="dark"] .license-text {
-  color: var(--gray-lighter);
+html[data-theme="dark"] .license-text {
+  color: #9ca3af;
 }
 
-[data-theme="dark"] .scroll-platform {
+html[data-theme="dark"] .scroll-platform {
   background: #1a1a1a;
   border-top-color: var(--border-dark);
 }
 
-[data-theme="dark"] .platform-link {
-  color: var(--white);
+html[data-theme="dark"] .platform-link {
+  color: #e5e7eb;
 }
 
-[data-theme="dark"] .platform-endorsement {
-  color: var(--gray-lighter);
+html[data-theme="dark"] .platform-endorsement {
+  color: #9ca3af;
 }
 
-[data-theme="dark"] .aris-link {
+html[data-theme="dark"] .aris-link {
   color: var(--red);
 }
 

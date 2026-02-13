@@ -93,7 +93,7 @@ async def test_verification_banner_has_action_button(jinja_env):
 
     # Should have a button element
     assert "<button" in result
-    assert "type=\"submit\"" in result or "type='submit'" in result
+    assert 'type="submit"' in result or "type='submit'" in result
 
 
 @pytest.mark.asyncio
@@ -104,6 +104,6 @@ async def test_verification_banner_accessible_markup(jinja_env):
     result = template.module.verification_banner()
 
     # Icon should have aria-hidden or role
-    assert 'aria-hidden="true"' in result or 'role=' in result
+    assert 'aria-hidden="true"' in result or "role=" in result
     # Should have semantic heading
     assert "<h3" in result or "<h2" in result or "<strong" in result

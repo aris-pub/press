@@ -10,7 +10,7 @@ Usage:
 {% from "components/doi_badge.html" import doi_badge %}
 <div class="scroll preview" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
   {% if url_hash %}
-  <a href="/scroll/{{ url_hash }}" class="scroll-card-link">
+  <a href="/scroll/{{ url_hash }}" class="scroll-card-link" hx-boost="false">
     <div class="scroll-title">{{ title }}</div>
     <div class="scroll-authors">{{ authors }}</div>
     <div class="scroll-abstract">{{ abstract }}</div>

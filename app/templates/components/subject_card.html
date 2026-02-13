@@ -6,10 +6,17 @@ Usage:
 #}
 
 {% macro subject_card(name, count) %}
-<div class="subject-card" data-subject-name="{{ name.lower().replace(' ', '-') }}" data-subject-display="{{ name }}">
+<button
+  type="button"
+  class="subject-card"
+  hx-get="/partials/scrolls?subject={{ name }}"
+  hx-target="#scrolls-section"
+  hx-swap="innerHTML"
+  hx-push-url="?subject={{ name }}"
+>
   <div class="subject-link">
     <span class="subject-name">{{ name }}</span>
     <span class="subject-count">{{ "{:,}".format(count) }}</span>
   </div>
-</div>
+</button>
 {% endmacro %}

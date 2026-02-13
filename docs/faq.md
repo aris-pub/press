@@ -61,6 +61,19 @@ Use the permanent URL and author/title information. Example:
 
 DOI-based citations will be available once DataCite integration is complete.
 
+## How does Press work with AI research tools?
+
+Your research on Press is discoverable through both traditional search (Google Scholar) and modern AI research assistants (Claude, ChatGPT, Scite, Consensus, Elicit).
+
+**Why this matters:** Researchers increasingly discover papers by asking AI tools "What's the latest research on X?" rather than browsing publisher websites. Press's semantic HTML structure makes your work easy for AI tools to understand, cite, and synthesize accurately.
+
+**What you get:**
+- Your paper reaches readers through direct browsing AND AI-assisted discovery
+- AI tools can properly cite your work with correct attribution
+- Semantic structure means accurate extraction (not heuristic PDF parsing)
+
+**No AI slop:** Press doesn't use AI to generate, summarize, or alter your content. Your words are your words. We just make sure AI tools can find and cite them properly.
+
 ## Can I delete my paper?
 
 Yes. Contact us at hello@aris.pub to request removal. We'll take down the public-facing content, though we may retain archival copies for legal/administrative purposes.

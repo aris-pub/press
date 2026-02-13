@@ -17,11 +17,11 @@
       <span>You have {{ current_drafts|length }} draft{% if current_drafts|length > 1 %}s{% endif %}. Continue "{{ current_drafts[0].title if current_drafts[0].title else 'Untitled' }}" from {{ current_drafts[0].last_accessed_at.strftime('%b %d, %Y') }}?</span>
     </div>
     <div class="drafts-banner-actions">
-      <form method="POST" action="/upload/continue-draft/{{ current_drafts[0].url_hash }}" style="display: inline;">
+      <form method="POST" action="/upload/continue-draft/{{ current_drafts[0].url_hash }}" style="display: inline;" hx-boost="false">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button type="submit" class="btn btn-primary btn-sm">Continue</button>
       </form>
-      <form method="POST" action="/upload/start-fresh" style="display: inline;">
+      <form method="POST" action="/upload/start-fresh" style="display: inline;" hx-boost="false">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button type="submit" class="btn btn-secondary btn-sm">Start Fresh</button>
       </form>

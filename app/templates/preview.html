@@ -70,14 +70,14 @@
       </button>
     </form>
 
-    <form method="POST" action="/preview/{{ scroll.url_hash }}/cancel" style="display: inline;">
+    <form method="POST" action="/preview/{{ scroll.url_hash }}/cancel" style="display: inline;" hx-boost="false">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button type="submit" class="btn btn-cancel">
         Cancel & Discard
       </button>
     </form>
 
-    <form method="POST" action="/preview/{{ scroll.url_hash }}/confirm" style="display: inline;">
+    <form method="POST" action="/preview/{{ scroll.url_hash }}/confirm" style="display: inline;" hx-boost="false">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button type="submit" class="btn btn-publish">
         Confirm & Publish

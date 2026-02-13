@@ -1,0 +1,34 @@
+{% from "components/scroll_card.html" import scroll_card %}
+{# HTMX partial for scrolls section - used by subject filtering #}
+<h2 id="recent-submissions-heading">{% if subject_filter %}Recent {{ subject_filter }} Scrolls{% else %}Recent Scrolls{% endif %}</h2>
+
+<div id="scrolls-grid" class="scrolls-grid">
+  {% for preview_row in scrolls %}
+  {% set preview = preview_row[0] %}
+  {% set subject_name = preview_row[1] %}
+  {{ scroll_card(
+      preview.title,
+      preview.authors,
+      preview.abstract,
+      preview.keywords,
+      subject_name,
+      "recently",
+      "v" + preview.version|string,
+      preview.url_hash
+  ) }}
+  {% endfor %}
+</div>
+
+{# Out-of-band swap to update Show All button state #}
+<button
+  type="button"
+  id="show-all-btn"
+  class="show-all-btn{% if not subject_filter %} active{% endif %}"
+  hx-get="/partials/scrolls"
+  hx-target="#scrolls-section"
+  hx-swap="innerHTML"
+  hx-push-url="/"
+  hx-swap-oob="true"
+>
+  Show All
+</button>
