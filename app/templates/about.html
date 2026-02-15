@@ -21,20 +21,105 @@
     <p>No more squinting at PDFs. No more pinch-to-zoom. Just research that respects your time and works everywhere.</p>
 
     <section>
-      <h2>Why HTML-native?</h2>
+      <h2>What is Press?</h2>
+      <p>Press is a permanent preprint archive for HTML-native research. Think of it as what arXiv would be if it was built today - designed for the web, not for print.</p>
+
+      <p>We host research papers written in HTML, issue DOIs through DataCite for permanent citability, and preserve your work with archival-grade infrastructure. Your interactive visualizations, embedded code, and responsive layouts aren't just supported - they're the point.</p>
+
+      <h3>Why HTML-native?</h3>
       <p>Traditional academic publishing relies on PDFs—a format designed for print, not screens. HTML allows for responsive design, interactive elements, embedded media, and accessibility features that make research more engaging and inclusive.</p>
+
+      <p>HTML research can adapt to any screen size, work with screen readers, and preserve interactive elements. Whether you write in Quarto, Typst, MyST, RSM Studio, or code HTML by hand, the web-native format gives your work the flexibility that PDFs can't provide.</p>
     </section>
 
     <section>
-      <h2>Open and Transparent</h2>
-      <p>All content on Scroll Press is freely accessible and permanently archived. We mint DOIs via DataCite to ensure your work is citable and discoverable forever. No paywalls. No subscriptions. No institutional access required.</p>
+      <h2>What We ARE (and Aren't)</h2>
+      <p>Press is intentionally focused. We're an archive, not a platform. Here's what that means:</p>
+
+      <h3>We ARE:</h3>
+      <p><strong>An HTML archive</strong> - We host HTML research permanently with immutable URLs and content integrity verification. Once published, your work stays exactly as you intended.</p>
+
+      <p><strong>A DOI provider</strong> - Every paper receives a Digital Object Identifier through DataCite, making your work citable, discoverable, and part of the permanent scholarly record.</p>
+
+      <p><strong>Tool-agnostic</strong> - We accept HTML from any source: Quarto, Typst, MyST, RSM Studio, Jupyter notebooks, or hand-coded HTML. Write in your tool of choice, export HTML, upload. We don't care how you made it.</p>
+
+      <p><strong>Permanent storage</strong> - Content is immutable and versioned. What you publish today will be readable in the same form decades from now. We use content-addressable storage and maintain distributed backups.</p>
+
+      <p><strong>Open source</strong> - The entire Press platform is open source and community-managed. No proprietary lock-in. You can inspect the code, contribute improvements, or fork the entire project if needed.</p>
+
+      <h3>We are NOT:</h3>
+      <p><strong>An authoring platform</strong> - We don't build editors or writing tools. Use Quarto, Typst, RSM Studio, Overleaf, Curvenote, or whatever tool suits your workflow. We archive the output.</p>
+
+      <p><strong>A collaboration tool</strong> - We don't provide real-time editing or team workspaces. Use GitHub, Google Docs, or specialized research collaboration platforms for that. We host the final product.</p>
+
+      <p><strong>A journal</strong> - We don't run peer review or editorial processes. We're a preprint server. Your work is published as-is, without gatekeeping.</p>
+
+      <p><strong>A content management system</strong> - We're not a full CMS for managing research projects. We provide simple upload, permanent URLs, and archival guarantees. That's it.</p>
+
+      <h3>We complement traditional archives</h3>
+      <p>We complement traditional preprint archives such as arXiv, bioRxiv, and others. Our goal is for researchers to publish PDFs to traditional archives and HTML versions to Press when appropriate. arXiv excels at PDF archival with 30+ years of institutional trust. Press is designed for HTML archival with modern web infrastructure.</p>
     </section>
 
     <section>
-      <h2>Built for the Future</h2>
-      <p>Scroll Press is part of <a href="https://aris.pub" class="page-link">The Aris Program</a>, building the infrastructure for post-PDF scientific publishing. We're working toward a future where research is interactive, accessible, and truly digital-first.</p>
-      
-      <p>Want to see what we're building next? Check out our <a href="/roadmap" class="page-link">roadmap</a> to learn about upcoming features and our vision for the platform.</p>
+      <h2>Trust & Permanence</h2>
+      <p>We know trust has to be earned through transparency, not persuasion. Here's how we ensure your research stays safe and accessible.</p>
+
+      <h3>Permanent URLs & DOIs</h3>
+      <p>Every paper on Press receives two permanent identifiers:</p>
+
+      <p><strong>Content-addressable URLs</strong> - Your paper's URL is derived from its content hash, making it mathematically unique and immutable. The URL will never break, redirect, or point to different content.</p>
+
+      <p><strong>DataCite DOIs</strong> - We issue Digital Object Identifiers through DataCite, the same infrastructure used by Zenodo, Figshare, and thousands of research repositories worldwide. Your DOI is registered in the global scholarly metadata infrastructure.</p>
+
+      <p>Between these two mechanisms, your work is discoverable and citable through both traditional academic channels (Google Scholar, Crossref) and direct web access.</p>
+
+      <h3>What if Press shuts down?</h3>
+      <p>This is the right question to ask of any new archive. Here's our answer:</p>
+
+      <p><strong>The platform is MIT open source</strong> - The entire codebase is available on GitHub. If Press disappears, anyone can fork the platform and continue running it. Your content isn't trapped in proprietary software.</p>
+
+      <p><strong>Your content is yours</strong> - You retain full copyright. We're a host, not a publisher. You can export your papers at any time.</p>
+
+      <p><strong>Distributed backups</strong> - Content is stored with geographic redundancy. We maintain backups across multiple regions to prevent data loss.</p>
+
+      <p><strong>Retraction, not deletion</strong> - As an academic archive, we support retraction (marking papers as withdrawn with clear notices) but not deletion from the scholarly record. This maintains the integrity of the citation graph and preserves the scholarly record.</p>
+
+      <p>If Press shuts down, we commit to:</p>
+      <ol>
+        <li>Providing 6 months notice</li>
+        <li>Making full content exports available</li>
+        <li>Publishing a preservation guide for community forks</li>
+        <li>Coordinating with institutional repositories willing to mirror content</li>
+      </ol>
+
+      <p>We're building this to last, but we're also building it to be forkable. The mission outlives any single organization.</p>
+
+      <h3>Funding</h3>
+      <p>Press has no shareholders, no quarterly growth targets, and no venture capital investors demanding exits.</p>
+
+      <p><strong>Grant-funded</strong> - We're pursuing research infrastructure grants to sustain operations without relying on paywalls or commercialization pressure.</p>
+
+      <p><strong>Transparent pricing</strong> - Core archival (upload, hosting, DOIs) is free forever. Optional premium features (custom domains, advanced analytics) will use simple, public pricing—no "book a demo" enterprise contracts.</p>
+
+      <h3>Discoverable Through Modern Tools</h3>
+      <p>Researchers increasingly discover papers by asking AI assistants "What's the latest research on X?" rather than browsing publisher websites directly.</p>
+
+      <p>Press adds standard metadata tags (schema.org, Open Graph, citation metadata) to every paper's page—the same discoverability mechanisms used by other modern repositories. <strong>We never modify your uploaded HTML content itself.</strong> These tags help AI tools (Claude, ChatGPT, Scite, Consensus, Elicit) and traditional search engines (Google Scholar) find and properly cite your work.</p>
+    </section>
+
+    <section>
+      <h2>Who Runs This?</h2>
+      <p><strong>The Aris Program</strong> - Press is part of <a href="https://aris.pub" class="page-link">The Aris Program</a>, a broader initiative building open-source infrastructure for post-PDF scientific publishing. The vision is community ownership - Press should outlive its founders and serve the research community for decades, not exit to an acquisition.</p>
+
+      <p><strong>Contact:</strong></p>
+      <ul>
+        <li>Email: <a href="mailto:hello@aris.pub" class="page-link">hello@aris.pub</a></li>
+        <li>GitHub: <a href="https://github.com/aris-pub/press" class="page-link">github.com/aris-pub/press</a></li>
+      </ul>
+
+      <p>If you have questions, concerns, or want to get involved, reach out. This is a community project in progress.</p>
+
+      <p>Want to see what we're building next? Check out our <a href="/roadmap" class="page-link">roadmap</a> to learn about upcoming features.</p>
     </section>
   </div>
 
