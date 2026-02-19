@@ -230,8 +230,8 @@ async def test_register_form_missing_confirm_password(client: AsyncClient):
 
 
 async def test_register_form_display_name_too_long(client: AsyncClient):
-    """Test POST /register-form with display name over 200 characters."""
-    long_name = "A" * 201  # 201 characters
+    """Test POST /register-form with display name over 100 characters."""
+    long_name = "A" * 101  # 101 characters
     register_data = {
         "email": "newuser@example.com",
         "password": "password123",
@@ -242,7 +242,7 @@ async def test_register_form_display_name_too_long(client: AsyncClient):
 
     response = await client.post("/register-form", data=register_data)
     assert response.status_code == 422
-    assert "Display name must be less than 200 characters" in response.text
+    assert "Display name must be less than 100 characters" in response.text
 
 
 async def test_register_form_display_name_whitespace_only(client: AsyncClient):
@@ -290,8 +290,8 @@ async def test_register_form_display_name_valid_edge_cases(client: AsyncClient):
     assert response.status_code == 200
     assert "session_id" in response.cookies
 
-    # Test maximum length (200 characters)
-    long_name = "A" * 200  # Exactly 200 characters
+    # Test maximum length (100 characters)
+    long_name = "A" * 100  # Exactly 100 characters
     register_data = {
         "email": "user2@example.com",
         "password": "password123",
@@ -303,3 +303,48 @@ async def test_register_form_display_name_valid_edge_cases(client: AsyncClient):
     response = await client.post("/register-form", data=register_data)
     assert response.status_code == 200
     assert "session_id" in response.cookies
+
+
+async def test_register_form_display_name_with_http_url(client: AsyncClient):
+    """Test POST /register-form rejects display names containing http:// URLs."""
+    register_data = {
+        "email": "spammer@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": "Click here http://evil.com/phish",
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Display name cannot contain URLs" in response.text
+
+
+async def test_register_form_display_name_with_https_url(client: AsyncClient):
+    """Test POST /register-form rejects display names containing https:// URLs."""
+    register_data = {
+        "email": "spammer@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": "Sign In https://yandex.com/poll/abc123",
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Display name cannot contain URLs" in response.text
+
+
+async def test_register_form_display_name_with_www_url(client: AsyncClient):
+    """Test POST /register-form rejects display names containing www. URLs."""
+    register_data = {
+        "email": "spammer@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": "Visit www.evil.com for free crypto",
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Display name cannot contain URLs" in response.text

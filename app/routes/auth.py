@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 import os
+import re
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -254,8 +255,10 @@ async def register_form(
         display_name_stripped = display_name.strip()
         if len(display_name_stripped) == 0:
             raise ValueError("Display name cannot be empty")
-        if len(display_name_stripped) > 200:
-            raise ValueError("Display name must be less than 200 characters")
+        if len(display_name_stripped) > 100:
+            raise ValueError("Display name must be less than 100 characters")
+        if re.search(r"https?://|www\.", display_name_stripped, re.IGNORECASE):
+            raise ValueError("Display name cannot contain URLs")
         display_name = display_name_stripped
 
         # Password validation
