@@ -221,7 +221,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "img-src 'self' data:; "
                 "font-src 'self' https://fonts.gstatic.com; "
                 "connect-src 'self'; "
-                "frame-src 'self';"
+                "frame-src 'self' https://challenges.cloudflare.com;"
             )
         response.headers["Content-Security-Policy"] = csp
 
