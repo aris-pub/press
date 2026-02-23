@@ -52,21 +52,26 @@ Usage:
     {% endfor %}
 
     {% if form_type == "register" and turnstile_site_key %}
+    <input type="hidden" name="cf-turnstile-response" id="turnstile-token" value="">
     <div id="turnstile-container"></div>
     <script>
       (function() {
         function renderWidget() {
           var el = document.getElementById('turnstile-container');
           if (!el || el.hasChildNodes()) return;
-          if (typeof turnstile !== 'undefined') {
-            turnstile.render(el, { sitekey: '{{ turnstile_site_key }}', theme: 'auto' });
+          if (typeof turnstile === 'undefined') {
+            setTimeout(renderWidget, 200);
+            return;
           }
+          turnstile.render(el, {
+            sitekey: '{{ turnstile_site_key }}',
+            theme: 'auto',
+            callback: function(token) {
+              document.getElementById('turnstile-token').value = token;
+            }
+          });
         }
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', renderWidget);
-        } else {
-          setTimeout(renderWidget, 100);
-        }
+        renderWidget();
       })();
     </script>
     {% endif %}
