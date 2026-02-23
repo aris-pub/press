@@ -216,7 +216,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # Standard CSP for static pages (homepage, auth, etc) - no nonces needed
             csp = (
                 "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' https://unpkg.com; "
+                "script-src 'self' 'unsafe-inline' https://unpkg.com https://challenges.cloudflare.com; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                 "img-src 'self' data:; "
                 "font-src 'self' https://fonts.gstatic.com; "
