@@ -36,6 +36,7 @@
     if (el.querySelector('iframe')) return;
     turnstile.render(el, {
       sitekey: el.dataset.turnstileSitekey,
+      size: 'normal',
       theme: 'auto',
       callback: function(token) {
         var input = document.getElementById('turnstile-token');

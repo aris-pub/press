@@ -263,6 +263,16 @@ pytest_plugins = ("pytest_asyncio",)
 
 
 @pytest.fixture(autouse=True, scope="function")
+def reset_signup_rate_limiter():
+    """Reset the in-memory signup rate limiter between tests."""
+    from app.routes.auth import _signup_timestamps
+
+    _signup_timestamps.clear()
+    yield
+    _signup_timestamps.clear()
+
+
+@pytest.fixture(autouse=True, scope="function")
 def mock_resend_globally():
     """CRITICAL: Mock Resend email sending for ALL tests to prevent sending real emails.
 
