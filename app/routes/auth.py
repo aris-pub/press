@@ -1187,22 +1187,6 @@ async def export_user_data(
     )
 
 
-# Temporary diagnostic endpoint - remove after Turnstile is fixed
-@router.get("/turnstile-test")
-async def turnstile_test():
-    """Bare HTML page to isolate Turnstile 400020. No middleware, no templates."""
-    html = f"""<!DOCTYPE html>
-<html>
-<head><title>Turnstile Test</title></head>
-<body>
-<h1>Turnstile Diagnostic</h1>
-<div class="cf-turnstile" data-sitekey="{TURNSTILE_SITE_KEY}" data-theme="light"></div>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-</body>
-</html>"""
-    return HTMLResponse(content=html, headers={"Content-Security-Policy": ""})
-
-
 # Test-only endpoint for E2E tests
 @router.post("/test-verify-user")
 async def test_verify_user(
