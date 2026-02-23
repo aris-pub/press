@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 {% if turnstile_site_key %}
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
 {% endif %}
 {% endblock %}
 
@@ -28,26 +28,4 @@
 {% endblock %}
 
 {% block scripts %}
-{% if turnstile_site_key %}
-<script>
-  function renderTurnstile() {
-    var el = document.getElementById('turnstile-container');
-    if (!el || !el.dataset.turnstileSitekey) return;
-    if (el.querySelector('iframe')) return;
-    turnstile.render(el, {
-      sitekey: el.dataset.turnstileSitekey,
-      size: 'normal',
-      theme: 'auto',
-      callback: function(token) {
-        var input = document.getElementById('turnstile-token');
-        if (input) input.value = token;
-      }
-    });
-  }
-  function onTurnstileLoad() {
-    renderTurnstile();
-  }
-  document.addEventListener('htmx:afterSettle', renderTurnstile);
-</script>
-{% endif %}
 {% endblock %}
