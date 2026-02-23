@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 {% if turnstile_site_key %}
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" defer></script>
 {% endif %}
 {% endblock %}
 
@@ -34,10 +34,6 @@
     var el = document.getElementById('turnstile-container');
     if (!el || !el.dataset.turnstileSitekey) return;
     if (el.querySelector('iframe')) return;
-    if (typeof turnstile === 'undefined') {
-      setTimeout(renderTurnstile, 300);
-      return;
-    }
     turnstile.render(el, {
       sitekey: el.dataset.turnstileSitekey,
       theme: 'auto',
@@ -47,7 +43,9 @@
       }
     });
   }
-  document.addEventListener('DOMContentLoaded', renderTurnstile);
+  function onTurnstileLoad() {
+    renderTurnstile();
+  }
   document.addEventListener('htmx:afterSettle', renderTurnstile);
 </script>
 {% endif %}
