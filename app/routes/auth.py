@@ -60,12 +60,8 @@ async def _verify_turnstile(token: str, remote_ip: str) -> bool:
     if not TURNSTILE_SECRET_KEY:
         return True
 
-    # If no token was submitted, the widget likely failed to render (e.g. Cloudflare
-    # propagation delay). Fall through to other defenses (rate limiter) rather than
-    # blocking legitimate users.
     if not token:
-        get_logger().warning(f"Turnstile token missing from {remote_ip} - widget may not have rendered")
-        return True
+        return False
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
