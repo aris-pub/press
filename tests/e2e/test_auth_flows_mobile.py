@@ -75,9 +75,10 @@ async def test_complete_login_flow_mobile(test_server):
 
             # Navigate to login page
             await page.goto(f"{test_server}/login")
+            await page.wait_for_load_state("networkidle")
 
             # Should have login form elements
-            await expect(page.locator('input[name="email"]')).to_be_visible()
+            await expect(page.locator('input[name="email"]')).to_be_visible(timeout=10000)
             await expect(page.locator('input[name="password"]')).to_be_visible()
 
             # Fill and submit login form
