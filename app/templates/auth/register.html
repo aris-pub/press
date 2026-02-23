@@ -26,3 +26,29 @@
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+{% if turnstile_site_key %}
+<script>
+  function renderTurnstile() {
+    var el = document.getElementById('turnstile-container');
+    if (!el || !el.dataset.turnstileSitekey) return;
+    if (el.querySelector('iframe')) return;
+    if (typeof turnstile === 'undefined') {
+      setTimeout(renderTurnstile, 300);
+      return;
+    }
+    turnstile.render(el, {
+      sitekey: el.dataset.turnstileSitekey,
+      theme: 'auto',
+      callback: function(token) {
+        var input = document.getElementById('turnstile-token');
+        if (input) input.value = token;
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded', renderTurnstile);
+  document.addEventListener('htmx:afterSettle', renderTurnstile);
+</script>
+{% endif %}
+{% endblock %}
