@@ -44,6 +44,8 @@ _signup_timestamps: dict[str, list[float]] = {}
 
 def _check_signup_rate_limit(ip: str) -> bool:
     """Return True if the IP is within rate limits, False if exceeded."""
+    if IS_E2E_TESTING:
+        return True
     now = time.monotonic()
     timestamps = _signup_timestamps.get(ip, [])
     timestamps = [t for t in timestamps if now - t < SIGNUP_RATE_WINDOW]
