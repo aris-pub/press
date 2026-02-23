@@ -4,10 +4,17 @@ This module provides centralized template configuration with access to
 request-scoped variables like CSP nonces.
 """
 
+import os
+
+from dotenv import load_dotenv
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from app.security.nonce import get_nonce_from_request
+
+load_dotenv()
+
+TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "")
 
 
 class TemplatesWithGlobals(Jinja2Templates):
@@ -44,3 +51,4 @@ class TemplatesWithGlobals(Jinja2Templates):
 
 # Shared templates instance for all routes
 templates = TemplatesWithGlobals(directory="app/templates")
+templates.env.globals["turnstile_site_key"] = TURNSTILE_SITE_KEY

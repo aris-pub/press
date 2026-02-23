@@ -1,11 +1,13 @@
 """Authentication routes for registration, login, and logout."""
 
+import time
 from datetime import UTC, datetime
 import os
 import re
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+import httpx
 import sentry_sdk
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,6 +33,43 @@ router = APIRouter()
 
 IS_PRODUCTION = os.getenv("ENVIRONMENT") == "production"
 IS_E2E_TESTING = os.getenv("E2E_TESTING", "").lower() in ("true", "1", "yes")
+
+TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "")
+TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "")
+
+SIGNUP_RATE_LIMIT = 5
+SIGNUP_RATE_WINDOW = 3600  # 1 hour in seconds
+_signup_timestamps: dict[str, list[float]] = {}
+
+
+def _check_signup_rate_limit(ip: str) -> bool:
+    """Return True if the IP is within rate limits, False if exceeded."""
+    now = time.monotonic()
+    timestamps = _signup_timestamps.get(ip, [])
+    timestamps = [t for t in timestamps if now - t < SIGNUP_RATE_WINDOW]
+    _signup_timestamps[ip] = timestamps
+    return len(timestamps) < SIGNUP_RATE_LIMIT
+
+
+def _record_signup(ip: str) -> None:
+    _signup_timestamps.setdefault(ip, []).append(time.monotonic())
+
+
+async def _verify_turnstile(token: str, remote_ip: str) -> bool:
+    """Verify a Turnstile token with Cloudflare. Returns True if valid or if Turnstile is not configured."""
+    if not TURNSTILE_SECRET_KEY:
+        return True
+
+    if not token:
+        return False
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data={"secret": TURNSTILE_SECRET_KEY, "response": token, "remoteip": remote_ip},
+        )
+        result = resp.json()
+        return result.get("success", False)
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -240,6 +279,50 @@ async def register_form(
         ValueError: For validation errors (empty fields, duplicate email)
         Exception: For database or unexpected errors during registration
     """
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Signup rate limit check (before any other validation)
+    if not _check_signup_rate_limit(client_ip):
+        log_auth_event(
+            "register", email, False, request, error_message="Signup rate limit exceeded"
+        )
+        return templates.TemplateResponse(
+            request,
+            "auth/partials/register_form.html",
+            {
+                "errors": ["Too many signup attempts. Please try again later."],
+                "form_data": {
+                    "email": email,
+                    "display_name": display_name,
+                    "confirm_password": confirm_password,
+                    "agree_terms": agree_terms,
+                },
+            },
+            status_code=422,
+        )
+
+    # Turnstile verification
+    form_data_raw = await request.form()
+    turnstile_token = form_data_raw.get("cf-turnstile-response", "")
+    if not await _verify_turnstile(turnstile_token, client_ip):
+        log_auth_event(
+            "register", email, False, request, error_message="Turnstile verification failed"
+        )
+        return templates.TemplateResponse(
+            request,
+            "auth/partials/register_form.html",
+            {
+                "errors": ["CAPTCHA verification failed. Please try again."],
+                "form_data": {
+                    "email": email,
+                    "display_name": display_name,
+                    "confirm_password": confirm_password,
+                    "agree_terms": agree_terms,
+                },
+            },
+            status_code=422,
+        )
+
     try:
         sentry_sdk.set_tag("operation", "user_registration")
         sentry_sdk.set_context("registration", {"email": email, "display_name": display_name})
@@ -313,6 +396,8 @@ async def register_form(
         db.add(db_user)
         await db.commit()
         await db.refresh(db_user)
+
+        _record_signup(client_ip)
 
         # Create email verification token
         verification_token = await create_verification_token(db, db_user.id)
