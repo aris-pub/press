@@ -997,7 +997,7 @@ form.htmx-request .btn-primary {
   color: inherit; 
   user-select: none;
 }
-.subject-name { font-weight: normal; font-size: var(--text-base); }
+.subject-name { font-weight: normal; font-size: var(--text-base); color: var(--black); }
 .subject-count { color: var(--gray); font-size: var(--text-base); }
 
 /* Main content */
