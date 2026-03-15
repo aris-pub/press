@@ -55,7 +55,7 @@ jobs:
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
-      run: uv run pytest -n auto -m "not e2e"
+      run: uv run pytest -m "not e2e"
 
   e2e:
     runs-on: ubuntu-latest
