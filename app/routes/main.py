@@ -523,12 +523,17 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     session_id = request.cookies.get("session_id")
     csrf_token = await get_csrf_token(session_id)
 
-    # Check if this is an HTMX request (for content-only swap)
+    # Return content-only partial for targeted HTMX swaps (e.g. login success
+    # redirecting into #main-content), but return the full page for hx-boost
+    # navigation and regular requests. hx-boost sends both HX-Request and
+    # HX-Boosted headers and needs the full <html> page to extract <body> content.
     is_htmx = request.headers.get("HX-Request") == "true"
+    is_boosted = request.headers.get("HX-Boosted") == "true"
+    use_partial = is_htmx and not is_boosted
 
     return templates.TemplateResponse(
         request,
-        "dashboard_content.html" if is_htmx else "dashboard.html",
+        "dashboard_content.html" if use_partial else "dashboard.html",
         {
             "current_user": current_user,
             "papers": papers,
