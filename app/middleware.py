@@ -10,6 +10,7 @@ import sentry_sdk
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.logging_config import get_logger
+from app.sentry_config import report_rate_limit_hit
 from app.security.nonce import get_nonce_from_request
 
 # Rate limiting constants
@@ -286,11 +287,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             logger = get_logger()
             logger.warning(f"Rate limit exceeded for IP: {client_ip}")
 
-            # Track rate limiting in Sentry
-            sentry_sdk.set_tag("rate_limited", True)
-            sentry_sdk.set_context(
-                "rate_limit",
-                {"client_ip": client_ip, "path": request.url.path, "method": request.method},
+            report_rate_limit_hit(
+                client_ip=client_ip,
+                path=request.url.path,
+                method=request.method,
             )
 
             # Add rate limit headers

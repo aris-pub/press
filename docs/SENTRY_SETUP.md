@@ -189,10 +189,12 @@ env | grep GIT_COMMIT
 
 1. ✅ **DONE**: Sentry DSN configured in Fly.io secrets
 2. ✅ **DONE**: GIT_COMMIT environment variable configured for release tracking
-3. **TODO**: Trigger test error to verify alerts work
-4. **TODO**: Configure email alerts in Sentry dashboard
-5. **OPTIONAL**: Set up Sentry CLI for release tracking
-6. **OPTIONAL**: Add Slack/Discord webhook for critical alerts
+3. ✅ **DONE**: before_send filter configured (filters 404s and test events)
+4. ✅ **DONE**: Abuse pattern alerts via capture_message (rate limits, rapid uploads, storage thresholds)
+5. **TODO**: Trigger test error to verify alerts work
+6. **TODO**: Configure email alerts in Sentry dashboard
+7. **OPTIONAL**: Set up Sentry CLI for release tracking
+8. **OPTIONAL**: Add Slack/Discord webhook for critical alerts
 
 ## Useful Sentry Features You're Not Using Yet
 

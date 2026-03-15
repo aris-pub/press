@@ -18,7 +18,7 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 import sentry_sdk
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -29,6 +29,7 @@ from app.emails.service import get_email_service
 from app.integrations.doi_service import mint_doi_safe
 from app.logging_config import get_logger, log_error, log_preview_event, log_request
 from app.models.scroll import Scroll, Subject
+from app.sentry_config import report_rapid_uploads, report_storage_threshold
 from app.templates_config import templates
 from app.upload import HTMLProcessor
 
@@ -54,6 +55,32 @@ def _check_upload_rate_limit(user_id: str) -> bool:
 
 def _record_upload(user_id: str) -> None:
     _upload_timestamps.setdefault(user_id, []).append(time.monotonic())
+
+
+STORAGE_THRESHOLD_BYTES = 500 * 1024 * 1024  # 500 MB
+
+
+async def _check_storage_threshold(db: AsyncSession, user_id) -> None:
+    """Check if a user's total storage exceeds the threshold and report to Sentry."""
+    try:
+        result = await db.execute(
+            select(
+                func.coalesce(func.sum(Scroll.file_size), 0),
+                func.count(Scroll.id),
+            ).where(Scroll.user_id == user_id)
+        )
+        row = result.one()
+        total_bytes = int(row[0])
+        scroll_count = int(row[1])
+
+        if total_bytes >= STORAGE_THRESHOLD_BYTES:
+            report_storage_threshold(
+                user_id=str(user_id),
+                total_bytes=total_bytes,
+                scroll_count=scroll_count,
+            )
+    except Exception:
+        pass
 
 
 @router.get("/preview/{url_hash}", response_class=HTMLResponse)
@@ -667,6 +694,12 @@ async def upload_form(
         return RedirectResponse(url="/login", status_code=302)
 
     if not _check_upload_rate_limit(str(current_user.id)):
+        upload_count = len(_upload_timestamps.get(str(current_user.id), []))
+        report_rapid_uploads(
+            user_id=str(current_user.id),
+            upload_count=upload_count,
+            window_seconds=UPLOAD_RATE_WINDOW,
+        )
         return HTMLResponse("Too many uploads. Please try again later.", status_code=429)
     _record_upload(str(current_user.id))
 
@@ -1025,6 +1058,8 @@ async def upload_form(
             extra_data={"title": scroll.title, "status": "preview", "url_hash": scroll.url_hash},
         )
 
+        await _check_storage_threshold(db, current_user.id)
+
         # Store form data in session for edit functionality
         from app.auth.session import get_session
 
@@ -1149,6 +1184,12 @@ async def upload_html_paper(
         raise HTTPException(status_code=401, detail="Authentication required")
 
     if not _check_upload_rate_limit(str(current_user.id)):
+        upload_count = len(_upload_timestamps.get(str(current_user.id), []))
+        report_rapid_uploads(
+            user_id=str(current_user.id),
+            upload_count=upload_count,
+            window_seconds=UPLOAD_RATE_WINDOW,
+        )
         raise HTTPException(status_code=429, detail="Too many uploads. Please try again later.")
     _record_upload(str(current_user.id))
 
@@ -1250,6 +1291,8 @@ async def upload_html_paper(
                 "sanitization_count": len(processed_data.get("sanitization_log", [])),
             },
         )
+
+        await _check_storage_threshold(db, current_user.id)
 
         # Send admin notification
         email_service = get_email_service()
