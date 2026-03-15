@@ -20,6 +20,7 @@ from app.exception_handlers import (
     not_found_handler,
     rate_limit_handler,
 )
+from app.sentry_config import before_send
 from app.logging_config import get_logger
 from app.memory_profiling_middleware import MemoryProfilingMiddleware
 from app.middleware import (
@@ -56,8 +57,9 @@ if sentry_dsn:
         attach_stacktrace=True,
         send_default_pii=False,  # GDPR compliance - no user emails/IPs in errors
         max_breadcrumbs=50,
-        # Filter out test events
-        before_send=lambda event, hint: event if environment != "testing" else None,
+        before_send=lambda event, hint: before_send(
+            event, hint, environment=environment
+        ),
     )
 
 
