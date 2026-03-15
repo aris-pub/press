@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  lint-and-unit:
     runs-on: ubuntu-latest
 
     services:
@@ -48,6 +48,77 @@ jobs:
     - name: Install Just
       uses: extractions/setup-just@v1
 
+    - name: Run linting
+      run: just lint
+
+    - name: Run unit tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        TESTING: 1
+      run: uv run pytest -n auto -m "not e2e"
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: lint-and-unit
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: desktop
+            marker: "e2e and desktop"
+            browser: ""
+            timeout: 240
+          - name: mobile-webkit
+            marker: "e2e and mobile"
+            browser: "--browser webkit"
+            timeout: 240
+          - name: mobile-chromium
+            marker: "e2e and mobile"
+            browser: "--browser chromium"
+            timeout: 240
+          - name: universal
+            marker: "e2e and not desktop and not mobile"
+            browser: ""
+            timeout: 300
+
+    name: e2e (${{ matrix.name }})
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: press
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        prune-cache: false
+        cache-suffix: v1
+
+    - name: Install dependencies
+      run: uv sync
+
     - name: Cache Playwright browsers
       uses: actions/cache@v4
       id: playwright-cache
@@ -59,32 +130,24 @@ jobs:
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: uv run playwright install --with-deps
 
+    - name: Install Playwright system deps
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: uv run playwright install-deps
+
     - name: Run database migrations
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
       run: uv run alembic upgrade head
 
-    - name: Run linting
-      run: just lint
-
-    - name: Run unit tests
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
-        TESTING: 1
-      run: uv run pytest -m "not e2e"
-
-    - name: Seed database for e2e tests
+    - name: Seed database
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
         PYTHONPATH: .
-      run: |
-        echo "Seeding database for e2e tests..."
-        uv run python scripts/seed.py
-        echo "Seed completed"
+      run: uv run python scripts/seed.py
 
-    - name: Start development server for e2e tests
+    - name: Start server
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
@@ -92,42 +155,13 @@ jobs:
         PYTHONPATH: .
         PORT: 8000
       run: |
-        echo "Starting FastAPI server for e2e tests..."
         uv run uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info &
-        echo "Waiting for server to start..."
         sleep 8
-        echo "Testing server connection..."
         curl -f http://localhost:8000 || exit 1
-        echo "Server is ready for e2e tests"
 
-    - name: Run desktop e2e tests
+    - name: Run e2e tests (${{ matrix.name }})
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
       run: |
-        echo "Running desktop-specific E2E tests..."
-        timeout 240 uv run pytest -m "e2e and desktop" --tb=short -v
-
-    - name: Run mobile e2e tests - WebKit (iOS Safari)
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
-        TESTING: 1
-      run: |
-        echo "Running mobile E2E tests with WebKit (iOS Safari emulation)..."
-        timeout 240 uv run pytest -m "e2e and mobile" --tb=short -v --browser webkit
-
-    - name: Run mobile e2e tests - Chromium (Android)
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
-        TESTING: 1
-      run: |
-        echo "Running mobile E2E tests with Chromium (Android emulation)..."
-        timeout 240 uv run pytest -m "e2e and mobile" --tb=short -v --browser chromium
-
-    - name: Run universal e2e tests
-      env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
-        TESTING: 1
-      run: |
-        echo "Running universal E2E tests (work on both desktop and mobile)..."
-        timeout 300 uv run pytest -m "e2e and not desktop and not mobile" --tb=short -v
+        timeout ${{ matrix.timeout }} uv run pytest -m "${{ matrix.marker }}" --tb=short -v ${{ matrix.browser }}
