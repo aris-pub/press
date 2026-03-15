@@ -439,6 +439,37 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
     )
 
 
+@router.get("/scroll/{url_hash}/og-image.png")
+async def get_og_image(
+    url_hash: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate an OpenGraph preview image for a published scroll."""
+    result = await db.execute(
+        select(Scroll)
+        .options(selectinload(Scroll.subject))
+        .where(Scroll.url_hash == url_hash, Scroll.status == "published")
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Scroll not found")
+
+    from app.og_image import generate_og_image
+
+    png_bytes = generate_og_image(
+        title=scroll.title,
+        authors=scroll.authors,
+        subject=scroll.subject.name if scroll.subject else "",
+    )
+
+    return Response(
+        content=png_bytes,
+        media_type="image/png",
+        headers={"cache-control": "public, max-age=86400, immutable"},
+    )
+
+
 @router.get("/scroll/{url_hash}/paper")
 async def get_paper_html(
     request: Request,

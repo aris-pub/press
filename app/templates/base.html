@@ -15,10 +15,13 @@
     <meta property="og:url" content="{% block og_url %}https://scroll.press{{ request.url.path }}{% endblock %}">
     <meta property="og:site_name" content="Scroll Press">
 
+    {% block og_image %}{% endblock %}
+
     <!-- Twitter Card Meta Tags -->
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="{% block twitter_card %}summary{% endblock %}">
     <meta name="twitter:title" content="{% block twitter_title %}{{ self.og_title() }}{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}{{ self.og_description() }}{% endblock %}">
+    {% block twitter_image %}{% endblock %}
 
     <link rel="icon" type="image/svg+xml" href="/brand/logos/press/press-logo-64.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">

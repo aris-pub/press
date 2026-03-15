@@ -12,17 +12,63 @@
   <meta name="description" content="{{ scroll.abstract[:200] }}...">
 
   <!-- OpenGraph Meta Tags for Social Media -->
-  <meta property="og:title" content="{{ scroll.title }}">
-  <meta property="og:description" content="{{ scroll.abstract[:200] }}...">
+  <meta property="og:title" content="{{ scroll.title | e }}">
+  <meta property="og:description" content="{{ scroll.abstract[:200] | e }}...">
   <meta property="og:type" content="article">
-  <meta property="og:url" content="https://scroll.press/scroll/{{ scroll.url_hash }}">
+  <meta property="og:url" content="{{ base_url }}/scroll/{{ scroll.url_hash }}">
   <meta property="og:site_name" content="Scroll Press">
-  <meta property="article:author" content="{{ scroll.authors }}">
+  <meta property="og:image" content="{{ base_url }}/scroll/{{ scroll.url_hash }}/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ scroll.title | e }}">
+  <meta property="article:author" content="{{ scroll.authors | e }}">
+  {% if scroll.published_at %}
+  <meta property="article:published_time" content="{{ scroll.published_at.isoformat() }}">
+  {% elif scroll.created_at %}
+  <meta property="article:published_time" content="{{ scroll.created_at.isoformat() }}">
+  {% endif %}
+  {% if scroll.subject and scroll.subject.name %}
+  <meta property="article:section" content="{{ scroll.subject.name | e }}">
+  {% endif %}
+  {% if scroll.keywords %}
+  {% for keyword in scroll.keywords if keyword %}
+  <meta property="article:tag" content="{{ keyword | e }}">
+  {% endfor %}
+  {% endif %}
 
   <!-- Twitter Card Meta Tags -->
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="{{ scroll.title }}">
-  <meta name="twitter:description" content="{{ scroll.abstract[:200] }}...">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ scroll.title | e }}">
+  <meta name="twitter:description" content="{{ scroll.abstract[:200] | e }}...">
+  <meta name="twitter:image" content="{{ base_url }}/scroll/{{ scroll.url_hash }}/og-image.png">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "name": {{ scroll.title | tojson }},
+    "headline": {{ scroll.title | tojson }},
+    "description": {{ scroll.abstract | tojson }},
+    "author": [
+      {% for author in scroll.authors.split(',') if author.strip() %}{% if not loop.first %}, {% endif %}{
+        "@type": "Person",
+        "name": {{ author.strip() | tojson }}
+      }{% endfor %}
+    ],
+    "datePublished": "{{ scroll.published_at.isoformat() if scroll.published_at else scroll.created_at.isoformat() }}",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Scroll Press",
+      "url": "{{ base_url }}"
+    },
+    "url": "{{ base_url }}/scroll/{{ scroll.url_hash }}",
+    "image": "{{ base_url }}/scroll/{{ scroll.url_hash }}/og-image.png"{% if scroll.subject and scroll.subject.name %},
+    "about": {{ scroll.subject.name | tojson }}{% endif %}{% if scroll.keywords %},
+    "keywords": {{ scroll.keywords | tojson }}{% endif %}{% if scroll.license == 'cc-by-4.0' %},
+    "license": "https://creativecommons.org/licenses/by/4.0/"{% endif %}
+  }
+  </script>
 
   <!-- Google Scholar Meta Tags -->
   {{ google_scholar_meta(scroll, base_url) }}
