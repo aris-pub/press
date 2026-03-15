@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+import time
 import uuid as uuid_module
 
 from fastapi import (
@@ -32,6 +33,27 @@ from app.templates_config import templates
 from app.upload import HTMLProcessor
 
 router = APIRouter()
+
+IS_E2E_TESTING = os.getenv("E2E_TESTING", "").lower() in ("true", "1", "yes")
+
+UPLOAD_RATE_LIMIT = 5
+UPLOAD_RATE_WINDOW = 3600  # 1 hour in seconds
+_upload_timestamps: dict[str, list[float]] = {}
+
+
+def _check_upload_rate_limit(user_id: str) -> bool:
+    """Return True if the user is within upload rate limits, False if exceeded."""
+    if IS_E2E_TESTING:
+        return True
+    now = time.monotonic()
+    timestamps = _upload_timestamps.get(user_id, [])
+    timestamps = [t for t in timestamps if now - t < UPLOAD_RATE_WINDOW]
+    _upload_timestamps[user_id] = timestamps
+    return len(timestamps) < UPLOAD_RATE_LIMIT
+
+
+def _record_upload(user_id: str) -> None:
+    _upload_timestamps.setdefault(user_id, []).append(time.monotonic())
 
 
 @router.get("/preview/{url_hash}", response_class=HTMLResponse)
@@ -644,6 +666,10 @@ async def upload_form(
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
 
+    if not _check_upload_rate_limit(str(current_user.id)):
+        return HTMLResponse("Too many uploads. Please try again later.", status_code=429)
+    _record_upload(str(current_user.id))
+
     log_request(
         request, user_id=str(current_user.id), extra_data={"title": title, "action": action}
     )
@@ -1121,6 +1147,10 @@ async def upload_html_paper(
     # Redirect unauthenticated users
     if not current_user:
         raise HTTPException(status_code=401, detail="Authentication required")
+
+    if not _check_upload_rate_limit(str(current_user.id)):
+        raise HTTPException(status_code=429, detail="Too many uploads. Please try again later.")
+    _record_upload(str(current_user.id))
 
     log_request(
         request,
