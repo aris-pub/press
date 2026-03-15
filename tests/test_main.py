@@ -740,3 +740,48 @@ async def test_navbar_shows_login_button_when_unauthenticated(client):
     # Check user menu is NOT present
     assert 'class="user-menu-trigger"' not in response.text
     assert "user-icon.svg" not in response.text
+
+
+async def test_dashboard_htmx_boosted_returns_full_page(authenticated_client: AsyncClient):
+    """hx-boost navigation to /dashboard should return the full page with navbar/footer.
+
+    When <body hx-boost="true"> is set, clicking a link to /dashboard sends both
+    HX-Request and HX-Boosted headers. The server must return the full page so HTMX
+    can extract the <body> content correctly. Returning a content-only partial would
+    replace the entire body, removing the navbar and footer.
+    """
+    response = await authenticated_client.get(
+        "/dashboard",
+        headers={"HX-Request": "true", "HX-Boosted": "true"},
+    )
+    assert response.status_code == 200
+    # Full page should contain base layout elements
+    assert "<html" in response.text
+    assert "navbar" in response.text
+    assert "footer" in response.text
+
+
+async def test_dashboard_htmx_non_boosted_returns_content_only(
+    authenticated_client: AsyncClient,
+):
+    """Targeted HTMX swap to /dashboard should return content-only partial.
+
+    When a non-boosted HTMX request targets #main-content (e.g. after login success),
+    the server should return just the dashboard content without the base layout.
+    """
+    response = await authenticated_client.get(
+        "/dashboard",
+        headers={"HX-Request": "true"},
+    )
+    assert response.status_code == 200
+    # Content-only partial should NOT contain base layout elements
+    assert "<html" not in response.text
+    assert "Your Scrolls" in response.text
+
+
+async def test_dashboard_non_htmx_returns_full_page(authenticated_client: AsyncClient):
+    """Regular (non-HTMX) navigation to /dashboard should return full page."""
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    assert "<html" in response.text
+    assert "navbar" in response.text
