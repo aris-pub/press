@@ -1258,6 +1258,24 @@ form.htmx-request .btn-primary {
     margin-bottom: 0.5rem;
 }
 
+.subprocessor-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: var(--text-md);
+}
+.subprocessor-table th,
+.subprocessor-table td {
+    text-align: left;
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--gray-light);
+    color: var(--gray-dark);
+}
+.subprocessor-table th {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 .page-link {
     color: var(--red);
     text-decoration: none;
