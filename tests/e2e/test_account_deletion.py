@@ -137,9 +137,7 @@ async def test_account_deletion_preserves_published_scrolls(test_server):
                     f"Scroll at {url} returned {response.status} after account deletion"
                 )
                 # Verify the page has scroll content (not an error page)
-                await expect(page.locator(".metadata-title")).to_be_visible(
-                    timeout=5000
-                )
+                await expect(page.locator(".metadata-title")).to_be_visible(timeout=5000)
 
         finally:
             await browser.close()

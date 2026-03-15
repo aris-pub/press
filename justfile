@@ -56,7 +56,7 @@ test:
     #!/usr/bin/env bash
     set -e
     # Run unit tests
-    uv run pytest -n auto -m "not e2e"
+    uv run pytest -m "not e2e"
 
     # Run E2E tests based on environment
     if [ -n "$CI" ]; then

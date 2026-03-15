@@ -7,7 +7,6 @@ pipeline to verify the sanitization system catches real-world abuse.
 from app.security.html_validator import HTMLValidator
 from app.security.validation import ContentValidator
 
-
 FILLER_PARAGRAPH = (
     "This research investigates the fundamental properties of distributed systems "
     "in heterogeneous computing environments. We present a novel framework for "
@@ -74,7 +73,8 @@ class TestPhishingPages:
 
     def test_meta_refresh_redirect(self):
         """Paper that redirects to a phishing page via meta refresh."""
-        html = """<!DOCTYPE html>
+        html = (
+            """<!DOCTYPE html>
 <html>
 <head>
     <title>Loading Research Paper...</title>
@@ -83,9 +83,12 @@ class TestPhishingPages:
 <body>
     <h1>Loading Research Paper</h1>
     <p>Redirecting to institutional access portal...</p>
-    <p>""" + FILLER_PARAGRAPH + """</p>
+    <p>"""
+            + FILLER_PARAGRAPH
+            + """</p>
 </body>
 </html>"""
+        )
         is_valid, errors = self.html_validator.validate(html)
         assert not is_valid
         assert any(e["type"] == "dangerous_meta" for e in errors)
@@ -100,12 +103,15 @@ class TestSEOSpam:
     def test_keyword_stuffed_abstract(self):
         """Paper with extreme keyword repetition in the body."""
         stuffed = " ".join(["blockchain"] * 200)
-        html = make_paper(f"""
+        html = make_paper(
+            f"""
         <section>
             <h2>Abstract</h2>
             <p>{stuffed} technology innovation paradigm framework.</p>
         </section>
-        """, title="A Novel Blockchain Framework for Distributed Blockchain Systems")
+        """,
+            title="A Novel Blockchain Framework for Distributed Blockchain Systems",
+        )
         is_valid, errors = self.content_validator.validate(html)
         assert not is_valid
         assert any(e["type"] == "keyword_stuffing" for e in errors)
@@ -113,8 +119,7 @@ class TestSEOSpam:
     def test_hidden_spam_links(self):
         """Paper body packed with external links beyond the limit."""
         links = "\n".join(
-            f'<a href="https://spam-site-{i}.com/buy">reference {i}</a>'
-            for i in range(30)
+            f'<a href="https://spam-site-{i}.com/buy">reference {i}</a>' for i in range(30)
         )
         html = make_paper(f"""
         <section>
@@ -128,14 +133,17 @@ class TestSEOSpam:
 
     def test_spam_keywords_in_academic_wrapper(self):
         """Spam content dressed up as an academic paper."""
-        html = make_paper("""
+        html = make_paper(
+            """
         <section>
             <h2>Abstract</h2>
             <p>Buy now our revolutionary weight loss supplement. This limited offer
             guarantees risk free results. Act now to win a prize! Click here for
             guaranteed casino lottery winnings. Congratulations, you are a winner!</p>
         </section>
-        """, title="A Clinical Study on Nutritional Supplements")
+        """,
+            title="A Clinical Study on Nutritional Supplements",
+        )
         is_valid, errors = self.content_validator.validate(html)
         assert not is_valid
         assert any(e["type"] == "spam_keywords" for e in errors)
@@ -150,7 +158,8 @@ class TestCryptoScamPages:
 
     def test_crypto_scam_with_event_handlers(self):
         """Crypto scam using event handlers to redirect users."""
-        html = make_paper("""
+        html = make_paper(
+            """
         <section>
             <h2>Investment Returns Analysis</h2>
             <p>Our decentralized finance protocol achieved 10000% returns.</p>
@@ -158,7 +167,9 @@ class TestCryptoScamPages:
                 <p>Hover to view detailed portfolio performance data.</p>
             </div>
         </section>
-        """, title="Decentralized Finance: A Quantitative Analysis")
+        """,
+            title="Decentralized Finance: A Quantitative Analysis",
+        )
         is_valid, errors = self.html_validator.validate(html)
         assert not is_valid
         assert any(e["type"] == "forbidden_attribute" for e in errors)
@@ -200,8 +211,7 @@ class TestExcessiveExternalLinks:
     def test_exactly_at_limit(self):
         """25 external links should pass (at the limit, not over)."""
         links = "\n".join(
-            f'<a href="https://journal-{i}.org/paper">Ref {i}</a>'
-            for i in range(25)
+            f'<a href="https://journal-{i}.org/paper">Ref {i}</a>' for i in range(25)
         )
         html = make_paper(f"<section>{links}</section>")
         is_valid, errors = self.content_validator.validate(html)
@@ -211,8 +221,7 @@ class TestExcessiveExternalLinks:
     def test_one_over_limit(self):
         """26 external links should fail."""
         links = "\n".join(
-            f'<a href="https://journal-{i}.org/paper">Ref {i}</a>'
-            for i in range(26)
+            f'<a href="https://journal-{i}.org/paper">Ref {i}</a>' for i in range(26)
         )
         html = make_paper(f"<section>{links}</section>")
         is_valid, errors = self.content_validator.validate(html)
@@ -221,15 +230,9 @@ class TestExcessiveExternalLinks:
 
     def test_mixed_internal_and_external_links(self):
         """Only external (http/https) links count toward the limit."""
-        external = "\n".join(
-            f'<a href="https://ext-{i}.com">Ext {i}</a>' for i in range(20)
-        )
-        internal = "\n".join(
-            f'<a href="#section-{i}">Section {i}</a>' for i in range(50)
-        )
-        relative = "\n".join(
-            f'<a href="page-{i}.html">Page {i}</a>' for i in range(50)
-        )
+        external = "\n".join(f'<a href="https://ext-{i}.com">Ext {i}</a>' for i in range(20))
+        internal = "\n".join(f'<a href="#section-{i}">Section {i}</a>' for i in range(50))
+        relative = "\n".join(f'<a href="page-{i}.html">Page {i}</a>' for i in range(50))
         html = make_paper(f"<section>{external}{internal}{relative}</section>")
         is_valid, errors = self.content_validator.validate(html)
         link_errors = [e for e in errors if e["type"] == "excessive_links"]
@@ -359,8 +362,8 @@ class TestObfuscatedJavaScript:
     def test_javascript_url_with_whitespace(self):
         """javascript: URLs with tabs/newlines to evade simple string matching."""
         test_cases = [
-            "<a href=\"java\tscript:alert(1)\">link</a>",
-            "<a href=\"java\nscript:alert(1)\">link</a>",
+            '<a href="java\tscript:alert(1)">link</a>',
+            '<a href="java\nscript:alert(1)">link</a>',
         ]
         for html in test_cases:
             is_valid, errors = self.html_validator.validate(html)
@@ -376,9 +379,7 @@ class TestObfuscatedJavaScript:
         html = '<a href="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;alert(1)">link</a>'
         is_valid, errors = self.html_validator.validate(html)
         assert not is_valid, "HTML-entity-encoded javascript: URL should be caught"
-        assert any(
-            e["type"] in ("javascript_url", "dangerous_protocol") for e in errors
-        )
+        assert any(e["type"] in ("javascript_url", "dangerous_protocol") for e in errors)
 
     def test_vbscript_protocol(self):
         """vbscript: protocol in href."""
@@ -400,9 +401,7 @@ class TestObfuscatedJavaScript:
         html = '<div style="width: expression(alert(1))">text</div>'
         is_valid, errors = self.html_validator.validate(html)
         assert not is_valid
-        assert any(
-            e["type"] in ("dangerous_css", "css_expression") for e in errors
-        )
+        assert any(e["type"] in ("dangerous_css", "css_expression") for e in errors)
 
     def test_css_import_from_external_source(self):
         """@import pulling CSS from an attacker-controlled domain."""
@@ -410,8 +409,7 @@ class TestObfuscatedJavaScript:
         is_valid, errors = self.html_validator.validate(html)
         assert not is_valid
         assert any(
-            e["type"] in ("css_import", "css_import_external", "dangerous_css")
-            for e in errors
+            e["type"] in ("css_import", "css_import_external", "dangerous_css") for e in errors
         )
 
     def test_css_moz_binding(self):
@@ -440,15 +438,14 @@ class TestCombinedPipeline:
     def _validate_both(self, html: str):
         html_valid, html_errors = self.html_validator.validate(html)
         content_valid, content_errors = self.content_validator.validate(html)
-        blocking_content_errors = [
-            e for e in content_errors if e.get("severity") == "error"
-        ]
+        blocking_content_errors = [e for e in content_errors if e.get("severity") == "error"]
         all_pass = html_valid and len(blocking_content_errors) == 0
         return all_pass, html_errors + content_errors
 
     def test_well_formed_phishing_page_rejected(self):
         """A carefully crafted phishing page should be caught by at least one validator."""
-        html = """<!DOCTYPE html>
+        html = (
+            """<!DOCTYPE html>
 <html>
 <head><title>Institutional Repository Access</title></head>
 <body>
@@ -464,9 +461,12 @@ class TestCombinedPipeline:
             <button type="submit">Sign In</button>
         </form>
     </section>
-    <p>""" + FILLER_PARAGRAPH + """</p>
+    <p>"""
+            + FILLER_PARAGRAPH
+            + """</p>
 </body>
 </html>"""
+        )
         all_pass, errors = self._validate_both(html)
         assert not all_pass
         assert any(e["type"] == "external_form_action" for e in errors)
@@ -474,15 +474,17 @@ class TestCombinedPipeline:
     def test_seo_spam_disguised_as_paper(self):
         """SEO spam with academic window dressing should be flagged."""
         links = "\n".join(
-            f'<a href="https://buy-papers-{i}.com">Source {i}</a>'
-            for i in range(30)
+            f'<a href="https://buy-papers-{i}.com">Source {i}</a>' for i in range(30)
         )
-        html = make_paper(f"""
+        html = make_paper(
+            f"""
         <section>
             <h2>References</h2>
             {links}
         </section>
-        """, title="A Comprehensive Review of Academic Publishing Platforms")
+        """,
+            title="A Comprehensive Review of Academic Publishing Platforms",
+        )
         all_pass, errors = self._validate_both(html)
         assert not all_pass
         assert any(e["type"] == "excessive_links" for e in errors)
@@ -538,16 +540,20 @@ class TestCombinedPipeline:
 
     def test_obfuscated_attack_plus_spam(self):
         """Page combining XSS vectors with spam content should fail on multiple fronts."""
-        html = """<!DOCTYPE html>
+        html = (
+            """<!DOCTYPE html>
 <html>
 <head><title>Special Offer Research</title></head>
 <body>
     <h1>Special Offer Research</h1>
     <p onclick="location='https://evil.com'">Buy now! Limited offer!
     Act now for guaranteed results. Click here to win a prize!</p>
-    <p>""" + FILLER_PARAGRAPH + """</p>
+    <p>"""
+            + FILLER_PARAGRAPH
+            + """</p>
 </body>
 </html>"""
+        )
         all_pass, errors = self._validate_both(html)
         assert not all_pass
         error_types = {e["type"] for e in errors}
