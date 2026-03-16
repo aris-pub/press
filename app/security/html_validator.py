@@ -432,6 +432,7 @@ class HTMLValidator:
         "cdn.jsdelivr.net/npm/vega-embed@",
         "unpkg.com/d3@",
         "unpkg.com/plotly.js@",
+        "cdn.plot.ly/plotly-",
         "cdn.bokeh.org/bokeh/release/",
         "cdn.jsdelivr.net/npm/three@",
         "cdn.jsdelivr.net/npm/leaflet@",
