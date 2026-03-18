@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
 
-from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, String, Text
+from sqlalchemy import ARRAY, Integer, JSON, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import TypeDecorator
@@ -148,6 +148,10 @@ class Scroll(Base):
         nullable=False,
     )
 
+    # Human-readable URL fields
+    slug: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
+    publication_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     # DOI fields
     doi: Mapped[Optional[str]] = mapped_column(String(100), unique=True, nullable=True, index=True)
     doi_status: Mapped[Optional[str]] = mapped_column(
@@ -208,5 +212,11 @@ class Scroll(Base):
         if self.url_hash:
             return f"/scroll/{self.url_hash}"
         else:
-            # Fall back to legacy URL for backward compatibility
             return f"/scroll/{self.preview_id}"
+
+    @property
+    def canonical_url(self) -> str:
+        """Get the canonical human-readable URL, falling back to permanent_url."""
+        if self.publication_year and self.slug:
+            return f"/{self.publication_year}/{self.slug}"
+        return self.permanent_url
