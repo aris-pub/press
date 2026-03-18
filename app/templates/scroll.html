@@ -135,13 +135,14 @@
     </div>
   </footer>
 
-  <button class="fab" id="info-fab" aria-label="View preview information">
-    <img src="/brand/logos/press/press-logo-64.svg" alt="Press logo" class="fab-logo">
-  </button>
-
-  <button class="fab-top" id="top-fab" aria-label="Back to top" hidden>
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-  </button>
+  <div class="fab-group" id="fab-group">
+    <button class="fab-group-btn" id="top-fab" aria-label="Back to top">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+    </button>
+    <button class="fab-group-btn" id="info-fab" aria-label="View preview information">
+      <img src="/brand/logos/press/press-logo-64.svg" alt="Press logo" class="fab-logo">
+    </button>
+  </div>
 
   <div class="modal" id="info-modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
     <div class="modal-backdrop" id="modal-backdrop"></div>
@@ -398,26 +399,31 @@ html[data-theme="dark"] .aris-link {
   color: var(--red);
 }
 
-.fab {
+.fab-group {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
+  display: flex;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(34, 34, 34, 0.3);
+  z-index: 1000;
+}
+
+.fab-group-btn {
   width: 44px;
   height: 44px;
-  border-radius: var(--border-radius);
   background: var(--gray);
   color: var(--white);
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(34, 34, 34, 0.3);
-  transition: all 0.3s ease;
-  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.3s ease;
 }
 
-.fab:hover {
+.fab-group-btn:hover {
   background: var(--red);
 }
 
@@ -427,36 +433,20 @@ html[data-theme="dark"] .aris-link {
   filter: brightness(0) invert(1);
 }
 
-.fab-top {
-  position: fixed;
-  bottom: calc(2rem + 44px + 10px);
-  right: 2rem;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--border-radius);
-  background: var(--gray);
-  color: var(--white);
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(34, 34, 34, 0.3);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+#top-fab {
+  width: 0;
+  overflow: hidden;
   opacity: 0;
-  transform: translateY(8px) scale(0.9);
-  transition: opacity 0.2s ease, transform 0.2s ease, background 0.3s ease;
+  transition: width 0.2s ease, opacity 0.2s ease, background 0.3s ease;
   pointer-events: none;
+  border-right: 0 solid rgba(255, 255, 255, 0.15);
 }
 
-.fab-top:hover {
-  background: var(--red);
-}
-
-.fab-top.visible {
+#top-fab.visible {
+  width: 44px;
   opacity: 1;
-  transform: translateY(0) scale(1);
   pointer-events: auto;
+  border-right-width: 1px;
 }
 
 .modal {
@@ -634,18 +624,18 @@ body.modal-open {
     padding: 0;
   }
 
-  .fab {
+  .fab-group {
     bottom: 1rem;
     right: 1rem;
+  }
+
+  .fab-group-btn {
     width: 40px;
     height: 40px;
   }
 
-  .fab-top {
-    bottom: calc(1rem + 40px + 10px);
-    right: 1rem;
+  #top-fab.visible {
     width: 40px;
-    height: 40px;
   }
 
   .modal-content {
@@ -819,14 +809,9 @@ body.modal-open {
 
   window.addEventListener('scroll', function() {
     if (window.scrollY > scrollThreshold) {
-      topFab.hidden = false;
-      requestAnimationFrame(function() { topFab.classList.add('visible'); });
+      topFab.classList.add('visible');
     } else {
       topFab.classList.remove('visible');
-      topFab.addEventListener('transitionend', function handler() {
-        if (!topFab.classList.contains('visible')) topFab.hidden = true;
-        topFab.removeEventListener('transitionend', handler);
-      });
     }
   }, { passive: true });
 
