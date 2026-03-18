@@ -32,6 +32,7 @@ from app.models.scroll import Scroll, Subject
 from app.sentry_config import report_rapid_uploads, report_storage_threshold
 from app.templates_config import templates
 from app.upload import HTMLProcessor
+from app.utils.slug import generate_unique_slug
 
 router = APIRouter()
 
@@ -189,8 +190,11 @@ async def confirm_preview(
     if scroll.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to publish this preview")
 
-    # Publish the scroll
+    # Publish the scroll and assign year/slug
     scroll.publish()
+    current_year = scroll.published_at.year
+    scroll.publication_year = current_year
+    scroll.slug = await generate_unique_slug(db, scroll.title, current_year)
     await db.commit()
 
     log_preview_event(
@@ -225,8 +229,8 @@ async def confirm_preview(
         session.pop("preview_form_data", None)
         session.pop("current_preview_url_hash", None)
 
-    # Redirect to published scroll
-    return RedirectResponse(url=f"/scroll/{scroll.url_hash}", status_code=303)
+    # Redirect to published scroll via year/slug URL
+    return RedirectResponse(url=f"/{scroll.publication_year}/{scroll.slug}", status_code=303)
 
 
 @router.post("/preview/{url_hash}/cancel", response_class=HTMLResponse)
