@@ -405,7 +405,6 @@ html[data-theme="dark"] .aris-link {
   right: 2rem;
   display: flex;
   border-radius: var(--border-radius);
-  overflow: hidden;
   box-shadow: 0 4px 12px rgba(34, 34, 34, 0.3);
   z-index: 1000;
 }
@@ -436,6 +435,7 @@ html[data-theme="dark"] .aris-link {
 #top-fab {
   width: 0;
   overflow: hidden;
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
   opacity: 0;
   transition: width 0.2s ease, opacity 0.2s ease, background 0.3s ease;
   pointer-events: none;
