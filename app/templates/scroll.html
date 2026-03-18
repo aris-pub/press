@@ -135,6 +135,10 @@
     </div>
   </footer>
 
+  <button class="fab fab-top" id="top-fab" aria-label="Back to top" hidden>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+  </button>
+
   <button class="fab" id="info-fab" aria-label="View preview information">
     <img src="/brand/logos/press/press-logo-64.svg" alt="Press logo" class="fab-logo">
   </button>
@@ -423,6 +427,20 @@ html[data-theme="dark"] .aris-link {
   filter: brightness(0) invert(1);
 }
 
+.fab-top {
+  bottom: calc(2rem + 44px + 0.75rem);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.3s ease;
+  pointer-events: none;
+}
+
+.fab-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .modal {
   display: none;
   position: fixed;
@@ -606,6 +624,10 @@ body.modal-open {
     font-size: 1.25rem;
   }
 
+  .fab-top {
+    bottom: calc(1rem + 40px + 0.75rem);
+  }
+
   .modal-content {
     margin: 1rem;
     width: calc(100% - 2rem);
@@ -767,6 +789,29 @@ body.modal-open {
       // User is in auto mode, update accordingly
       document.documentElement.removeAttribute('data-theme');
     }
+  });
+})();
+
+// Back to top FAB
+(function() {
+  var topFab = document.getElementById('top-fab');
+  var scrollThreshold = 400;
+
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > scrollThreshold) {
+      topFab.hidden = false;
+      requestAnimationFrame(function() { topFab.classList.add('visible'); });
+    } else {
+      topFab.classList.remove('visible');
+      topFab.addEventListener('transitionend', function handler() {
+        if (!topFab.classList.contains('visible')) topFab.hidden = true;
+        topFab.removeEventListener('transitionend', handler);
+      });
+    }
+  }, { passive: true });
+
+  topFab.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 })();
 
