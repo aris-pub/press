@@ -27,7 +27,8 @@
             "v" + paper.version|string,
             paper.url_hash,
             doi=paper.doi,
-            doi_status=paper.doi_status
+            doi_status=paper.doi_status,
+            canonical_url=paper.canonical_url
         ) }}
         {% endfor %}
       </div>

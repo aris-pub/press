@@ -67,7 +67,8 @@
                       subject_name,
                       "recently",
                       "v" + preview.version|string,
-                      preview.url_hash
+                      preview.url_hash,
+                      canonical_url=preview.canonical_url
          ) }}
       {% endfor %}
     </div>
