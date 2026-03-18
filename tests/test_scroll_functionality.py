@@ -35,10 +35,14 @@ async def test_scroll_page_functionality(client: AsyncClient, test_db, test_user
 
     # Functionality: Check key components are present
     assert "basic test scroll" in response.text.lower()
-    assert 'class="fab"' in response.text
+    assert 'class="fab-group"' in response.text
     assert "press-logo-64.svg" in response.text
     assert 'id="info-modal"' in response.text
     assert "scroll press" in response.text.lower()
+
+    # Back to top FAB
+    assert 'id="top-fab"' in response.text
+    assert 'aria-label="Back to top"' in response.text
 
     # Standalone: Check navbar is not present
     assert "<nav" not in response.text.lower()
