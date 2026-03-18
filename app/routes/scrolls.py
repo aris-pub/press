@@ -466,6 +466,45 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
     )
 
 
+@router.get("/{year:int}/{slug:str}", response_class=HTMLResponse)
+async def view_scroll_by_year_slug(
+    request: Request, year: int, slug: str, db: AsyncSession = Depends(get_db)
+):
+    """Display a published scroll by its year and slug."""
+    sentry_sdk.set_tag("operation", "scroll_view")
+    sentry_sdk.set_context("scroll", {"year": year, "slug": slug})
+    log_request(request, extra_data={"year": year, "slug": slug})
+
+    result = await db.execute(
+        select(Scroll)
+        .options(selectinload(Scroll.subject))
+        .where(
+            Scroll.publication_year == year,
+            Scroll.slug == slug,
+            Scroll.status == "published",
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        get_logger().warning(f"Scroll not found: {year}/{slug}")
+        return templates.TemplateResponse(
+            request, "404.html", {"message": "Scroll not found"}, status_code=404
+        )
+
+    log_preview_event(
+        "view",
+        f"{year}/{slug}",
+        str(scroll.user_id) if scroll.user_id else None,
+        request,
+        extra_data={"title": scroll.title, "url_hash": scroll.url_hash},
+    )
+
+    return templates.TemplateResponse(
+        request, "scroll.html", {"scroll": scroll, "base_url": get_base_url()}
+    )
+
+
 @router.get("/scroll/{url_hash}/og-image.png")
 async def get_og_image(
     url_hash: str,
