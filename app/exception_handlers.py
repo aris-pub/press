@@ -1,7 +1,7 @@
 """Global exception handlers for the FastAPI application."""
 
 from fastapi import HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from app.logging_config import get_logger
@@ -10,9 +10,12 @@ logger = get_logger()
 templates = Jinja2Templates(directory="app/templates")
 
 
-async def not_found_handler(request: Request, exc: HTTPException) -> HTMLResponse:
-    """Handle 404 Not Found errors with custom template."""
+async def not_found_handler(request: Request, exc: HTTPException) -> HTMLResponse | JSONResponse:
+    """Handle 404 Not Found errors with custom template or JSON for API routes."""
     logger.warning(f"404 error: {request.url} - {exc.detail}")
+
+    if request.url.path.startswith("/api/"):
+        return JSONResponse(status_code=404, content={"detail": exc.detail})
 
     return templates.TemplateResponse(
         request=request, name="404.html", context={"message": exc.detail}, status_code=404

@@ -20,7 +20,6 @@ from app.exception_handlers import (
     not_found_handler,
     rate_limit_handler,
 )
-from app.sentry_config import before_send
 from app.logging_config import get_logger
 from app.memory_profiling_middleware import MemoryProfilingMiddleware
 from app.middleware import (
@@ -32,8 +31,9 @@ from app.middleware import (
     SecurityHeadersMiddleware,
     StaticFilesCacheMiddleware,
 )
-from app.routes import auth, main, scrolls
+from app.routes import api, auth, main, scrolls
 from app.security.nonce_middleware import NonceMiddleware
+from app.sentry_config import before_send
 
 # Initialize Sentry for error tracking and performance monitoring
 sentry_dsn = os.getenv("SENTRY_DSN")
@@ -228,3 +228,4 @@ async def health_check():
 app.include_router(main.router)
 app.include_router(auth.router)
 app.include_router(scrolls.router)
+app.include_router(api.router)
