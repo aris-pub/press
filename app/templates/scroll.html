@@ -135,12 +135,14 @@
     </div>
   </footer>
 
-  <button class="fab fab-top" id="top-fab" aria-label="Back to top" hidden>
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-  </button>
-  <button class="fab" id="info-fab" aria-label="View preview information">
-    <img src="/brand/logos/press/press-logo-64.svg" alt="Press logo" class="fab-logo">
-  </button>
+  <div class="fab-group">
+    <button class="fab fab-top" id="top-fab" aria-label="Back to top" hidden>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+    </button>
+    <button class="fab" id="info-fab" aria-label="View preview information">
+      <img src="/brand/logos/press/press-logo-64.svg" alt="Press logo" class="fab-logo">
+    </button>
+  </div>
 
   <div class="modal" id="info-modal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
     <div class="modal-backdrop" id="modal-backdrop"></div>
@@ -397,10 +399,18 @@ html[data-theme="dark"] .aris-link {
   color: var(--red);
 }
 
-.fab {
+.fab-group {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.fab {
   width: 44px;
   height: 44px;
   border-radius: var(--border-radius);
@@ -410,10 +420,10 @@ html[data-theme="dark"] .aris-link {
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(34, 34, 34, 0.3);
   transition: background 0.3s ease;
-  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .fab:hover {
@@ -427,14 +437,10 @@ html[data-theme="dark"] .aris-link {
 }
 
 .fab-top {
-  bottom: calc(2rem + 44px + 0.5rem);
-  width: 36px;
-  height: 36px;
   opacity: 0;
   transform: translateY(8px) scale(0.9);
   transition: opacity 0.2s ease, transform 0.2s ease, background 0.3s ease;
   pointer-events: none;
-  right: calc(2rem + 4px);
 }
 
 .fab-top.visible {
@@ -618,18 +624,14 @@ body.modal-open {
     padding: 0;
   }
 
-  .fab {
+  .fab-group {
     bottom: 1rem;
     right: 1rem;
-    width: 40px;
-    height: 40px;
   }
 
-  .fab-top {
-    bottom: calc(1rem + 40px + 0.5rem);
-    width: 32px;
-    height: 32px;
-    right: calc(1rem + 4px);
+  .fab {
+    width: 40px;
+    height: 40px;
   }
 
   .modal-content {
