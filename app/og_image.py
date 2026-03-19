@@ -12,16 +12,16 @@ from PIL import Image, ImageDraw, ImageFont
 OG_WIDTH = 1200
 OG_HEIGHT = 630
 
-# Brand colors
-BG_COLOR = (250, 250, 250)
+BG_COLOR = (255, 255, 255)
+HEADER_BG = (185, 28, 28)
+HEADER_TEXT = (255, 255, 255)
 TEXT_COLOR = (34, 34, 34)
-ACCENT_COLOR = (185, 28, 28)
-SUBTLE_COLOR = (107, 114, 128)
-DIVIDER_COLOR = (220, 220, 220)
+SUBTLE_COLOR = (100, 100, 100)
+DIVIDER_COLOR = (210, 210, 210)
+FOOTER_BG = (245, 245, 245)
 
 
 def _get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    """Load a font, falling back to default if system fonts aren't available."""
     font_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         if bold
@@ -37,99 +37,104 @@ def _get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFo
     return ImageFont.load_default()
 
 
-def _draw_text_block(
+def _wrap_text(text: str, font, max_width: int) -> list[str]:
+    """Wrap text using actual font measurements."""
+    words = text.split()
+    lines = []
+    current = ""
+    for word in words:
+        test = f"{current} {word}".strip()
+        bbox = font.getbbox(test)
+        if bbox[2] > max_width and current:
+            lines.append(current)
+            current = word
+        else:
+            current = test
+    if current:
+        lines.append(current)
+    return lines
+
+
+def _draw_wrapped(
     draw: ImageDraw.ImageDraw,
     text: str,
     x: int,
     y: int,
     max_width: int,
-    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    font,
     color: tuple,
-    max_lines: int = 3,
-    line_spacing: int = 6,
+    max_lines: int = 99,
+    line_spacing: int = 8,
 ) -> int:
-    """Draw wrapped text and return the y position after the last line."""
-    avg_char_width = font.size * 0.55 if hasattr(font, "size") else 10
-    chars_per_line = max(20, int(max_width / avg_char_width))
-
-    lines = textwrap.wrap(text, width=chars_per_line)
+    """Draw wrapped text using actual font metrics. Returns y after last line."""
+    lines = _wrap_text(text, font, max_width)
     if len(lines) > max_lines:
         lines = lines[:max_lines]
-        if lines[-1]:
-            lines[-1] = lines[-1][:-3] + "..." if len(lines[-1]) > 3 else "..."
+        last = lines[-1]
+        while font.getbbox(last + "...")[2] > max_width and len(last) > 10:
+            last = last.rsplit(" ", 1)[0] if " " in last else last[:-4]
+        lines[-1] = last + "..."
 
-    line_height = (font.size if hasattr(font, "size") else 14) + line_spacing
     for line in lines:
         draw.text((x, y), line, font=font, fill=color)
-        y += line_height
-
+        bbox = font.getbbox(line)
+        y += (bbox[3] - bbox[1]) + line_spacing
     return y
 
 
 def generate_og_image(
     title: str, authors: str, subject: str, abstract: str = ""
 ) -> bytes:
-    """Generate a 1200x630 OG image with scroll metadata.
-
-    Returns PNG bytes.
-    """
+    """Generate a 1200x630 OG image with scroll metadata."""
     img = Image.new("RGB", (OG_WIDTH, OG_HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
 
-    # Accent bar at top
-    draw.rectangle([0, 0, OG_WIDTH, 6], fill=ACCENT_COLOR)
+    px = 60
+    content_w = OG_WIDTH - px * 2
 
-    padding_x = 72
-    content_width = OG_WIDTH - (padding_x * 2)
-
-    # Subject label
-    font_subject = _get_font(22)
-    draw.text((padding_x, 36), subject.upper(), font=font_subject, fill=ACCENT_COLOR)
+    # Red header bar with subject
+    header_h = 56
+    draw.rectangle([0, 0, OG_WIDTH, header_h], fill=HEADER_BG)
+    font_subject = _get_font(22, bold=True)
+    draw.text((px, 16), subject.upper(), font=font_subject, fill=HEADER_TEXT)
 
     # Title
-    font_title = _get_font(48, bold=True)
-    y = _draw_text_block(
-        draw, title, padding_x, 70, content_width, font_title, TEXT_COLOR, max_lines=3
-    )
+    y = header_h + 30
+    font_title = _get_font(52, bold=True)
+    y = _draw_wrapped(draw, title, px, y, content_w, font_title, TEXT_COLOR, max_lines=2, line_spacing=6)
 
     # Authors
-    font_authors = _get_font(26)
-    y = _draw_text_block(
-        draw, authors, padding_x, y + 14, content_width, font_authors, SUBTLE_COLOR, max_lines=1
-    )
+    y += 10
+    font_authors = _get_font(28)
+    y = _draw_wrapped(draw, authors, px, y, content_w, font_authors, SUBTLE_COLOR, max_lines=1)
 
     # Divider
-    y += 12
-    draw.line([(padding_x, y), (padding_x + content_width, y)], fill=DIVIDER_COLOR, width=1)
+    y += 16
+    draw.line([(px, y), (px + content_w, y)], fill=DIVIDER_COLOR, width=2)
+    y += 16
 
-    # Abstract
+    # Abstract — fill remaining space above footer
     if abstract:
-        clean_abstract = " ".join(abstract.replace("\r\n", " ").replace("\n", " ").split())
-        font_abstract = _get_font(22)
-        _draw_text_block(
-            draw,
-            clean_abstract,
-            padding_x,
-            y + 16,
-            content_width,
-            font_abstract,
-            SUBTLE_COLOR,
-            max_lines=6,
-            line_spacing=5,
-        )
+        footer_h = 56
+        available_h = OG_HEIGHT - footer_h - y - 20
+        clean = " ".join(abstract.replace("\r\n", " ").replace("\n", " ").split())
+        font_abs = _get_font(24)
+        line_h = font_abs.getbbox("Ag")[3] + 8
+        max_abs_lines = max(2, available_h // line_h)
+        _draw_wrapped(draw, clean, px, y, content_w, font_abs, SUBTLE_COLOR, max_lines=max_abs_lines, line_spacing=8)
 
-    # Platform branding at bottom
-    draw.rectangle([0, OG_HEIGHT - 56, OG_WIDTH, OG_HEIGHT], fill=(245, 245, 245))
-    draw.line([(0, OG_HEIGHT - 56), (OG_WIDTH, OG_HEIGHT - 56)], fill=DIVIDER_COLOR, width=1)
-
-    font_brand = _get_font(22, bold=True)
-    draw.text((padding_x, OG_HEIGHT - 40), "Scroll Press", font=font_brand, fill=TEXT_COLOR)
-
-    font_tagline = _get_font(17)
+    # Footer
+    footer_y = OG_HEIGHT - 56
+    draw.rectangle([0, footer_y, OG_WIDTH, OG_HEIGHT], fill=FOOTER_BG)
+    draw.line([(0, footer_y), (OG_WIDTH, footer_y)], fill=DIVIDER_COLOR, width=1)
+    font_brand = _get_font(24, bold=True)
+    draw.text((px, footer_y + 16), "Scroll Press", font=font_brand, fill=TEXT_COLOR)
+    font_tag = _get_font(20)
+    brand_w = font_brand.getbbox("Scroll Press")[2]
     draw.text(
-        (padding_x + 160, OG_HEIGHT - 38),
+        (px + brand_w + 20, footer_y + 18),
         "HTML-native preprint server",
-        font=font_tagline,
+        font=font_tag,
         fill=SUBTLE_COLOR,
     )
 
