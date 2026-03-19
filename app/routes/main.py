@@ -64,6 +64,8 @@ async def landing_page(
                 Scroll.keywords,
                 Scroll.version,
                 Scroll.url_hash,
+                Scroll.slug,
+                Scroll.publication_year,
             )
         )
         .order_by(Scroll.created_at.desc())
@@ -138,6 +140,8 @@ async def get_scrolls(
                 Scroll.version,
                 Scroll.url_hash,
                 Scroll.created_at,
+                Scroll.slug,
+                Scroll.publication_year,
             )
         )
     )
@@ -493,6 +497,8 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
                 Scroll.url_hash,
                 Scroll.doi,
                 Scroll.doi_status,
+                Scroll.slug,
+                Scroll.publication_year,
             )
         )
         .order_by(Scroll.created_at.desc())

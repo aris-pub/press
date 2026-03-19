@@ -15,7 +15,8 @@
   <meta property="og:title" content="{{ scroll.title | e }}">
   <meta property="og:description" content="{{ scroll.abstract[:200] | e }}...">
   <meta property="og:type" content="article">
-  <meta property="og:url" content="{{ base_url }}/scroll/{{ scroll.url_hash }}">
+  <meta property="og:url" content="{{ base_url }}{{ scroll.canonical_url }}">
+  <link rel="canonical" href="{{ base_url }}{{ scroll.canonical_url }}">
   <meta property="og:site_name" content="Scroll Press">
   <meta property="og:image" content="{{ base_url }}/scroll/{{ scroll.url_hash }}/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -62,7 +63,7 @@
       "name": "Scroll Press",
       "url": "{{ base_url }}"
     },
-    "url": "{{ base_url }}/scroll/{{ scroll.url_hash }}",
+    "url": "{{ base_url }}{{ scroll.canonical_url }}",
     "image": "{{ base_url }}/scroll/{{ scroll.url_hash }}/og-image.png"{% if scroll.subject and scroll.subject.name %},
     "about": {{ scroll.subject.name | tojson }}{% endif %}{% if scroll.keywords %},
     "keywords": {{ scroll.keywords | tojson }}{% endif %}{% if scroll.license == 'cc-by-4.0' %},

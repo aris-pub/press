@@ -6,11 +6,11 @@ Usage:
 {{ scroll_card("Title", "Authors", "Abstract", ["tag1", "tag2"], "Computer Science", "2 hours ago", "v1", url_hash="abc123", doi="10.5281/zenodo.1234567", doi_status="minted") }}
 #}
 
-{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", url_hash="", doi=None, doi_status=None) %}
+{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", url_hash="", doi=None, doi_status=None, canonical_url="") %}
 {% from "components/doi_badge.html" import doi_badge %}
 <div class="scroll preview" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
   {% if url_hash %}
-  <a href="/scroll/{{ url_hash }}" class="scroll-card-link" hx-boost="false">
+  <a href="{{ canonical_url if canonical_url else '/scroll/' + url_hash }}" class="scroll-card-link" hx-boost="false">
     <div class="scroll-title">{{ title }}</div>
     <div class="scroll-authors">{{ authors }}</div>
     <div class="scroll-abstract">{{ abstract }}</div>
