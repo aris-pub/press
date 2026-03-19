@@ -1,6 +1,7 @@
 """E2E test for preview edit flow."""
 
 import os
+import re
 import tempfile
 
 from playwright.async_api import async_playwright, expect
@@ -444,8 +445,8 @@ async def test_publish_preview_flow(test_server):
                 # Click Publish/Confirm button
                 await page.click('button:has-text("Publish")')
 
-                # Should redirect to published scroll page
-                await page.wait_for_url(f"{test_server}/scroll/**", timeout=5000)
+                # Should redirect to published scroll page (/{year}/{slug})
+                await page.wait_for_url(re.compile(r"/\d{4}/[\w-]+$"), timeout=5000)
 
                 # Verify preview banner is gone
                 page_content = await page.content()
