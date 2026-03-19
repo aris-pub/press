@@ -99,9 +99,15 @@ async def test_confirm_preview_redirects_to_published_scroll(
         follow_redirects=False,
     )
 
-    # Should redirect to published scroll
+    # Should redirect to year/slug URL
     assert response.status_code == 303
-    assert response.headers["location"] == f"/scroll/{scroll.url_hash}"
+    location = response.headers["location"]
+    assert location == "/2026/preview-confirm"
+
+    # Verify slug and year were set on the scroll
+    await test_db.refresh(scroll)
+    assert scroll.publication_year == 2026
+    assert scroll.slug == "preview-confirm"
 
     # Verify scroll is published
     await test_db.refresh(scroll)
