@@ -82,9 +82,7 @@ class TestListScrolls:
         assert len(data["scrolls"]) == 2
 
     @pytest.mark.asyncio
-    async def test_list_scrolls_metadata_fields(
-        self, client: AsyncClient, published_scroll
-    ):
+    async def test_list_scrolls_metadata_fields(self, client: AsyncClient, published_scroll):
         response = await client.get("/api/v1/scrolls")
         data = response.json()
         scroll = data["scrolls"][0]
@@ -123,9 +121,7 @@ class TestListScrolls:
         assert data["total"] == 0
 
     @pytest.mark.asyncio
-    async def test_search_by_query(
-        self, client: AsyncClient, published_scroll, second_scroll
-    ):
+    async def test_search_by_query(self, client: AsyncClient, published_scroll, second_scroll):
         response = await client.get("/api/v1/scrolls", params={"q": "quantum"})
         data = response.json()
         assert data["total"] == 1
@@ -141,28 +137,20 @@ class TestListScrolls:
         assert data["scrolls"][0]["title"] == "Neural Networks for Climate Modeling"
 
     @pytest.mark.asyncio
-    async def test_filter_by_author(
-        self, client: AsyncClient, published_scroll, second_scroll
-    ):
+    async def test_filter_by_author(self, client: AsyncClient, published_scroll, second_scroll):
         response = await client.get("/api/v1/scrolls", params={"author": "Alice Smith"})
         data = response.json()
         assert data["total"] == 1
         assert data["scrolls"][0]["authors"] == "Alice Smith, Bob Jones"
 
     @pytest.mark.asyncio
-    async def test_filter_by_subject(
-        self, client: AsyncClient, published_scroll, second_scroll
-    ):
-        response = await client.get(
-            "/api/v1/scrolls", params={"subject": "Computer Science"}
-        )
+    async def test_filter_by_subject(self, client: AsyncClient, published_scroll, second_scroll):
+        response = await client.get("/api/v1/scrolls", params={"subject": "Computer Science"})
         data = response.json()
         assert data["total"] == 2
 
     @pytest.mark.asyncio
-    async def test_pagination(
-        self, client: AsyncClient, published_scroll, second_scroll
-    ):
+    async def test_pagination(self, client: AsyncClient, published_scroll, second_scroll):
         response = await client.get("/api/v1/scrolls", params={"per_page": 1, "page": 1})
         data = response.json()
         assert len(data["scrolls"]) == 1
@@ -171,27 +159,21 @@ class TestListScrolls:
         assert data["per_page"] == 1
 
     @pytest.mark.asyncio
-    async def test_pagination_page_2(
-        self, client: AsyncClient, published_scroll, second_scroll
-    ):
+    async def test_pagination_page_2(self, client: AsyncClient, published_scroll, second_scroll):
         response = await client.get("/api/v1/scrolls", params={"per_page": 1, "page": 2})
         data = response.json()
         assert len(data["scrolls"]) == 1
         assert data["page"] == 2
 
     @pytest.mark.asyncio
-    async def test_pagination_out_of_range(
-        self, client: AsyncClient, published_scroll
-    ):
+    async def test_pagination_out_of_range(self, client: AsyncClient, published_scroll):
         response = await client.get("/api/v1/scrolls", params={"page": 999})
         data = response.json()
         assert data["scrolls"] == []
         assert data["total"] == 1
 
     @pytest.mark.asyncio
-    async def test_per_page_rejects_over_100(
-        self, client: AsyncClient, published_scroll
-    ):
+    async def test_per_page_rejects_over_100(self, client: AsyncClient, published_scroll):
         response = await client.get("/api/v1/scrolls", params={"per_page": 500})
         assert response.status_code == 422
 
@@ -203,9 +185,7 @@ class TestGetScroll:
     """Tests for the single scroll metadata endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_scroll_by_hash(
-        self, client: AsyncClient, published_scroll
-    ):
+    async def test_get_scroll_by_hash(self, client: AsyncClient, published_scroll):
         response = await client.get(f"/api/v1/scrolls/{published_scroll.url_hash}")
         assert response.status_code == 200
         data = response.json()
@@ -222,9 +202,7 @@ class TestGetScroll:
         assert "citation" in data
 
     @pytest.mark.asyncio
-    async def test_get_scroll_citation_format(
-        self, client: AsyncClient, published_scroll
-    ):
+    async def test_get_scroll_citation_format(self, client: AsyncClient, published_scroll):
         response = await client.get(f"/api/v1/scrolls/{published_scroll.url_hash}")
         data = response.json()
         citation = data["citation"]
@@ -233,9 +211,7 @@ class TestGetScroll:
         assert "Quantum Computing in Practice" in citation
 
     @pytest.mark.asyncio
-    async def test_get_scroll_with_doi(
-        self, client: AsyncClient, test_db, published_scroll
-    ):
+    async def test_get_scroll_with_doi(self, client: AsyncClient, test_db, published_scroll):
         published_scroll.doi = "10.1234/test.5678"
         published_scroll.doi_status = "minted"
         published_scroll.doi_minted_at = datetime.now(timezone.utc)
@@ -284,12 +260,8 @@ class TestGetScrollContent:
     """Tests for the full-text content endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_content_html(
-        self, client: AsyncClient, published_scroll
-    ):
-        response = await client.get(
-            f"/api/v1/scrolls/{published_scroll.url_hash}/content"
-        )
+    async def test_get_content_html(self, client: AsyncClient, published_scroll):
+        response = await client.get(f"/api/v1/scrolls/{published_scroll.url_hash}/content")
         assert response.status_code == 200
         data = response.json()
         assert data["format"] == "html"
@@ -298,9 +270,7 @@ class TestGetScrollContent:
         assert "citation" in data
 
     @pytest.mark.asyncio
-    async def test_get_content_plain_text(
-        self, client: AsyncClient, published_scroll
-    ):
+    async def test_get_content_plain_text(self, client: AsyncClient, published_scroll):
         response = await client.get(
             f"/api/v1/scrolls/{published_scroll.url_hash}/content",
             params={"format": "text"},
@@ -317,9 +287,7 @@ class TestGetScrollContent:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_get_content_invalid_format(
-        self, client: AsyncClient, published_scroll
-    ):
+    async def test_get_content_invalid_format(self, client: AsyncClient, published_scroll):
         response = await client.get(
             f"/api/v1/scrolls/{published_scroll.url_hash}/content",
             params={"format": "pdf"},

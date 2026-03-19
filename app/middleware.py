@@ -10,8 +10,8 @@ import sentry_sdk
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.logging_config import get_logger
-from app.sentry_config import report_rate_limit_hit
 from app.security.nonce import get_nonce_from_request
+from app.sentry_config import report_rate_limit_hit
 
 # Rate limiting constants
 DEFAULT_REQUESTS_PER_MINUTE = 300

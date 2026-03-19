@@ -2,9 +2,7 @@
 
 from unittest.mock import patch
 
-import pytest
-
-from app.sentry_config import before_send, report_rate_limit_hit, report_rapid_uploads
+from app.sentry_config import before_send, report_rapid_uploads, report_rate_limit_hit
 
 
 class TestBeforeSend:
@@ -107,9 +105,7 @@ class TestStorageThresholdReport:
     def test_reports_storage_threshold(self, mock_sentry):
         from app.sentry_config import report_storage_threshold
 
-        report_storage_threshold(
-            user_id="user-789", total_bytes=524288000, scroll_count=50
-        )
+        report_storage_threshold(user_id="user-789", total_bytes=524288000, scroll_count=50)
 
         mock_sentry.capture_message.assert_called_once()
         call_args = mock_sentry.capture_message.call_args

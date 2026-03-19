@@ -57,9 +57,7 @@ if sentry_dsn:
         attach_stacktrace=True,
         send_default_pii=False,  # GDPR compliance - no user emails/IPs in errors
         max_breadcrumbs=50,
-        before_send=lambda event, hint: before_send(
-            event, hint, environment=environment
-        ),
+        before_send=lambda event, hint: before_send(event, hint, environment=environment),
     )
 
 

@@ -77,3 +77,6 @@ seed_papers/graph_traversal_myst.md
 # Claude skills symlink
 .claude/skills
 .hns/
+
+# Dolt database files (added by bd init)
+.dolt/

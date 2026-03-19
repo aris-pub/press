@@ -1,12 +1,8 @@
 """Tests for slug utility functions."""
 
-import uuid
-
 import pytest
-import pytest_asyncio
-from sqlalchemy import select
 
-from app.utils.slug import slugify_title, generate_unique_slug
+from app.utils.slug import generate_unique_slug, slugify_title
 
 
 class TestSlugifyTitle:
@@ -17,7 +13,21 @@ class TestSlugifyTitle:
         assert slugify_title("The Impact of AI on the Future") == "impact-ai-future"
 
     def test_all_stop_words_removed(self):
-        for word in ["the", "a", "an", "of", "for", "in", "on", "with", "and", "or", "to", "is", "by"]:
+        for word in [
+            "the",
+            "a",
+            "an",
+            "of",
+            "for",
+            "in",
+            "on",
+            "with",
+            "and",
+            "or",
+            "to",
+            "is",
+            "by",
+        ]:
             title = f"Something {word} Else"
             result = slugify_title(title)
             assert word not in result.split("-"), f"Stop word '{word}' not removed"

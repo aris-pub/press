@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
 
-from sqlalchemy import ARRAY, Integer, JSON, DateTime, ForeignKey, String, Text
+from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import TypeDecorator

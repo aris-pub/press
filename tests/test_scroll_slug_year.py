@@ -1,15 +1,13 @@
 """Tests for slug and publication_year fields on Scroll model."""
 
-import uuid
 from datetime import datetime, timezone
+import uuid
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import select, text
 
 from app.models.scroll import Scroll, Subject
 from app.models.user import User
-from app.utils.slug import slugify_title
 
 
 @pytest_asyncio.fixture
@@ -94,9 +92,7 @@ class TestCanonicalUrl:
 
     @pytest.mark.asyncio
     async def test_canonical_url_with_both(self, test_db, user, subject):
-        scroll = _make_scroll(
-            user, subject, slug="quantum-entanglement", publication_year=2026
-        )
+        scroll = _make_scroll(user, subject, slug="quantum-entanglement", publication_year=2026)
         test_db.add(scroll)
         await test_db.commit()
         await test_db.refresh(scroll)

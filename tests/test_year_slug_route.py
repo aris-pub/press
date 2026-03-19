@@ -1,14 +1,14 @@
 """Tests for GET /{year}/{slug} route."""
 
-import uuid
 from datetime import datetime, timezone
+import uuid
 
 import pytest
 import pytest_asyncio
 
+from app.auth.utils import get_password_hash
 from app.models.scroll import Scroll, Subject
 from app.models.user import User
-from app.auth.utils import get_password_hash
 
 
 @pytest_asyncio.fixture

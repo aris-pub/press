@@ -5,7 +5,6 @@ and abstract excerpt for rich link previews on social platforms.
 """
 
 import io
-import textwrap
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -82,9 +81,7 @@ def _draw_wrapped(
     return y
 
 
-def generate_og_image(
-    title: str, authors: str, subject: str, abstract: str = ""
-) -> bytes:
+def generate_og_image(title: str, authors: str, subject: str, abstract: str = "") -> bytes:
     """Generate a 1200x630 OG image with scroll metadata."""
     img = Image.new("RGB", (OG_WIDTH, OG_HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
@@ -101,7 +98,9 @@ def generate_og_image(
     # Title
     y = header_h + 30
     font_title = _get_font(52, bold=True)
-    y = _draw_wrapped(draw, title, px, y, content_w, font_title, TEXT_COLOR, max_lines=2, line_spacing=6)
+    y = _draw_wrapped(
+        draw, title, px, y, content_w, font_title, TEXT_COLOR, max_lines=2, line_spacing=6
+    )
 
     # Authors
     y += 10
@@ -121,7 +120,17 @@ def generate_og_image(
         font_abs = _get_font(24)
         line_h = font_abs.getbbox("Ag")[3] + 8
         max_abs_lines = max(2, available_h // line_h)
-        _draw_wrapped(draw, clean, px, y, content_w, font_abs, SUBTLE_COLOR, max_lines=max_abs_lines, line_spacing=8)
+        _draw_wrapped(
+            draw,
+            clean,
+            px,
+            y,
+            content_w,
+            font_abs,
+            SUBTLE_COLOR,
+            max_lines=max_abs_lines,
+            line_spacing=8,
+        )
 
     # Footer
     footer_y = OG_HEIGHT - 56

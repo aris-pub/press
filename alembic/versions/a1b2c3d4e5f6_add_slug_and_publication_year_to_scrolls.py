@@ -49,7 +49,9 @@ def upgrade() -> None:
     # Backfill existing published scrolls
     conn = op.get_bind()
     rows = conn.execute(
-        text("SELECT id, title, published_at FROM scrolls WHERE status = 'published' AND published_at IS NOT NULL")
+        text(
+            "SELECT id, title, published_at FROM scrolls WHERE status = 'published' AND published_at IS NOT NULL"
+        )
     ).fetchall()
 
     seen: dict[tuple[int, str], int] = {}
