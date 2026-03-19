@@ -175,6 +175,61 @@ deploy: build
     echo "🎉 Deployment and health check complete!"
     echo "📬 Check your admin email for the test message"
 
+# Generate changelog entry from commits since last tag
+changelog version="Unreleased":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    VERSION="{{version}}"
+    LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+    if [ -z "$LAST_TAG" ]; then COMMITS=$(git log --oneline --no-merges); else COMMITS=$(git log --oneline --no-merges "${LAST_TAG}..HEAD"); fi
+    DATE=$(date +%Y-%m-%d)
+    PROMPT="Generate a CHANGELOG entry for version $VERSION (date: $DATE). Commits since last tag: $COMMITS. Rules: Skip ci/test/chore/docs commits and submodule updates. Group into Keep-a-Changelog sections: Added (feat:), Fixed (fix:), Changed (other). Rewrite as user-friendly prose. Omit empty sections. If no user-visible changes output: _No user-visible changes._ Output only raw markdown (no preamble, no code fences): ## [$VERSION] - $DATE, then ### Added, ### Fixed, ### Changed sections as needed."
+    entry=$(claude --print "$PROMPT")
+    if [ -f CHANGELOG.md ]; then { head -1 CHANGELOG.md; printf "\n%s\n" "$entry"; tail -n +2 CHANGELOG.md; } > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md; else printf "# Changelog\n\n%s\n" "$entry" > CHANGELOG.md; fi
+    echo "==> CHANGELOG.md updated for $VERSION"
+
+# Release: bump version, generate changelog, update roadmap, tag, push
+release level:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    LEVEL="{{level}}"
+    if [[ "$LEVEL" != "major" && "$LEVEL" != "minor" && "$LEVEL" != "patch" ]]; then
+        echo "Error: level must be 'major', 'minor', or 'patch', got '$LEVEL'"
+        exit 1
+    fi
+
+    CURRENT=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+    IFS='.' read -r major minor patch <<< "$CURRENT"
+    case "$LEVEL" in
+        major) major=$((major + 1)); minor=0; patch=0 ;;
+        minor) minor=$((minor + 1)); patch=0 ;;
+        patch) patch=$((patch + 1)) ;;
+    esac
+    NEXT="${major}.${minor}.${patch}"
+
+    echo "==> Bumping $CURRENT -> $NEXT"
+    sed -i '' "s/^version = \"$CURRENT\"/version = \"$NEXT\"/" pyproject.toml
+
+    echo "==> Generating changelog"
+    just changelog "$NEXT"
+
+    echo "==> Updating roadmap page"
+    just _update-roadmap "$NEXT"
+
+    git add pyproject.toml CHANGELOG.md app/templates/roadmap.html
+    git commit -m "Release v${NEXT}"
+    git tag "v${NEXT}"
+    git push origin main --tags
+
+    echo "==> Released v${NEXT}"
+    echo "==> Deploying to production"
+    just deploy
+
+# Internal: inject latest changelog entry into roadmap.html
+_update-roadmap version:
+    uv run python scripts/update_roadmap.py "{{version}}"
+
 # Setup project from scratch
 init: install build migrate seed install-hooks
     @echo "Project setup complete! Run 'just dev' to start the server."
