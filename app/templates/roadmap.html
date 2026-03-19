@@ -21,22 +21,53 @@ h2 {
   <div class="page-content">
     <!-- CHANGELOG_START -->
     <section>
-      <h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; vertical-align: middle; margin-right: 0.5rem; color: #f59e0b;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Recent Changes (v0.2.0)</h2>
+      <h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; vertical-align: middle; margin-right: 0.5rem; color: #f59e0b;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Recent Changes (v0.1.0)</h2>
       <h3>Added</h3>
       <ul>
-        <li>Human-readable URLs (`scroll.press/2026/glee`) alongside hash URLs</li>
-        <li>Public REST API for AI agents (`/api/v1/scrolls`, `/api/v1/scrolls/{hash}/content`)</li>
-        <li>Back-to-top floating action button on scroll pages</li>
-        <li>Slug generation from paper titles at publish time</li>
+        <li>Public REST API (v1) for AI agent access to scholarly content</li>
+        <li>Human-readable scroll URLs at `/{year}/{slug}` with automatic slug generation at publish time</li>
+        <li>Rich social link previews with Open Graph images and structured metadata</li>
+        <li>Turnstile CAPTCHA and signup rate limiting on registration</li>
+        <li>Per-user upload rate limit of 5 uploads per hour</li>
+        <li>Password change feature with forgot-password link</li>
+        <li>Account deletion flow</li>
+        <li>Infinite draft persistence for academic workflows</li>
+        <li>Admin email notifications for new signups and published scrolls</li>
+        <li>DOI badge component with Zenodo sandbox detection</li>
+        <li>Back-to-top floating action button on scroll view pages</li>
+        <li>Post-deployment email health check</li>
+        <li>Database health checks with latency metrics</li>
+        <li>Backup health check workflow</li>
+        <li>Sentry alert rules with abuse-pattern reporting</li>
+        <li>Plotly CDN support for interactive widgets</li>
       </ul>
       <h3>Fixed</h3>
       <ul>
-        <li>Mobile viewport padding on embedded papers</li>
-        <li>FAB logo clipping in grouped button layout</li>
+        <li>FAB occlusion issues resolved with grouped horizontal layout</li>
+        <li>Dashboard `hx-boost` bug and dead footer partial removed</li>
+        <li>Dark mode contrast and How It Works page layout</li>
+        <li>Turnstile widget rendering failures with HTMX navigation</li>
+        <li>CSRF protection for password change form</li>
+        <li>Double navbar after HTMX navigation</li>
+        <li>Theme toggle and event listeners for HTMX-loaded content</li>
+        <li>Upload form returning full page instead of partial on errors</li>
+        <li>Session injection vulnerability via Supabase RLS enforcement</li>
+        <li>Email error handling with Sentry integration</li>
+        <li>Parallel database conflicts in unit tests</li>
+        <li>Flaky mobile login and E2E test timing issues</li>
       </ul>
       <h3>Changed</h3>
       <ul>
-        <li>Scroll cards and meta tags now use canonical year/slug URLs</li>
+        <li>Redesigned floating action buttons as a grouped horizontal unit</li>
+        <li>Homepage refactored to HTMX patterns with dark-mode footer fix</li>
+        <li>HTML validation switched from regex to BeautifulSoup</li>
+        <li>File uploads use `UploadFile` for better memory efficiency</li>
+        <li>Static file cache TTL reduced from 1 year to 1 hour</li>
+        <li>Security model relaxed to allow `unsafe-eval` for interactive research libraries (Bokeh, Plotly)</li>
+        <li>Signup form label changed to "Full Name"</li>
+        <li>Legal page dates and privacy policy updated with named subprocessors for GDPR compliance</li>
+        <li>Excluded `html_content` from list queries to improve load times</li>
+        <li>Unified email verification banners into a reusable component</li>
       </ul>
       <p><a href="https://github.com/aris-pub/press/releases" class="page-link">Full changelog on GitHub</a></p>
     </section>
