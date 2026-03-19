@@ -531,6 +531,7 @@ async def get_og_image(
         title=scroll.title,
         authors=scroll.authors,
         subject=scroll.subject.name if scroll.subject else "",
+        abstract=scroll.abstract or "",
     )
 
     return Response(
