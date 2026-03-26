@@ -50,7 +50,12 @@ jobs:
 
           flyctl secrets set --app "$APP_NAME" \
             SECRET_KEY="preview-${{ github.event.pull_request.number }}" \
-            ENVIRONMENT="preview"
+            ENVIRONMENT="preview" \
+            AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            AWS_ENDPOINT_URL_S3="${{ secrets.AWS_ENDPOINT_URL_S3 }}" \
+            AWS_REGION="auto" \
+            AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            BUCKET_NAME="${{ secrets.BUCKET_NAME }}"
         fi
 
     - name: Deploy preview
