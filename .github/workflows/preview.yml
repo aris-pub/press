@@ -12,6 +12,9 @@ env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
   APP_NAME: scroll-press-pr-${{ github.event.pull_request.number }}
 
+permissions:
+  pull-requests: write
+
 jobs:
   deploy:
     if: github.event.action != 'closed'
@@ -36,18 +39,24 @@ jobs:
             --org personal \
             --region fra \
             --vm-size shared-cpu-1x \
+            --vm-memory 1024 \
             --volume-size 1 \
             --initial-cluster-size 1
 
           # Create the app
           flyctl apps create "$APP_NAME" --org personal
 
-          # Attach database (sets DATABASE_URL automatically)
+          # Attach database (sets DATABASE_URL — app normalizes postgres:// at startup)
           flyctl postgres attach "$DB_APP" --app "$APP_NAME"
 
           flyctl secrets set --app "$APP_NAME" \
             SECRET_KEY="preview-${{ github.event.pull_request.number }}" \
-            ENVIRONMENT="preview"
+            ENVIRONMENT="preview" \
+            AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            AWS_ENDPOINT_URL_S3="${{ secrets.AWS_ENDPOINT_URL_S3 }}" \
+            AWS_REGION="auto" \
+            AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            BUCKET_NAME="${{ secrets.BUCKET_NAME }}"
         fi
 
     - name: Deploy preview
@@ -55,6 +64,12 @@ jobs:
         flyctl deploy --app "$APP_NAME" \
           --ha=false \
           --yes
+
+    - name: Seed database
+      run: |
+        flyctl ssh console --app "$APP_NAME" \
+          -C "cd /app && uv run --frozen --no-dev python scripts/seed.py" \
+          || true
 
     - name: Comment preview URL
       uses: actions/github-script@v7
