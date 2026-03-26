@@ -333,6 +333,126 @@ class TestConfirmEntryPointErrorHandling:
         assert response.status_code == 400
 
 
+class TestFullUploadToServingRoundTrip:
+    """Verify that zip-uploaded assets are stored with keys that the serving endpoints can find."""
+
+    @pytest.mark.asyncio
+    async def test_uploaded_assets_are_servable(
+        self, authenticated_client, test_subject, mock_storage
+    ):
+        """Upload zip → confirm → serve entry point + assets. The key round-trip test."""
+        html_with_assets = VALID_HTML.replace(
+            "</head>", '<link href="styles/main.css"></head>'
+        )
+        zip_bytes = make_zip_bytes(
+            {
+                "index.html": html_with_assets,
+                "styles/main.css": "h1 { color: navy; }",
+            }
+        )
+
+        # Step 1: Upload zip
+        response = await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Round Trip Test",
+                "authors": "Author",
+                "subject_id": str(test_subject.id),
+                "abstract": "Test abstract for round trip",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            files={"file": ("test.zip", zip_bytes, "application/zip")},
+        )
+        assert response.status_code == 200
+        assert "Select Entry Point" in response.text
+
+        # Step 2: Confirm entry point
+        response = await authenticated_client.post(
+            "/upload/confirm-entry-point",
+            data={"entry_point": "index.html"},
+            follow_redirects=False,
+        )
+        assert response.status_code in (302, 303)
+        preview_url = response.headers["location"]
+        assert "/preview/" in preview_url
+
+        # Extract url_hash from preview URL
+        url_hash = preview_url.split("/preview/")[1].rstrip("/")
+
+        # Step 3: Verify entry point is servable
+        response = await authenticated_client.get(f"/scroll/{url_hash}/paper/")
+        assert response.status_code == 200
+        assert b"Research Paper Title" in response.content
+
+        # Step 4: Verify CSS asset is servable
+        response = await authenticated_client.get(
+            f"/scroll/{url_hash}/paper/styles/main.css"
+        )
+        assert response.status_code == 200
+        assert b"color: navy" in response.content
+
+    @pytest.mark.asyncio
+    async def test_nested_zip_assets_servable_after_flattening(
+        self, authenticated_client, test_subject, mock_storage
+    ):
+        """Nested zip (my-paper/index.html) should serve assets after flattening."""
+        nested_html = VALID_HTML.replace(
+            "</head>", '<link href="css/style.css"></head>'
+        )
+        zip_bytes = make_zip_bytes(
+            {
+                "my-paper/index.html": nested_html,
+                "my-paper/css/style.css": "body { margin: 0; }",
+                "my-paper/data/results.json": '{"x": [1,2,3]}',
+            }
+        )
+
+        # Upload + confirm
+        response = await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Nested Zip Test",
+                "authors": "Author",
+                "subject_id": str(test_subject.id),
+                "abstract": "Nested archive test abstract",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            files={"file": ("nested.zip", zip_bytes, "application/zip")},
+        )
+        assert response.status_code == 200
+
+        response = await authenticated_client.post(
+            "/upload/confirm-entry-point",
+            data={"entry_point": "index.html"},
+            follow_redirects=False,
+        )
+        assert response.status_code in (302, 303)
+        url_hash = response.headers["location"].split("/preview/")[1].rstrip("/")
+
+        # Verify entry point (should be at root after flattening)
+        response = await authenticated_client.get(f"/scroll/{url_hash}/paper/")
+        assert response.status_code == 200
+        assert b"Research Paper Title" in response.content
+
+        # Verify CSS (should be at css/style.css after stripping my-paper/ prefix)
+        response = await authenticated_client.get(
+            f"/scroll/{url_hash}/paper/css/style.css"
+        )
+        assert response.status_code == 200
+        assert b"margin: 0" in response.content
+
+        # Verify JSON data
+        response = await authenticated_client.get(
+            f"/scroll/{url_hash}/paper/data/results.json"
+        )
+        assert response.status_code == 200
+        assert b'"x"' in response.content
+
+
 class TestHtmlUploadStillWorks:
     @pytest.mark.asyncio
     async def test_html_upload_unchanged(self, authenticated_client, test_subject):
