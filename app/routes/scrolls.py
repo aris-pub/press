@@ -541,6 +541,33 @@ async def get_og_image(
     )
 
 
+_PAPER_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.plot.ly https://cdn.bokeh.org https://unpkg.com; "
+    "style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
+    "img-src 'self' data: https:; "
+    "font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
+    "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.bokeh.org https://unpkg.com; "
+    "form-action 'self'; "
+    "frame-ancestors 'self';"
+)
+
+
+async def _verify_scroll_access(
+    request: Request, url_hash: str, db: AsyncSession
+) -> Scroll:
+    """Look up a scroll by url_hash and verify access. Raises HTTPException on failure."""
+    result = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
+    scroll = result.scalar_one_or_none()
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Scroll not found")
+    if scroll.status == "preview":
+        current_user = await get_current_user_from_session(request, db)
+        if not current_user or scroll.user_id != current_user.id:
+            raise HTTPException(status_code=404, detail="Scroll not found")
+    return scroll
+
+
 @router.get("/scroll/{url_hash}/paper")
 async def get_paper_html(
     request: Request,
@@ -549,54 +576,118 @@ async def get_paper_html(
 ):
     """Serve paper HTML for iframe embedding.
 
-    Returns raw HTML content of a published paper for iframe rendering.
-    For preview scrolls, only the owner can view.
-    This route provides complete CSS/JS isolation from the parent Press page.
-
-    Security headers:
-    - X-Frame-Options: SAMEORIGIN (prevent external embedding)
-    - frame-ancestors 'self' (CSP equivalent)
+    For inline scrolls, returns the html_content directly.
+    For archive scrolls, redirects to the trailing-slash URL so relative
+    paths in author HTML resolve correctly.
     """
     sentry_sdk.set_tag("operation", "paper_view")
     sentry_sdk.set_context("paper", {"url_hash": url_hash})
 
-    # Find scroll by content-addressable hash (published or preview)
-    result = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
-    scroll = result.scalar_one_or_none()
+    scroll = await _verify_scroll_access(request, url_hash, db)
 
-    if not scroll:
-        raise HTTPException(status_code=404, detail="Scroll not found")
+    if scroll.storage_type == "archive":
+        return RedirectResponse(
+            url=f"/scroll/{url_hash}/paper/", status_code=301
+        )
 
-    # If preview, verify ownership
-    if scroll.status == "preview":
-        current_user = await get_current_user_from_session(request, db)
-        if not current_user or scroll.user_id != current_user.id:
-            raise HTTPException(status_code=404, detail="Scroll not found")
-
-    # Set security headers for iframe embedding
-    # CSP allows 'unsafe-eval' to support interactive academic visualizations
-    # (Bokeh, Plotly, Observable) that use new Function() for dynamic callbacks.
-    # This does NOT meaningfully increase risk vs 'unsafe-inline' since entire
-    # HTML document is untrusted user content served in isolated iframe.
-    # Upload validation (HTMLValidator) is our primary XSS defense.
     headers = {
         "X-Frame-Options": "SAMEORIGIN",
-        "Content-Security-Policy": (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.plot.ly https://cdn.bokeh.org https://unpkg.com; "
-            "style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
-            "img-src 'self' data: https:; "
-            "font-src 'self' data: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
-            "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.bokeh.org https://unpkg.com; "
-            "form-action 'self'; "
-            "frame-ancestors 'self';"
-        ),
+        "Content-Security-Policy": _PAPER_CSP,
     }
-
     return Response(
         content=scroll.html_content,
         media_type="text/html",
         headers=headers,
+    )
+
+
+@router.get("/scroll/{url_hash}/paper/")
+async def get_archive_entry_point(
+    request: Request,
+    url_hash: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Serve the entry-point HTML for an archive scroll from Tigris."""
+    sentry_sdk.set_tag("operation", "archive_entry_point")
+    sentry_sdk.set_context("paper", {"url_hash": url_hash})
+
+    scroll = await _verify_scroll_access(request, url_hash, db)
+
+    if scroll.storage_type != "archive":
+        return Response(
+            content=scroll.html_content,
+            media_type="text/html",
+            headers={
+                "X-Frame-Options": "SAMEORIGIN",
+                "Content-Security-Policy": _PAPER_CSP,
+            },
+        )
+
+    from app.storage import get_storage
+
+    storage = get_storage()
+    key = f"scrolls/{scroll.content_hash}/{scroll.entry_point}"
+
+    try:
+        data = await storage.get(key)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Entry point not found in storage")
+
+    return Response(
+        content=data,
+        media_type="text/html",
+        headers={
+            "X-Frame-Options": "SAMEORIGIN",
+            "Content-Security-Policy": _PAPER_CSP,
+            "Cache-Control": "public, max-age=3600",
+        },
+    )
+
+
+@router.get("/scroll/{url_hash}/paper/{path:path}")
+async def get_archive_asset(
+    request: Request,
+    url_hash: str,
+    path: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Serve an asset file from an archive scroll stored in Tigris."""
+    import mimetypes
+
+    sentry_sdk.set_tag("operation", "archive_asset")
+    sentry_sdk.set_context("paper", {"url_hash": url_hash, "path": path})
+
+    # Block path traversal
+    from pathlib import PurePosixPath
+
+    resolved = PurePosixPath(path)
+    if ".." in resolved.parts:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    scroll = await _verify_scroll_access(request, url_hash, db)
+
+    if scroll.storage_type != "archive":
+        raise HTTPException(status_code=404, detail="Not an archive scroll")
+
+    from app.storage import get_storage
+
+    storage = get_storage()
+    key = f"scrolls/{scroll.content_hash}/{path}"
+
+    try:
+        data = await storage.get(key)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={
+            "X-Frame-Options": "SAMEORIGIN",
+            "Cache-Control": "public, max-age=31536000, immutable",
+        },
     )
 
 

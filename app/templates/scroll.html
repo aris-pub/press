@@ -93,7 +93,7 @@
     </div>
     <iframe
       id="paper-frame"
-      src="/scroll/{{ scroll.url_hash }}/paper"
+      src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
       style="width: 100%; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
       title="{{ scroll.title }}"
       scrolling="no"

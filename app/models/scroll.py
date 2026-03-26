@@ -107,6 +107,8 @@ class Scroll(Base):
 
     # Storage type: 'inline' = html_content column, 'archive' = Tigris object storage
     storage_type: Mapped[str] = mapped_column(String(20), default="inline", nullable=False)
+    # Entry point file path within archive (e.g. "index.html"), only for storage_type='archive'
+    entry_point: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     # New fields for HTML scrolls
     content_type: Mapped[str] = mapped_column(String(50), default="html")  # 'html' only for now
