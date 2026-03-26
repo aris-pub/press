@@ -9,8 +9,8 @@ import tempfile
 import unicodedata
 import zipfile
 
-import magic
 from defusedxml import ElementTree as DefusedET
+import magic
 
 from app.security.html_validator import HTMLValidator
 from app.security.validation import ContentValidator
@@ -24,23 +24,74 @@ MAX_COMPRESSION_RATIO = 100
 MAX_FILENAME_LENGTH = 255
 CHUNK_SIZE = 8192
 
-ALLOWED_EXTENSIONS = frozenset({
-    ".html", ".htm", ".css", ".js", ".mjs",
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg",
-    ".woff", ".woff2", ".ttf", ".otf", ".eot",
-    ".json", ".csv", ".tsv", ".txt", ".map",
-})
+ALLOWED_EXTENSIONS = frozenset(
+    {
+        ".html",
+        ".htm",
+        ".css",
+        ".js",
+        ".mjs",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".svg",
+        ".woff",
+        ".woff2",
+        ".ttf",
+        ".otf",
+        ".eot",
+        ".json",
+        ".csv",
+        ".tsv",
+        ".txt",
+        ".map",
+    }
+)
 
-NESTED_ARCHIVE_EXTENSIONS = frozenset({
-    ".zip", ".tar", ".gz", ".tgz", ".bz2", ".xz",
-    ".rar", ".7z", ".jar", ".war", ".ear",
-})
+NESTED_ARCHIVE_EXTENSIONS = frozenset(
+    {
+        ".zip",
+        ".tar",
+        ".gz",
+        ".tgz",
+        ".bz2",
+        ".xz",
+        ".rar",
+        ".7z",
+        ".jar",
+        ".war",
+        ".ear",
+    }
+)
 
-WINDOWS_RESERVED = frozenset({
-    "CON", "PRN", "AUX", "NUL",
-    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
-})
+WINDOWS_RESERVED = frozenset(
+    {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
+    }
+)
 
 HIDDEN_PREFIXES = ("__MACOSX/", "__MACOSX")
 HIDDEN_BASENAMES = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
@@ -61,18 +112,32 @@ FILE_SIZE_LIMITS: dict[str, int] = {
 
 # Extension to category mapping
 EXTENSION_CATEGORY: dict[str, str] = {
-    ".html": "html", ".htm": "html",
+    ".html": "html",
+    ".htm": "html",
     ".css": "css",
-    ".js": "js", ".mjs": "js", ".map": "js",
-    ".png": "image", ".jpg": "image", ".jpeg": "image",
-    ".gif": "image", ".webp": "image",
+    ".js": "js",
+    ".mjs": "js",
+    ".map": "js",
+    ".png": "image",
+    ".jpg": "image",
+    ".jpeg": "image",
+    ".gif": "image",
+    ".webp": "image",
     ".svg": "svg",
-    ".woff": "font", ".woff2": "font", ".ttf": "font",
-    ".otf": "font", ".eot": "font",
-    ".json": "data", ".csv": "data", ".tsv": "data", ".txt": "data",
+    ".woff": "font",
+    ".woff2": "font",
+    ".ttf": "font",
+    ".otf": "font",
+    ".eot": "font",
+    ".json": "data",
+    ".csv": "data",
+    ".tsv": "data",
+    ".txt": "data",
 }
 
-TEXT_EXTENSIONS = frozenset({".html", ".htm", ".css", ".js", ".mjs", ".json", ".csv", ".tsv", ".txt", ".map"})
+TEXT_EXTENSIONS = frozenset(
+    {".html", ".htm", ".css", ".js", ".mjs", ".json", ".csv", ".tsv", ".txt", ".map"}
+)
 
 # Expected MIME patterns per extension (prefix matching)
 MIME_EXPECTATIONS: dict[str, list[str]] = {
@@ -92,10 +157,32 @@ MIME_EXPECTATIONS: dict[str, list[str]] = {
     ".gif": ["image/gif"],
     ".webp": ["image/webp"],
     ".svg": ["image/svg", "text/xml", "application/xml", "text/html", "text/plain"],
-    ".woff": ["font/", "application/font-woff", "application/x-font-woff", "application/octet-stream"],
-    ".woff2": ["font/", "application/font-woff2", "application/x-font-woff2", "application/octet-stream"],
-    ".ttf": ["font/", "application/x-font-ttf", "application/font-sfnt", "application/octet-stream"],
-    ".otf": ["font/", "application/x-font-opentype", "application/font-sfnt", "font/otf", "application/octet-stream", "application/vnd.ms-opentype"],
+    ".woff": [
+        "font/",
+        "application/font-woff",
+        "application/x-font-woff",
+        "application/octet-stream",
+    ],
+    ".woff2": [
+        "font/",
+        "application/font-woff2",
+        "application/x-font-woff2",
+        "application/octet-stream",
+    ],
+    ".ttf": [
+        "font/",
+        "application/x-font-ttf",
+        "application/font-sfnt",
+        "application/octet-stream",
+    ],
+    ".otf": [
+        "font/",
+        "application/x-font-opentype",
+        "application/font-sfnt",
+        "font/otf",
+        "application/octet-stream",
+        "application/vnd.ms-opentype",
+    ],
     ".eot": ["application/vnd.ms-fontobject", "application/octet-stream"],
 }
 
@@ -139,7 +226,9 @@ class ZipValidator:
         """Validate and extract. Returns (errors, extract_dir_or_None)."""
         return self._run_validation(archive_path, keep_extracted=True)
 
-    def _run_validation(self, archive_path: str, keep_extracted: bool) -> tuple[list[str], str | None]:
+    def _run_validation(
+        self, archive_path: str, keep_extracted: bool
+    ) -> tuple[list[str], str | None]:
         errors: list[str] = []
 
         # Step 1: Archive size
@@ -148,7 +237,9 @@ class ZipValidator:
         except OSError:
             return ["Archive file not found."], None
         if archive_size > MAX_ARCHIVE_SIZE:
-            return [f"Archive size ({archive_size / 1024 / 1024:.1f}MB) exceeds the 50MB limit."], None
+            return [
+                f"Archive size ({archive_size / 1024 / 1024:.1f}MB) exceeds the 50MB limit."
+            ], None
 
         # Step 2: Open safely
         try:
@@ -166,7 +257,9 @@ class ZipValidator:
 
             # 3a: File count
             if len(non_hidden) > MAX_FILE_COUNT:
-                errors.append(f"Archive contains {len(non_hidden)} files, maximum is {MAX_FILE_COUNT}.")
+                errors.append(
+                    f"Archive contains {len(non_hidden)} files, maximum is {MAX_FILE_COUNT}."
+                )
 
             total_uncompressed = 0
             for info in infos:
@@ -196,17 +289,24 @@ class ZipValidator:
                 # 3e: Extension allowlist
                 ext = os.path.splitext(name)[1].lower()
                 if ext not in ALLOWED_EXTENSIONS:
-                    errors.append(f"File '{name}' has disallowed extension '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}")
+                    errors.append(
+                        f"File '{name}' has disallowed extension '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+                    )
 
                 # 3f: Nested archives
                 if _check_nested_archive(name):
-                    errors.append(f"File '{name}' is a nested archive. Nested archives are not allowed.")
+                    errors.append(
+                        f"File '{name}' is a nested archive. Nested archives are not allowed."
+                    )
 
                 # 3g: Accumulate uncompressed size
                 total_uncompressed += info.file_size
 
                 # 3h: Compression ratio
-                if info.compress_size > 0 and info.file_size / info.compress_size > MAX_COMPRESSION_RATIO:
+                if (
+                    info.compress_size > 0
+                    and info.file_size / info.compress_size > MAX_COMPRESSION_RATIO
+                ):
                     errors.append(
                         f"File '{name}' has suspicious compression ratio "
                         f"({info.file_size / info.compress_size:.0f}:1). "
@@ -310,7 +410,9 @@ class ZipValidator:
                 # 5c: HTML validation
                 if ext in (".html", ".htm"):
                     has_html = True
-                    html_errors = self._validate_html_file(rel_name, full_path, html_validator, content_validator)
+                    html_errors = self._validate_html_file(
+                        rel_name, full_path, html_validator, content_validator
+                    )
                     errors.extend(html_errors)
 
                 # 5d: SVG validation
@@ -352,7 +454,9 @@ class ZipValidator:
     def _check_path_safety(self, name: str) -> list[str]:
         errors = []
         if ".." in name.split("/"):
-            errors.append(f"Path traversal detected in '{name}'. Paths containing '..' are not allowed.")
+            errors.append(
+                f"Path traversal detected in '{name}'. Paths containing '..' are not allowed."
+            )
         if name.startswith("/"):
             errors.append(f"Absolute path detected: '{name}'. Only relative paths are allowed.")
         if "\x00" in name:
@@ -370,12 +474,16 @@ class ZipValidator:
             if not component:
                 continue
             if len(component) > MAX_FILENAME_LENGTH:
-                errors.append(f"Filename component '{component[:50]}...' exceeds {MAX_FILENAME_LENGTH} characters.")
+                errors.append(
+                    f"Filename component '{component[:50]}...' exceeds {MAX_FILENAME_LENGTH} characters."
+                )
             stem = os.path.splitext(component)[0].upper()
             if stem in WINDOWS_RESERVED:
                 errors.append(f"'{component}' uses reserved name '{stem}'.")
             if not SAFE_COMPONENT_RE.match(component):
-                errors.append(f"Filename '{component}' contains invalid characters. Only letters, numbers, hyphens, dots, and spaces are allowed.")
+                errors.append(
+                    f"Filename '{component}' contains invalid characters. Only letters, numbers, hyphens, dots, and spaces are allowed."
+                )
         return errors
 
     def _check_mime(self, rel_name: str, full_path: str, ext: str) -> list[str]:
@@ -389,11 +497,16 @@ class ZipValidator:
         for pattern in expected:
             if detected.startswith(pattern):
                 return []
-        return [f"File '{rel_name}' has extension '{ext}' but MIME type is '{detected}' (possible type spoofing)."]
+        return [
+            f"File '{rel_name}' has extension '{ext}' but MIME type is '{detected}' (possible type spoofing)."
+        ]
 
     def _validate_html_file(
-        self, rel_name: str, full_path: str,
-        html_validator: HTMLValidator, content_validator: ContentValidator,
+        self,
+        rel_name: str,
+        full_path: str,
+        html_validator: HTMLValidator,
+        content_validator: ContentValidator,
     ) -> list[str]:
         errors = []
         try:
@@ -437,10 +550,14 @@ class ZipValidator:
                 clean_attr = attr_name.split("}")[-1] if "}" in attr_name else attr_name
 
                 if SVG_FORBIDDEN_ATTRS_RE.match(clean_attr):
-                    errors.append(f"SVG '{rel_name}' contains forbidden event handler attribute '{clean_attr}'.")
+                    errors.append(
+                        f"SVG '{rel_name}' contains forbidden event handler attribute '{clean_attr}'."
+                    )
 
                 if clean_attr.lower() in ("href", "xlink:href") or attr_name.endswith("}href"):
                     if SVG_DANGEROUS_HREF_RE.match(attr_value):
-                        errors.append(f"SVG '{rel_name}' contains dangerous href: '{attr_value[:50]}'.")
+                        errors.append(
+                            f"SVG '{rel_name}' contains dangerous href: '{attr_value[:50]}'."
+                        )
 
         return errors

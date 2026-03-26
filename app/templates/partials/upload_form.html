@@ -74,9 +74,9 @@
                     <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
                 </svg>
             </div>
-            <div class="file-upload-text">Drop your HTML file here or click to browse</div>
-            <div class="file-upload-subtext">Only .html files are accepted (max 50MB, UTF-8 encoded)</div>
-            <input type="file" id="html_file" name="file" class="file-upload-input" accept=".html,text/html" {% if not (form_data and form_data.original_filename) %}required{% endif %} aria-label="Select HTML file">
+            <div class="file-upload-text">Drop your file here or click to browse</div>
+            <div class="file-upload-subtext">Accepts .html or .zip files (max 50MB)</div>
+            <input type="file" id="html_file" name="file" class="file-upload-input" accept=".html,.zip,text/html,application/zip" {% if not (form_data and form_data.original_filename) %}required{% endif %} aria-label="Select HTML or zip file">
         </div>
 
         <!-- Uploaded state: file info with replace button -->
@@ -214,8 +214,11 @@ function handleFileSelection(file) {
     hideMessages();
 
     // Validate file type
-    if (!file.name.toLowerCase().endsWith('.html') && file.type !== 'text/html') {
-        showError('Please select an HTML file (.html extension required)');
+    const lowerName = file.name.toLowerCase();
+    const isHtml = lowerName.endsWith('.html') || file.type === 'text/html';
+    const isZip = lowerName.endsWith('.zip') || file.type === 'application/zip';
+    if (!isHtml && !isZip) {
+        showError('Please select an HTML (.html) or zip (.zip) file');
         return;
     }
 

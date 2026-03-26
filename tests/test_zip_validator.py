@@ -4,17 +4,16 @@ import io
 import os
 import stat
 import struct
-import tempfile
 import unicodedata
 import zipfile
 import zlib
 
-import pytest
-
 from app.upload.zip_validator import ZipValidator
 
 
-def _make_zip(files: dict[str, bytes | str], *, symlinks: list[tuple[str, str]] | None = None) -> bytes:
+def _make_zip(
+    files: dict[str, bytes | str], *, symlinks: list[tuple[str, str]] | None = None
+) -> bytes:
     """Helper to create a zip archive in memory.
 
     Args:
@@ -46,7 +45,7 @@ def _minimal_png() -> bytes:
 
     ihdr_data = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
     ihdr = _chunk(b"IHDR", ihdr_data)
-    raw_row = b"\x00\xFF\xFF\xFF"
+    raw_row = b"\x00\xff\xff\xff"
     idat = _chunk(b"IDAT", zlib.compress(raw_row))
     iend = _chunk(b"IEND", b"")
     return signature + ihdr + idat + iend
@@ -101,7 +100,9 @@ class TestFileCount:
         archive = tmp_path / "many.zip"
         archive.write_bytes(data)
         errors = validator.validate(str(archive))
-        assert any("500" in e or "file count" in e.lower() or "too many" in e.lower() for e in errors)
+        assert any(
+            "500" in e or "file count" in e.lower() or "too many" in e.lower() for e in errors
+        )
 
     def test_hidden_files_not_counted(self, tmp_path):
         """Hidden files like __MACOSX/ and .DS_Store should be skipped in file count."""
@@ -256,7 +257,9 @@ class TestNestedArchives:
         archive = tmp_path / "nested_tar.zip"
         archive.write_bytes(data)
         errors = validator.validate(str(archive))
-        assert any("tar.gz" in e or "nested" in e.lower() or "archive" in e.lower() for e in errors)
+        assert any(
+            "tar.gz" in e or "nested" in e.lower() or "archive" in e.lower() for e in errors
+        )
 
 
 class TestUncompressedSize:
@@ -287,7 +290,10 @@ class TestCompressionRatio:
         archive = tmp_path / "bomb.zip"
         archive.write_bytes(data)
         errors = validator.validate(str(archive))
-        assert any("compression" in e.lower() or "ratio" in e.lower() or "bomb" in e.lower() for e in errors)
+        assert any(
+            "compression" in e.lower() or "ratio" in e.lower() or "bomb" in e.lower()
+            for e in errors
+        )
 
 
 class TestHiddenFileSkipping:
@@ -324,7 +330,9 @@ class TestPerFileSizeLimits:
     def test_rejects_oversized_svg(self, tmp_path):
         validator = ZipValidator()
         # SVG limit is 5MB
-        big_svg = '<svg xmlns="http://www.w3.org/2000/svg">' + "x" * (5 * 1024 * 1024 + 1) + "</svg>"
+        big_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg">' + "x" * (5 * 1024 * 1024 + 1) + "</svg>"
+        )
         data = _make_zip({"index.html": MINIMAL_HTML, "image.svg": big_svg})
         archive = tmp_path / "big_svg.zip"
         archive.write_bytes(data)
@@ -351,7 +359,9 @@ class TestMIMECheck:
         archive = tmp_path / "spoofed.zip"
         archive.write_bytes(data)
         errors = validator.validate(str(archive))
-        assert any("mime" in e.lower() or "type" in e.lower() or "spoof" in e.lower() for e in errors)
+        assert any(
+            "mime" in e.lower() or "type" in e.lower() or "spoof" in e.lower() for e in errors
+        )
 
 
 class TestHTMLValidation:
@@ -534,6 +544,7 @@ class TestExtractedPath:
         assert os.path.isfile(os.path.join(extract_dir, "style.css"))
         # Clean up
         import shutil
+
         shutil.rmtree(extract_dir)
 
     def test_returns_none_path_on_failure(self, tmp_path):
@@ -564,4 +575,5 @@ class TestSubdirectoryStructure:
         assert os.path.isfile(os.path.join(extract_dir, "js", "app.js"))
         assert os.path.isfile(os.path.join(extract_dir, "images", "logo.png"))
         import shutil
+
         shutil.rmtree(extract_dir)

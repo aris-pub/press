@@ -347,7 +347,7 @@ class TestFileUploadUIElements:
         assert 'id="file-upload-zone"' in response.text
         assert 'class="file-upload-zone"' in response.text
         assert 'id="html_file"' in response.text
-        assert 'accept=".html,text/html"' in response.text
+        assert 'accept=".html,.zip,text/html,application/zip"' in response.text
         assert 'type="hidden"' in response.text  # Hidden html_content field
 
     async def test_upload_page_contains_validation_messages(

@@ -109,6 +109,8 @@ class Scroll(Base):
     storage_type: Mapped[str] = mapped_column(String(20), default="inline", nullable=False)
     # Entry point file path within archive (e.g. "index.html"), only for storage_type='archive'
     entry_point: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    # JSON manifest of archive contents: {relative_path: {size, content_type}}
+    archive_manifest: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # New fields for HTML scrolls
     content_type: Mapped[str] = mapped_column(String(50), default="html")  # 'html' only for now
