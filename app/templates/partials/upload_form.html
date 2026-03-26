@@ -36,6 +36,12 @@
 </div>
 {% endif %}
 
+{% if warnings %}
+<div class="form-warnings" id="form-warnings">
+    {{ warnings|safe }}
+</div>
+{% endif %}
+
 <form id="upload-form" method="POST" action="/upload-form" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research scroll") }}
