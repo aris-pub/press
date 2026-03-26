@@ -1,0 +1,105 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  APP_NAME: scroll-press-pr-${{ github.event.pull_request.number }}
+
+jobs:
+  deploy:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Setup Fly CLI
+      uses: superfly/flyctl-actions/setup-flyctl@master
+
+    - name: Create preview app and database
+      env:
+        DB_APP: ${{ env.APP_NAME }}-db
+      run: |
+        if ! flyctl status --app "$APP_NAME" 2>/dev/null; then
+          # Create ephemeral Postgres for this PR
+          flyctl postgres create \
+            --name "$DB_APP" \
+            --org personal \
+            --region fra \
+            --vm-size shared-cpu-1x \
+            --volume-size 1 \
+            --initial-cluster-size 1
+
+          # Create the app
+          flyctl apps create "$APP_NAME" --org personal
+
+          # Attach database (sets DATABASE_URL automatically)
+          flyctl postgres attach "$DB_APP" --app "$APP_NAME"
+
+          flyctl secrets set --app "$APP_NAME" \
+            SECRET_KEY="preview-${{ github.event.pull_request.number }}" \
+            ENVIRONMENT="preview"
+        fi
+
+    - name: Deploy preview
+      run: |
+        flyctl deploy --app "$APP_NAME" \
+          --region fra \
+          --vm-size shared-cpu-1x \
+          --vm-memory 512 \
+          --ha=false \
+          --auto-confirm
+
+    - name: Comment preview URL
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const appName = process.env.APP_NAME;
+          const url = `https://${appName}.fly.dev`;
+          const body = `### Deploy Preview\n\n${url}\n\nThis preview will be destroyed when the PR is closed.`;
+
+          // Find existing preview comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          const existing = comments.find(c => c.body.includes('### Deploy Preview'));
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+          }
+
+  destroy:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup Fly CLI
+      uses: superfly/flyctl-actions/setup-flyctl@master
+
+    - name: Destroy preview app and database
+      run: |
+        flyctl apps destroy "$APP_NAME" --yes || true
+        flyctl apps destroy "$APP_NAME-db" --yes || true
