@@ -28,6 +28,9 @@
   --error-border: #fecaca;
   --highlight-bg: #fef3c7;
   --highlight-text: #92400e;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #92400e;
 }
 
 /* Dark theme colors */
@@ -57,6 +60,9 @@
   --error-border: #991b1b;
   --highlight-bg: #92400e;
   --highlight-text: #fcd34d;
+  --warning-bg: #451a03;
+  --warning-border: #78350f;
+  --warning-text: #fcd34d;
 }
 
 /* Auto dark mode based on browser preference */
@@ -87,6 +93,9 @@
     --error-border: #991b1b;
     --highlight-bg: #92400e;
     --highlight-text: #fcd34d;
+    --warning-bg: #451a03;
+    --warning-border: #78350f;
+    --warning-text: #fcd34d;
   }
 }
 
@@ -582,6 +591,26 @@ button.btn, a.btn {
 .form-errors li:last-child {
   margin-bottom: 0;
 }
+.form-warnings {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--border-radius);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+.form-warnings ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.form-warnings li {
+  color: var(--warning-text);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-xs);
+}
+.form-warnings li:last-child {
+  margin-bottom: 0;
+}
 .success-message {
   background: var(--success-bg);
   border: 1px solid var(--success-border);
@@ -695,7 +724,18 @@ button.btn, a.btn {
     font-size: var(--mobile-text-sm);
     margin-bottom: var(--mobile-space-xs);
   }
-  
+
+  .form-warnings {
+    padding: var(--mobile-space-lg);
+    margin-bottom: var(--mobile-space-lg);
+    border-radius: var(--border-radius);
+  }
+
+  .form-warnings li {
+    font-size: var(--mobile-text-sm);
+    margin-bottom: var(--mobile-space-xs);
+  }
+
   .success-message {
     padding: var(--mobile-space-xl);
     border-radius: var(--border-radius);
