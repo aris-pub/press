@@ -9,9 +9,12 @@ from sqlalchemy.pool import NullPool
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/press")
+_disable_ssl = False
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-    DATABASE_URL = DATABASE_URL.replace("?sslmode=disable", "").replace("&sslmode=disable", "")
+    if "sslmode=disable" in DATABASE_URL:
+        _disable_ssl = True
+        DATABASE_URL = DATABASE_URL.replace("?sslmode=disable", "").replace("&sslmode=disable", "")
 
 # Database configuration based on URL type
 if "postgresql+asyncpg" in DATABASE_URL:
@@ -23,6 +26,8 @@ if "postgresql+asyncpg" in DATABASE_URL:
         "prepared_statement_cache_size": 0,
         "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4().hex[:8]}__",
     }
+    if _disable_ssl:
+        connect_args["ssl"] = False
     engine = create_async_engine(
         DATABASE_URL, echo=True, connect_args=connect_args, pool_pre_ping=True, poolclass=NullPool
     )
