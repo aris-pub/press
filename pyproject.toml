@@ -26,6 +26,7 @@ dependencies = [
     "psutil>=7.2.1",
     "pillow>=12.1.1",
     "aioboto3>=13.0.0",
+    "defusedxml>=0.7.1",
 ]
 
 [dependency-groups]
