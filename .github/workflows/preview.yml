@@ -42,7 +42,7 @@ jobs:
           # Create the app
           flyctl apps create "$APP_NAME" --org personal
 
-          # Attach database (sets DATABASE_URL automatically)
+          # Attach database (sets DATABASE_URL — app normalizes postgres:// at startup)
           flyctl postgres attach "$DB_APP" --app "$APP_NAME"
 
           flyctl secrets set --app "$APP_NAME" \
