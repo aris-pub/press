@@ -210,6 +210,129 @@ class TestConfirmEntryPoint:
         assert response.status_code == 400
 
 
+class TestConfirmEntryPointErrorHandling:
+    @pytest.mark.asyncio
+    async def test_storage_failure_preserves_session_for_retry(
+        self, authenticated_client, test_subject
+    ):
+        """If storage fails, session data should be preserved so the user can retry."""
+        zip_bytes = make_zip_bytes({"index.html": VALID_HTML, "style.css": "body{}"})
+
+        # Step 1: Upload zip to get picker
+        await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Retry Test",
+                "authors": "Author",
+                "subject_id": str(test_subject.id),
+                "abstract": "Test abstract for retry",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            files={"file": ("test.zip", zip_bytes, "application/zip")},
+        )
+
+        # Step 2: Confirm with a storage that fails
+        from app.storage.memory import InMemoryStorage
+
+        class FailingStorage(InMemoryStorage):
+            async def put(self, key, data, content_type="application/octet-stream"):
+                raise RuntimeError("Simulated storage failure")
+
+        with patch("app.storage.get_storage", return_value=FailingStorage()):
+            response = await authenticated_client.post(
+                "/upload/confirm-entry-point",
+                data={"entry_point": "index.html"},
+            )
+
+        assert response.status_code == 422
+        assert "Select Entry Point" in response.text
+        assert "index.html" in response.text
+
+        # Step 3: Retry with working storage should succeed
+        working_storage = InMemoryStorage()
+        with patch("app.storage.get_storage", return_value=working_storage):
+            response = await authenticated_client.post(
+                "/upload/confirm-entry-point",
+                data={"entry_point": "index.html"},
+            )
+
+        assert response.status_code in (302, 303, 307, 200)
+        if response.status_code in (302, 303, 307):
+            assert "/preview/" in response.headers.get("location", "")
+
+    @pytest.mark.asyncio
+    async def test_storage_failure_shows_error_message(
+        self, authenticated_client, test_subject
+    ):
+        """Storage failure should show error in the picker UI, not bare HTML."""
+        zip_bytes = make_zip_bytes({"index.html": VALID_HTML})
+
+        await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Error Display Test",
+                "authors": "Author",
+                "subject_id": str(test_subject.id),
+                "abstract": "Test abstract",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            files={"file": ("test.zip", zip_bytes, "application/zip")},
+        )
+
+        class FailingStorage:
+            async def put(self, key, data, content_type="application/octet-stream"):
+                raise RuntimeError("Storage is down")
+
+        with patch("app.storage.get_storage", return_value=FailingStorage()):
+            response = await authenticated_client.post(
+                "/upload/confirm-entry-point",
+                data={"entry_point": "index.html"},
+            )
+
+        assert response.status_code == 422
+        body = response.text
+        assert "Storage is down" in body
+        assert "form-errors" in body
+
+    @pytest.mark.asyncio
+    async def test_confirm_clears_session_on_success(
+        self, authenticated_client, test_subject, mock_storage
+    ):
+        """Session pending data should be cleared only after successful confirmation."""
+        zip_bytes = make_zip_bytes({"index.html": VALID_HTML})
+
+        await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Session Cleanup Test",
+                "authors": "Author",
+                "subject_id": str(test_subject.id),
+                "abstract": "Test abstract",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            files={"file": ("test.zip", zip_bytes, "application/zip")},
+        )
+
+        response = await authenticated_client.post(
+            "/upload/confirm-entry-point",
+            data={"entry_point": "index.html"},
+        )
+        assert response.status_code in (302, 303, 307, 200)
+
+        # Retrying should fail because session was cleaned up
+        response = await authenticated_client.post(
+            "/upload/confirm-entry-point",
+            data={"entry_point": "index.html"},
+        )
+        assert response.status_code == 400
+
+
 class TestHtmlUploadStillWorks:
     @pytest.mark.asyncio
     async def test_html_upload_unchanged(self, authenticated_client, test_subject):

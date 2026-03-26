@@ -1410,7 +1410,7 @@ async def confirm_entry_point(
         raise HTTPException(status_code=400, detail="No session found")
 
     session = get_session(session_id)
-    pending = session.pop("pending_zip_upload", None)
+    pending = session.get("pending_zip_upload")
     if not pending:
         raise HTTPException(
             status_code=400, detail="No pending zip upload found. Please start over."
@@ -1452,6 +1452,10 @@ async def confirm_entry_point(
         url_hash = pending["url_hash"]
         content_hash = pending["content_hash"]
 
+        # Store files in Tigris BEFORE DB commit so failures don't leave orphaned records
+        storage = get_storage()
+        await store_archive_files(storage, extracted_dir, url_hash)
+
         # Check for duplicate content
         existing = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
         existing_scroll = existing.scalar_one_or_none()
@@ -1474,6 +1478,7 @@ async def confirm_entry_point(
                 existing_scroll.license = license_val
                 existing_scroll.entry_point = entry_point
                 existing_scroll.archive_manifest = pending["manifest"]
+                existing_scroll.storage_type = "archive"
                 await db.commit()
                 await db.refresh(existing_scroll)
                 scroll = existing_scroll
@@ -1508,11 +1513,8 @@ async def confirm_entry_point(
         await db.commit()
         await db.refresh(scroll)
 
-        # Store files in Tigris
-        storage = get_storage()
-        await store_archive_files(storage, extracted_dir, url_hash)
-
-        # Store session data for edit functionality
+        # Success: remove pending data from session and set preview context
+        session.pop("pending_zip_upload", None)
         session["preview_form_data"] = form_data
         session["preview_form_data"]["original_filename"] = pending["original_filename"]
         session["current_preview_url_hash"] = url_hash
@@ -1530,18 +1532,48 @@ async def confirm_entry_point(
             },
         )
 
+        cleanup_extracted(extracted_dir)
         return RedirectResponse(url=f"/preview/{scroll.url_hash}", status_code=303)
 
     except Exception as e:
+        import traceback
+
         error_message = str(e) if str(e) else "Upload failed. Please try again."
-        get_logger().error(f"Entry point confirmation failed: {e}")
-        return HTMLResponse(
-            f'<h1>Upload Error</h1><p>{error_message}</p><p><a href="/upload">Try again</a></p>',
+        get_logger().error(
+            f"Entry point confirmation failed: {e}\n{traceback.format_exc()}"
+        )
+        if db.dirty or db.new:
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+
+        from app.auth.csrf import get_csrf_token
+
+        csrf_token = await get_csrf_token(session_id)
+
+        def _format_size(size_bytes):
+            if size_bytes < 1024:
+                return f"{size_bytes} B"
+            elif size_bytes < 1024 * 1024:
+                return f"{size_bytes / 1024:.1f} KB"
+            else:
+                return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+        return templates.TemplateResponse(
+            request,
+            "entry_point_picker.html",
+            {
+                "current_user": current_user,
+                "csrf_token": csrf_token,
+                "detected_entry_point": pending["entry_point"],
+                "html_files": pending["html_files"],
+                "file_count": pending["file_count"],
+                "total_size_display": _format_size(pending["total_size"]),
+                "error": error_message,
+            },
             status_code=422,
         )
-
-    finally:
-        cleanup_extracted(extracted_dir)
 
 
 @router.post("/upload/html")

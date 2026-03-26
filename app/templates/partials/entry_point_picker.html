@@ -5,6 +5,12 @@
     <p>Choose the main HTML file that viewers will see when they open your scroll</p>
 </div>
 
+{% if error %}
+<div class="form-errors" id="form-errors">
+    {{ error|safe }}
+</div>
+{% endif %}
+
 <div class="entry-point-picker">
     <div class="archive-summary">
         <div class="archive-summary-row">
