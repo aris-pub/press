@@ -39,6 +39,7 @@ jobs:
             --org personal \
             --region fra \
             --vm-size shared-cpu-1x \
+            --vm-memory 1024 \
             --volume-size 1 \
             --initial-cluster-size 1
 
