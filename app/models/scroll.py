@@ -105,6 +105,9 @@ class Scroll(Base):
     keywords: Mapped[List[str]] = mapped_column(StringArray, nullable=True)
     html_content: Mapped[str] = mapped_column(Text, nullable=False)  # Normalized HTML content
 
+    # Storage type: 'inline' = html_content column, 'archive' = Tigris object storage
+    storage_type: Mapped[str] = mapped_column(String(20), default="inline", nullable=False)
+
     # New fields for HTML scrolls
     content_type: Mapped[str] = mapped_column(String(50), default="html")  # 'html' only for now
     original_filename: Mapped[str] = mapped_column(String(255), nullable=True)
