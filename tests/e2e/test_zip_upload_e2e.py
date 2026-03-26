@@ -96,7 +96,7 @@ async def test_zip_upload_shows_entry_point_picker(test_server):
                 await expect(page.locator("body")).to_contain_text("index.html")
 
                 # Confirm entry point
-                await page.click('button[type="submit"]')
+                await page.click('#entry-point-form button[type="submit"]')
 
                 # Should redirect to preview
                 await expect(page.locator("body")).to_contain_text(
@@ -151,7 +151,7 @@ async def test_zip_upload_assets_load_in_iframe(test_server):
                 await expect(page.locator("body")).to_contain_text(
                     "Select Entry Point", timeout=10000
                 )
-                await page.click('button[type="submit"]')
+                await page.click('#entry-point-form button[type="submit"]')
 
                 # Wait for preview page
                 await expect(page.locator("body")).to_contain_text(
