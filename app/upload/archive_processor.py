@@ -265,14 +265,14 @@ def _create_deterministic_tar_from_dir(directory: str) -> bytes:
 async def store_archive_files(
     storage: StorageBackend,
     extracted_dir: str,
-    url_hash: str,
+    content_hash: str,
 ) -> None:
-    """Upload all extracted files to Tigris under scrolls/{url_hash}/."""
+    """Upload all extracted files to Tigris under scrolls/{content_hash}/."""
     for dirpath, _, filenames in os.walk(extracted_dir):
         for fname in filenames:
             full = os.path.join(dirpath, fname)
             rel = os.path.relpath(full, extracted_dir)
-            key = f"scrolls/{url_hash}/{rel}"
+            key = f"scrolls/{content_hash}/{rel}"
             ct = mimetypes.guess_type(fname)[0] or "application/octet-stream"
             with open(full, "rb") as f:
                 data = f.read()
@@ -282,10 +282,10 @@ async def store_archive_files(
 async def store_original_zip(
     storage: StorageBackend,
     archive_path: str,
-    url_hash: str,
+    content_hash: str,
 ) -> None:
     """Store the original zip file in Tigris for immutable archival."""
-    key = f"scrolls/{url_hash}/_original.zip"
+    key = f"scrolls/{content_hash}/_original.zip"
     with open(archive_path, "rb") as f:
         data = f.read()
     await storage.put(key, data, content_type="application/zip")

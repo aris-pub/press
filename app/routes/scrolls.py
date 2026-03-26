@@ -1454,7 +1454,7 @@ async def confirm_entry_point(
 
         # Store files in Tigris BEFORE DB commit so failures don't leave orphaned records
         storage = get_storage()
-        await store_archive_files(storage, extracted_dir, url_hash)
+        await store_archive_files(storage, extracted_dir, content_hash)
 
         # Check for duplicate content
         existing = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
