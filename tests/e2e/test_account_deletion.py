@@ -105,7 +105,7 @@ async def test_account_deletion_preserves_published_scrolls(test_server):
             await page.goto(f"{test_server}/dashboard")
             await page.wait_for_load_state("networkidle")
 
-            scroll_links = page.locator('a.scroll-card-link[href^="/scroll/"]')
+            scroll_links = page.locator("a.scroll-card-link")
             scroll_count = await scroll_links.count()
 
             if scroll_count == 0:
