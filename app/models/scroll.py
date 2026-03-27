@@ -180,6 +180,9 @@ class Scroll(Base):
     )
     zenodo_deposit_id: Mapped[Optional[int]] = mapped_column(nullable=True)
 
+    # Showcase flag for seed/example scrolls
+    is_showcase: Mapped[Optional[bool]] = mapped_column(default=False, nullable=True)
+
     # Foreign keys
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         GUID, ForeignKey("users.id"), nullable=True
