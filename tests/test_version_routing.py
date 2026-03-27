@@ -233,3 +233,26 @@ class TestIndexShowsLatestOnly:
         assert response.status_code == 200
         # Only one result should appear (search highlights terms with <mark>)
         assert response.text.count("A. Mathematician") == 1
+
+
+class TestCanonicalUrlLinks:
+    """Scroll cards on listing pages should link to /{year}/{slug}, not /scroll/{hash}."""
+
+    @pytest.mark.asyncio
+    async def test_landing_page_links_use_canonical_url(self, client, test_db, user, subject):
+        scrolls = await _create_versioned_scrolls(test_db, user, subject, num_versions=2)
+        response = await client.get("/")
+        assert response.status_code == 200
+        assert "/2026/topology-of-manifolds" in response.text
+        # The card link should NOT use /scroll/<hash>
+        for s in scrolls:
+            assert f"/scroll/{s.url_hash}" not in response.text
+
+    @pytest.mark.asyncio
+    async def test_search_results_link_use_canonical_url(self, client, test_db, user, subject):
+        scrolls = await _create_versioned_scrolls(test_db, user, subject, num_versions=1)
+        response = await client.get("/search?q=Topology")
+        assert response.status_code == 200
+        assert "/2026/topology-of-manifolds" in response.text
+        for s in scrolls:
+            assert f"/scroll/{s.url_hash}" not in response.text
