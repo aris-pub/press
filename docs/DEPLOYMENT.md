@@ -85,6 +85,14 @@ fly secrets set BASE_URL="https://scroll-press.fly.dev"
 # Set application limits
 fly secrets set HTML_UPLOAD_MAX_SIZE="52428800"
 fly secrets set MAX_EXTERNAL_LINKS="10"
+
+# Tigris object storage (for zip archive uploads)
+# Created via: fly storage create
+# Fly.io auto-injects these after `fly storage create`, but you can set them manually:
+fly secrets set BUCKET_NAME="your-bucket-name"
+fly secrets set AWS_ENDPOINT_URL_S3="https://fly.storage.tigris.dev"
+fly secrets set AWS_ACCESS_KEY_ID="your-access-key"
+fly secrets set AWS_SECRET_ACCESS_KEY="your-secret-key"
 ```
 
 ### 3. Deploy Application

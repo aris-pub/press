@@ -111,12 +111,40 @@ ruff check . && ruff format .
 - Component styling: Use `scroll-` class prefix (not `paper-`)
 - Icons: All icons use Lucide Icons (https://lucide.dev) - inline SVG with `stroke="currentColor"` for theming
 
+### File Storage (Tigris)
+- **Backend**: Tigris (Fly.io S3-compatible object storage) via aioboto3 (async native)
+- **Protocol**: `StorageBackend` in `app/storage/backend.py` — async interface for `put`, `get`, `delete`, `exists`, `list_prefix`
+- **Implementations**: `TigrisStorage` (production, `app/storage/tigris.py`) and `InMemoryStorage` (tests/preview, `app/storage/memory.py`)
+- **Factory**: `get_storage()` in `app/storage/__init__.py` auto-selects based on env vars
+- **Storage keys**: `scrolls/{content_hash}/{relative_path}` — content-addressable, immutable
+- **Config**: `BUCKET_NAME`, `AWS_ENDPOINT_URL_S3`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+
+### Zip Upload Pipeline
+- **Upload endpoint** (`POST /upload-form`): Accepts both `.html` and `.zip` files, auto-detects format
+- **Validation** (`app/upload/zip_validator.py`): Multi-stage pipeline — zip bomb detection (200MB uncompressed cap, 100:1 ratio), path traversal, symlinks, file type allowlist, SVG sanitization via defusedxml, HTMLValidator on all `.html` files, skips `__MACOSX`/dotfiles
+- **Entry point detection** (`app/upload/archive_processor.py`): Heuristic — single HTML wins, then `index.html` at shallowest level, then common names (`paper.html`, `article.html`), then largest HTML by size
+- **Entry point picker**: If multiple HTML files found, user selects via `entry_point_picker.html` template (pre-filled with best guess)
+- **Archive storage**: Files uploaded to Tigris under `scrolls/{content_hash}/`, directory structure preserved
+- **Allowed file types**: `.html`, `.htm`, `.css`, `.js`, `.mjs`, `.map`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, `.woff`, `.woff2`, `.ttf`, `.otf`, `.eot`, `.json`, `.csv`, `.tsv`, `.txt`
+
+### Scroll Storage Types
+- **`inline`** (legacy): HTML stored in `html_content` column, no external assets
+- **`archive`** (zip uploads): Files in Tigris, `entry_point` field identifies main HTML, `archive_manifest` JSON lists all files with sizes/content-types
+
+### Asset Serving
+- Archive entry point: `/scroll/{url_hash}/paper/` (trailing slash required for relative path resolution)
+- Archive assets: `/scroll/{url_hash}/paper/{relative_path}` served from Tigris with 1-year immutable cache
+- Inline scrolls: `/scroll/{url_hash}/paper` returns `html_content` directly
+
 ### Code Organization
 ```
 app/
 ├── auth/           # Session management and authentication
 ├── models/         # SQLAlchemy database models
 ├── routes/         # FastAPI route handlers
+├── storage/        # Tigris/S3 storage backend (StorageBackend protocol)
+├── upload/         # Zip validation, archive processing, entry point detection
+├── security/       # HTML validation, content validation
 ├── templates/      # Jinja2 templates with component macros
 └── database.py     # Async database configuration
 ```
@@ -153,6 +181,8 @@ app/
 - pytest + httpx (testing)
 - Alembic (migrations)
 - uv (package management)
+- aioboto3 (async S3/Tigris storage)
+- defusedxml (SVG sanitization in zip uploads)
 
 ## Database Time Handling
 - All dates and times in the DB are stored in UTC time zone, the client/frontend is responsible for converting to the user's browser's timezone
