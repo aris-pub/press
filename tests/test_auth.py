@@ -122,30 +122,36 @@ async def test_protected_route_allows_authenticated(authenticated_client: AsyncC
 
 
 async def test_login_success_redirects_to_dashboard(client: AsyncClient, test_user):
-    """Test that successful login shows success message with dashboard redirect."""
+    """Test that successful login shows success message with full page redirect."""
     login_data = {"email": test_user.email, "password": "testpassword123"}
 
     response = await client.post("/login-form", data=login_data)
     assert response.status_code == 200
     assert "session_id" in response.cookies
 
-    # Check that success template includes dashboard redirect
     assert "Welcome Back!" in response.text
-    assert "Redirecting to dashboard..." in response.text
-    assert 'hx-get="/dashboard"' in response.text
-    assert 'hx-trigger="load delay:1s"' in response.text
+    assert "Redirecting..." in response.text
+    assert "window.location.href" in response.text
+    assert "/dashboard" in response.text
 
 
-async def test_login_success_template_has_redirect_attributes(client: AsyncClient, test_user):
-    """Test that login success template has correct HTMX redirect attributes."""
+async def test_login_success_uses_full_page_redirect_not_htmx(client: AsyncClient, test_user):
+    """Test that login uses full page redirect (window.location) instead of HTMX swap.
+
+    HTMX partial swaps (hx-target=#main-content) leave the navbar in
+    unauthenticated state, causing the 'New Scroll' button to point to
+    /register instead of /upload.
+    """
     login_data = {"email": test_user.email, "password": "testpassword123"}
 
     response = await client.post("/login-form", data=login_data)
     assert response.status_code == 200
 
-    # Verify HTMX attributes for automatic redirect (targets main content, not body)
-    assert 'hx-target="#main-content"' in response.text
-    assert 'hx-push-url="true"' in response.text
+    # Must NOT use HTMX partial navigation (causes stale navbar)
+    assert 'hx-get=' not in response.text
+    assert 'hx-target="#main-content"' not in response.text
+    # Must use full page redirect
+    assert "window.location.href" in response.text
 
 
 async def test_delete_account_unauthenticated(client: AsyncClient):
