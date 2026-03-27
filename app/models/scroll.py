@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
 
-from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import ARRAY, JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.types import TypeDecorator
@@ -82,6 +82,14 @@ class Scroll(Base):
     """Academic scroll model with content-addressable storage."""
 
     __tablename__ = "scrolls"
+    __table_args__ = (
+        UniqueConstraint(
+            "publication_year",
+            "slug",
+            "version",
+            name="uq_scroll_year_slug_version",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
 
@@ -135,6 +143,9 @@ class Scroll(Base):
     # Metadata
     status: Mapped[str] = mapped_column(String(20), default="published")  # published only
     version: Mapped[int] = mapped_column(default=1)  # Version number
+    scroll_series_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        GUID, nullable=True, index=True
+    )  # Groups all versions of the same work
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -218,6 +229,13 @@ class Scroll(Base):
             return f"/scroll/{self.url_hash}"
         else:
             return f"/scroll/{self.preview_id}"
+
+    @property
+    def version_url(self) -> str:
+        """Get the version-specific URL for this scroll."""
+        if self.publication_year and self.slug:
+            return f"/{self.publication_year}/{self.slug}/v{self.version}"
+        return self.permanent_url
 
     @property
     def canonical_url(self) -> str:
