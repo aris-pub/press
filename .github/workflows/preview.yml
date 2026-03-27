@@ -68,19 +68,7 @@ jobs:
     - name: Reset and seed database
       run: |
         flyctl ssh console --app "$APP_NAME" \
-          -C "uv run --frozen python -c \"
-import asyncio, os
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
-url = os.environ['DATABASE_URL'].replace('postgres://', 'postgresql+asyncpg://', 1).replace('postgresql://', 'postgresql+asyncpg://', 1)
-async def reset():
-    e = create_async_engine(url)
-    async with e.begin() as c:
-        await c.execute(text('DROP SCHEMA public CASCADE'))
-        await c.execute(text('CREATE SCHEMA public'))
-    await e.dispose()
-asyncio.run(reset())
-\" && uv run --frozen alembic upgrade head && uv run --frozen --no-dev python /app/scripts/seed.py"
+          -C "uv run --frozen python /app/scripts/reset_db.py && uv run --frozen alembic upgrade head && uv run --frozen --no-dev python /app/scripts/seed.py"
 
     - name: Comment preview URL
       uses: actions/github-script@v7
