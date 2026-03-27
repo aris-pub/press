@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 
 from sqlalchemy import text
 
@@ -179,7 +180,10 @@ async def seed_scrolls(session=None):
 
         scrolls_data = metadata["scrolls"]
 
+        from app.storage.content_processing import generate_permanent_url
+
         # Load HTML content from files and create scrolls
+        created_scrolls = {}
         for scroll_data in scrolls_data:
             html_file = examples_dir / scroll_data["file"]
 
@@ -190,11 +194,9 @@ async def seed_scrolls(session=None):
             with open(html_file, "r", encoding="utf-8") as f:
                 html_content = f.read()
 
-            # Generate content-addressable storage fields
-            from app.storage.content_processing import generate_permanent_url
-
             url_hash, content_hash, tar_data = await generate_permanent_url(session, html_content)
 
+            series_id = uuid.uuid4()
             db_scroll = Scroll(
                 title=scroll_data["title"],
                 authors=scroll_data["authors"],
@@ -208,8 +210,50 @@ async def seed_scrolls(session=None):
                 subject_id=subjects[scroll_data["subject"]],
                 status="published",
                 version=1,
+                scroll_series_id=series_id,
             )
             session.add(db_scroll)
+            created_scrolls[scroll_data["title"]] = (db_scroll, series_id)
+
+        await session.flush()
+
+        # Create a v2 of the Spectral Theorem to seed a multi-version scroll
+        v1_title = "The Spectral Theorem for Symmetric Matrices"
+        if v1_title in created_scrolls:
+            v1_scroll, series_id = created_scrolls[v1_title]
+
+            html_file = examples_dir / "typst/spectral_theorem.html"
+            with open(html_file, "r", encoding="utf-8") as f:
+                html_content = f.read()
+
+            # Append a small revision note to produce a different content hash
+            html_content = html_content.replace(
+                "</body>",
+                "<!-- v2: Added clarifying remarks on diagonalization conditions --></body>",
+            )
+
+            url_hash, content_hash, tar_data = await generate_permanent_url(session, html_content)
+
+            v2_scroll = Scroll(
+                title=v1_title,
+                authors=v1_scroll.authors,
+                abstract=v1_scroll.abstract
+                + " This revised version includes clarifying remarks on the conditions required for diagonalization.",
+                keywords=v1_scroll.keywords,
+                html_content=html_content,
+                content_hash=content_hash,
+                url_hash=url_hash,
+                license=v1_scroll.license,
+                user_id=v1_scroll.user_id,
+                subject_id=v1_scroll.subject_id,
+                status="published",
+                version=2,
+                scroll_series_id=series_id,
+                slug=v1_scroll.slug,
+                publication_year=v1_scroll.publication_year,
+            )
+            session.add(v2_scroll)
+            print("Created v2 of 'The Spectral Theorem for Symmetric Matrices'")
 
         await session.commit()
         print(f"Created {len(scrolls_data)} seed papers from real HTML files")
