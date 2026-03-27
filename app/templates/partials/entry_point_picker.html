@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <form id="entry-point-form" method="POST" action="/upload/confirm-entry-point">
+    <form id="entry-point-form" method="POST" action="/upload/confirm-entry-point" hx-boost="false">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         <div class="form-group">
