@@ -303,9 +303,15 @@ Sitemap: https://scroll.press/sitemap.xml
 @router.get("/sitemap.xml", response_class=Response)
 async def sitemap_xml(db: AsyncSession = Depends(get_db)):
     """Generate dynamic sitemap.xml from published scrolls."""
-    # Get all published scrolls
+    # Get all published scrolls with canonical URL fields
     result = await db.execute(
-        select(Scroll.url_hash, Scroll.updated_at)
+        select(
+            Scroll.url_hash,
+            Scroll.updated_at,
+            Scroll.publication_year,
+            Scroll.slug,
+            Scroll.scroll_series_id,
+        )
         .where(Scroll.status == "published")
         .order_by(Scroll.updated_at.desc())
     )
@@ -336,16 +342,25 @@ async def sitemap_xml(db: AsyncSession = Depends(get_db)):
         xml_lines.append(f"    <changefreq>{changefreq}</changefreq>")
         xml_lines.append("  </url>")
 
-    # Add published scrolls
-    for url_hash, updated_at in scrolls:
-        # Format date as YYYY-MM-DD
+    # Add published scrolls, deduplicated by canonical URL
+    seen_canonical = set()
+    for url_hash, updated_at, publication_year, slug, scroll_series_id in scrolls:
+        if publication_year and slug:
+            canonical = f"https://scroll.press/{publication_year}/{slug}"
+        else:
+            canonical = f"https://scroll.press/scroll/{url_hash}"
+
+        if canonical in seen_canonical:
+            continue
+        seen_canonical.add(canonical)
+
         lastmod = (
             updated_at.strftime("%Y-%m-%d")
             if updated_at
             else datetime.utcnow().strftime("%Y-%m-%d")
         )
         xml_lines.append("  <url>")
-        xml_lines.append(f"    <loc>https://scroll.press/scroll/{url_hash}</loc>")
+        xml_lines.append(f"    <loc>{canonical}</loc>")
         xml_lines.append(f"    <lastmod>{lastmod}</lastmod>")
         xml_lines.append("    <priority>0.9</priority>")
         xml_lines.append("    <changefreq>monthly</changefreq>")
