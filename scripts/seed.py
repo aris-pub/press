@@ -208,6 +208,7 @@ async def seed_scrolls(session=None):
                 subject_id=subjects[scroll_data["subject"]],
                 status="published",
                 version=1,
+                is_showcase=True,
             )
             session.add(db_scroll)
 

@@ -52,26 +52,30 @@ async def landing_page(
     subjects = subjects_result.all()
 
     # Get recent published scrolls with subjects (exclude html_content for performance)
+    scroll_columns = load_only(
+        Scroll.title,
+        Scroll.authors,
+        Scroll.abstract,
+        Scroll.keywords,
+        Scroll.version,
+        Scroll.url_hash,
+        Scroll.slug,
+        Scroll.publication_year,
+        Scroll.is_showcase,
+    )
+
     scrolls_result = await db.execute(
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
         .where(Scroll.status == "published")
-        .options(
-            load_only(
-                Scroll.title,
-                Scroll.authors,
-                Scroll.abstract,
-                Scroll.keywords,
-                Scroll.version,
-                Scroll.url_hash,
-                Scroll.slug,
-                Scroll.publication_year,
-            )
-        )
+        .options(scroll_columns)
         .order_by(Scroll.created_at.desc())
-        .limit(10)
+        .limit(20)
     )
-    scrolls = scrolls_result.all()
+    all_scrolls = scrolls_result.all()
+
+    real_scrolls = [s for s in all_scrolls if not s[0].is_showcase]
+    showcase_scrolls = [s for s in all_scrolls if s[0].is_showcase]
 
     return templates.TemplateResponse(
         request,
@@ -79,7 +83,8 @@ async def landing_page(
         {
             "current_user": current_user,
             "subjects": subjects,
-            "scrolls": scrolls,
+            "scrolls": real_scrolls,
+            "showcase_scrolls": showcase_scrolls,
             "show_verification_notice": verification_required == "1",
         },
     )
@@ -109,10 +114,19 @@ async def get_scrolls_partial(
     query = query.order_by(Scroll.created_at.desc()).limit(10)
 
     scrolls_result = await db.execute(query)
-    scrolls = scrolls_result.all()
+    all_scrolls = scrolls_result.all()
+
+    real_scrolls = [s for s in all_scrolls if not s[0].is_showcase]
+    showcase_scrolls = [s for s in all_scrolls if s[0].is_showcase]
 
     return templates.TemplateResponse(
-        request, "partials/scrolls_grid.html", {"scrolls": scrolls, "subject_filter": subject}
+        request,
+        "partials/scrolls_grid.html",
+        {
+            "scrolls": real_scrolls,
+            "showcase_scrolls": showcase_scrolls,
+            "subject_filter": subject,
+        },
     )
 
 
