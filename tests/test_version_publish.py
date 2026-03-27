@@ -421,3 +421,83 @@ class TestOwnershipValidation:
 
         session = get_session(other_session_id)
         assert "revises_scroll" not in session
+
+
+@pytest.mark.asyncio
+class TestNewVersionLink:
+    """Published scroll page shows 'New Version' link to the scroll owner."""
+
+    async def test_owner_sees_new_version_link(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """The scroll owner should see a 'New Version' link on the published scroll page."""
+        v1 = await _create_published_v1(test_db, test_user, test_subject)
+
+        resp = await authenticated_client.get(
+            f"/{v1.publication_year}/{v1.slug}", follow_redirects=False
+        )
+        assert resp.status_code == 200
+        assert f"/upload?revises={v1.url_hash}" in resp.text
+        assert "New Version" in resp.text
+
+    async def test_non_owner_does_not_see_new_version_link(
+        self, client, test_subject, test_db
+    ):
+        """A different user should NOT see the 'New Version' link."""
+        from app.auth.utils import get_password_hash
+
+        owner = User(
+            email="owner3@example.com",
+            password_hash=get_password_hash("password123"),
+            display_name="Owner",
+            email_verified=True,
+        )
+        test_db.add(owner)
+        await test_db.commit()
+        await test_db.refresh(owner)
+
+        v1 = await _create_published_v1(test_db, owner, test_subject)
+
+        other_user = User(
+            email="viewer@example.com",
+            password_hash=get_password_hash("password123"),
+            display_name="Viewer",
+            email_verified=True,
+        )
+        test_db.add(other_user)
+        await test_db.commit()
+        await test_db.refresh(other_user)
+
+        other_session_id = await create_session(test_db, other_user.id)
+        client.cookies.set("session_id", other_session_id)
+
+        resp = await client.get(
+            f"/{v1.publication_year}/{v1.slug}", follow_redirects=False
+        )
+        assert resp.status_code == 200
+        assert f"/upload?revises={v1.url_hash}" not in resp.text
+
+    async def test_anonymous_does_not_see_new_version_link(
+        self, client, test_user, test_subject, test_db
+    ):
+        """An unauthenticated user should NOT see the 'New Version' link."""
+        v1 = await _create_published_v1(test_db, test_user, test_subject)
+
+        resp = await client.get(
+            f"/{v1.publication_year}/{v1.slug}", follow_redirects=False
+        )
+        assert resp.status_code == 200
+        assert f"/upload?revises={v1.url_hash}" not in resp.text
+        assert "New Version" not in resp.text
+
+    async def test_owner_sees_link_on_hash_route(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """The 'New Version' link also appears on the /scroll/{url_hash} route."""
+        v1 = await _create_published_v1(test_db, test_user, test_subject)
+
+        resp = await authenticated_client.get(
+            f"/scroll/{v1.url_hash}", follow_redirects=False
+        )
+        assert resp.status_code == 200
+        assert f"/upload?revises={v1.url_hash}" in resp.text

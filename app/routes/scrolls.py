@@ -510,8 +510,11 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
         extra_data={"title": scroll.title, "url_hash": scroll.url_hash},
     )
 
+    current_user = await get_current_user_from_session(request, db)
+    is_owner = current_user is not None and scroll.user_id == current_user.id
+
     return templates.TemplateResponse(
-        request, "scroll.html", {"scroll": scroll, "base_url": get_base_url()}
+        request, "scroll.html", {"scroll": scroll, "base_url": get_base_url(), "is_owner": is_owner}
     )
 
 
@@ -549,8 +552,11 @@ async def view_scroll_by_year_slug(
         extra_data={"title": scroll.title, "url_hash": scroll.url_hash},
     )
 
+    current_user = await get_current_user_from_session(request, db)
+    is_owner = current_user is not None and scroll.user_id == current_user.id
+
     return templates.TemplateResponse(
-        request, "scroll.html", {"scroll": scroll, "base_url": get_base_url()}
+        request, "scroll.html", {"scroll": scroll, "base_url": get_base_url(), "is_owner": is_owner}
     )
 
 
