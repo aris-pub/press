@@ -6,7 +6,7 @@ Usage:
 {{ scroll_card("Title", "Authors", "Abstract", ["tag1", "tag2"], "Computer Science", "2 hours ago", "v1", url_hash="abc123", doi="10.5281/zenodo.1234567", doi_status="minted") }}
 #}
 
-{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", url_hash="", doi=None, doi_status=None, canonical_url="") %}
+{% macro scroll_card(title, authors, abstract, tags=[], subject="", time_ago="", version="", url_hash="", doi=None, doi_status=None, canonical_url="", is_showcase=false) %}
 {% from "components/doi_badge.html" import doi_badge %}
 <div class="scroll preview" data-subject="{{ subject.lower().replace(' ', '-') if subject else '' }}">
   {% if url_hash %}
@@ -25,7 +25,7 @@ Usage:
         <span class="tag">{{ tag }}</span>
         {% endfor %}
       </div>
-      <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: var(--red);">{{ version }}</span></div>
+      <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}{% if is_showcase %}<span class="showcase-label">Showcase</span>{% else %}Submitted {{ time_ago }}{% endif %} | <span style="color: var(--red);">{{ version }}</span></div>
     </div>
   </a>
   {% else %}
@@ -43,7 +43,7 @@ Usage:
       <span class="tag">{{ tag }}</span>
       {% endfor %}
     </div>
-    <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}Submitted {{ time_ago }} | <span style="color: var(--red);">{{ version }}</span></div>
+    <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}{% if is_showcase %}<span class="showcase-label">Showcase</span>{% else %}Submitted {{ time_ago }}{% endif %} | <span style="color: var(--red);">{{ version }}</span></div>
   </div>
   {% endif %}
 </div>

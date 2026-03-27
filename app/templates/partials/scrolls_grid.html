@@ -1,5 +1,6 @@
 {% from "components/scroll_card.html" import scroll_card %}
 {# HTMX partial for scrolls section - used by subject filtering #}
+
 <h2 id="recent-submissions-heading">{% if subject_filter %}Recent {{ subject_filter }} Scrolls{% else %}Recent Scrolls{% endif %}</h2>
 
 <div id="scrolls-grid" class="scrolls-grid">
@@ -19,6 +20,33 @@
   ) }}
   {% endfor %}
 </div>
+
+{% if showcase_scrolls %}
+{% if scrolls %}
+<h2 class="showcase-heading">Showcase</h2>
+<p class="showcase-subtitle">Curated scrolls demonstrating what's possible on Press.</p>
+{% else %}
+<p class="showcase-subtitle">Showcasing what's possible with interactive preprints.</p>
+{% endif %}
+<div class="scrolls-grid">
+  {% for preview_row in showcase_scrolls %}
+  {% set preview = preview_row[0] %}
+  {% set subject_name = preview_row[1] %}
+  {{ scroll_card(
+      preview.title,
+      preview.authors,
+      preview.abstract,
+      preview.keywords,
+      subject_name,
+      "recently",
+      "v" + preview.version|string,
+      preview.url_hash,
+      canonical_url=preview.canonical_url,
+      is_showcase=true
+  ) }}
+  {% endfor %}
+</div>
+{% endif %}
 
 {# Out-of-band swap to update Show All button state #}
 <button

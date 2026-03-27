@@ -211,6 +211,7 @@ async def seed_scrolls(session=None):
                 status="published",
                 version=1,
                 scroll_series_id=series_id,
+                is_showcase=True,
             )
             session.add(db_scroll)
             created_scrolls[scroll_data["title"]] = (db_scroll, series_id)

@@ -1102,6 +1102,11 @@ form.htmx-request .btn-primary {
 .scroll-tags { display: flex; gap: var(--space-sm); }
 .tag { background: var(--gray-bg); padding: 0.15rem 0.4rem; border-radius: var(--border-radius); font-size: var(--text-xs); color: var(--gray-medium); }
 
+/* Showcase styles */
+.showcase-label { color: var(--gray-light); font-style: italic; }
+.showcase-heading { font-family: var(--font-serif); font-size: var(--text-xl); font-weight: 500; color: var(--black); margin-top: var(--space-3xl); }
+.showcase-subtitle { font-size: var(--text-sm); color: var(--gray); font-family: var(--font-sans); margin-bottom: var(--space-xl); }
+
 /* Scroll page styles */
 .scroll-page {
     max-width: 800px;

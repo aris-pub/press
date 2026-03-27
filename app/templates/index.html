@@ -55,6 +55,7 @@
   <div id="scrolls-section">
     <h2 id="recent-submissions-heading">Recent Scrolls</h2>
 
+    {% if scrolls %}
     <div id="scrolls-grid" class="scrolls-grid">
       {% for preview_row in scrolls %}
       {% set preview = preview_row[0] %}
@@ -72,6 +73,34 @@
          ) }}
       {% endfor %}
     </div>
+    {% endif %}
+
+    {% if showcase_scrolls %}
+    {% if scrolls %}
+    <h2 class="showcase-heading">Showcase</h2>
+    <p class="showcase-subtitle">Curated scrolls demonstrating what's possible on Press.</p>
+    {% else %}
+    <p class="showcase-subtitle">Showcasing what's possible with interactive preprints.</p>
+    {% endif %}
+    <div class="scrolls-grid">
+      {% for preview_row in showcase_scrolls %}
+      {% set preview = preview_row[0] %}
+      {% set subject_name = preview_row[1] %}
+      {{ scroll_card(
+                      preview.title,
+                      preview.authors,
+                      preview.abstract,
+                      preview.keywords,
+                      subject_name,
+                      "recently",
+                      "v" + preview.version|string,
+                      preview.url_hash,
+                      canonical_url=preview.canonical_url,
+                      is_showcase=true
+         ) }}
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
