@@ -201,6 +201,11 @@ async def seed_scrolls(session=None):
             publication_year = 2026
             slug = await generate_unique_slug(session, scroll_data["title"], publication_year)
 
+            # Assign the versioned scroll to Test User for easy testing
+            owner = scroll_data["user"]
+            if scroll_data["title"] == "The Spectral Theorem for Symmetric Matrices":
+                owner = "Test User"
+
             db_scroll = Scroll(
                 title=scroll_data["title"],
                 authors=scroll_data["authors"],
@@ -210,7 +215,7 @@ async def seed_scrolls(session=None):
                 content_hash=content_hash,
                 url_hash=url_hash,
                 license=scroll_data["license"],
-                user_id=users[scroll_data["user"]],
+                user_id=users[owner],
                 subject_id=subjects[scroll_data["subject"]],
                 status="published",
                 version=1,
