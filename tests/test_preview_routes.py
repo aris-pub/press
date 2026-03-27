@@ -74,6 +74,43 @@ async def test_preview_page_shows_preview_banner(
 
 
 @pytest.mark.asyncio
+async def test_preview_banner_contains_action_buttons(
+    authenticated_client, test_db: AsyncSession, test_user, test_subject
+):
+    """Test that preview banner contains publish, edit, and discard buttons."""
+    scroll = Scroll(
+        user_id=test_user.id,
+        title="Banner Actions Paper",
+        authors="Test Author",
+        subject_id=test_subject.id,
+        abstract="Test abstract with sufficient length",
+        html_content="<html><body><h1>Test</h1></body></html>",
+        license="cc-by-4.0",
+        content_hash="banneracts123",
+        url_hash="banneracts123",
+        status="preview",
+    )
+    test_db.add(scroll)
+    await test_db.commit()
+
+    response = await authenticated_client.get(f"/preview/{scroll.url_hash}")
+    assert response.status_code == 200
+    html = response.text
+
+    # Action buttons should be inside the preview-banner-actions div
+    assert "preview-banner-actions" in html
+    assert f"/preview/{scroll.url_hash}/confirm" in html
+    assert f"/preview/{scroll.url_hash}/cancel" in html
+    assert f"/preview/{scroll.url_hash}/edit" in html
+    assert "Publish" in html
+    assert "Discard" in html
+    assert "Edit Details" in html
+
+    # The old separate preview-actions section should NOT exist
+    assert 'class="preview-actions"' not in html
+
+
+@pytest.mark.asyncio
 async def test_confirm_preview_redirects_to_published_scroll(
     authenticated_client, test_db: AsyncSession, test_user, test_subject
 ):
