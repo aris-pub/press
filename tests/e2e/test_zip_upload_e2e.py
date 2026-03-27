@@ -164,12 +164,11 @@ async def test_zip_upload_assets_load_in_iframe(test_server):
                     "Research Paper: Zip Upload Test", timeout=10000
                 )
 
-                # Verify CSS loaded by checking computed style
-                h1_color = await iframe.locator("h1").evaluate(
-                    "el => getComputedStyle(el).color"
-                )
-                assert h1_color == "rgb(0, 0, 128)", (
-                    f"CSS not loaded: h1 color is {h1_color}, expected navy (rgb(0, 0, 128))"
+                # Verify CSS loaded by checking computed style (use to_have_css
+                # which polls/retries, unlike evaluate which is a one-shot check
+                # that can race with stylesheet loading)
+                await expect(iframe.locator("h1")).to_have_css(
+                    "color", "rgb(0, 0, 128)", timeout=10000
                 )
 
             finally:
