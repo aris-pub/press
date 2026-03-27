@@ -58,4 +58,7 @@ async def http_exception_handler(
         return await rate_limit_handler(request, exc)
     if exc.status_code >= 500:
         return await internal_server_error_handler(request, exc)
+    accept = request.headers.get("accept", "")
+    if "text/html" not in accept:
+        return JSONResponse(content={"detail": str(exc.detail)}, status_code=exc.status_code)
     return HTMLResponse(content=str(exc.detail), status_code=exc.status_code)
