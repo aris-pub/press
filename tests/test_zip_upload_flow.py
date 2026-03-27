@@ -453,6 +453,100 @@ class TestFullUploadToServingRoundTrip:
         assert b'"x"' in response.content
 
 
+    @pytest.mark.asyncio
+    async def test_sibling_dir_assets_servable_via_parent_path(
+        self, authenticated_client, test_subject, mock_storage
+    ):
+        """Assets in sibling dirs (referenced via ../) are servable at /scroll/{hash}/{path}.
+
+        When an archive has paper/index.html referencing ../styles/paper.css, the browser
+        resolves the ../ relative to /scroll/{hash}/paper/, producing /scroll/{hash}/styles/paper.css.
+        The fallback route must serve these.
+        """
+        html_with_parent_refs = VALID_HTML.replace(
+            "</head>",
+            '<link href="../styles/paper.css"></head>',
+        )
+        zip_bytes = make_zip_bytes(
+            {
+                "paper/index.html": html_with_parent_refs,
+                "styles/paper.css": "h1 { color: red; }",
+                "images/figure1.svg": "<svg></svg>",
+                "scripts/plot.js": "console.log('ok');",
+            }
+        )
+
+        response = await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Sibling Dir Test",
+                "authors": "Author",
+                "subject_id": str(test_subject.id),
+                "abstract": "Test abstract for sibling directory references",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            files={"file": ("sibling.zip", zip_bytes, "application/zip")},
+        )
+        assert response.status_code == 200
+
+        response = await authenticated_client.post(
+            "/upload/confirm-entry-point",
+            data={"entry_point": "index.html"},
+            follow_redirects=False,
+        )
+        assert response.status_code in (302, 303)
+        url_hash = response.headers["location"].split("/preview/")[1].rstrip("/")
+
+        # Assets in sibling directories are accessible via the parent-level route
+        # (simulating what ../styles/paper.css resolves to from /scroll/{hash}/paper/)
+        response = await authenticated_client.get(
+            f"/scroll/{url_hash}/styles/paper.css"
+        )
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/css")
+        assert b"color: red" in response.content
+
+        response = await authenticated_client.get(
+            f"/scroll/{url_hash}/images/figure1.svg"
+        )
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("image/svg+xml")
+
+        response = await authenticated_client.get(
+            f"/scroll/{url_hash}/scripts/plot.js"
+        )
+        assert response.status_code == 200
+        assert b"console.log" in response.content
+
+    @pytest.mark.asyncio
+    async def test_parent_path_route_rejects_non_archive_scrolls(
+        self, authenticated_client, test_subject
+    ):
+        """The fallback route should 404 for non-archive scrolls."""
+        response = await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Inline Scroll",
+                "authors": "Author",
+                "subject_id": str(test_subject.id),
+                "abstract": "Test abstract for inline scroll asset rejection",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            files={"file": ("paper.html", VALID_HTML.encode(), "text/html")},
+            follow_redirects=False,
+        )
+        url_hash = response.headers["location"].split("/preview/")[1].rstrip("/")
+
+        response = await authenticated_client.get(
+            f"/scroll/{url_hash}/styles/paper.css"
+        )
+        assert response.status_code == 404
+
+
 class TestHtmlUploadStillWorks:
     @pytest.mark.asyncio
     async def test_html_upload_unchanged(self, authenticated_client, test_subject):

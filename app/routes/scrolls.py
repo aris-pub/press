@@ -1972,3 +1972,53 @@ async def get_raw_content(request: Request, identifier: str, db: AsyncSession = 
     else:
         # Legacy scroll without content-addressable storage
         raise HTTPException(status_code=422, detail="Raw content not available for legacy scrolls")
+
+
+@router.get("/scroll/{url_hash}/{path:path}")
+async def get_archive_asset_parent(
+    request: Request,
+    url_hash: str,
+    path: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Serve archive assets referenced with ../ paths that escape /paper/.
+
+    When an archive entry point uses relative paths like ../styles/paper.css,
+    the browser resolves them above the /paper/ prefix. This catch-all route
+    handles those requests by looking up the asset in Tigris storage.
+
+    Must be registered AFTER all other /scroll/{url_hash}/ routes.
+    """
+    import mimetypes
+
+    from pathlib import PurePosixPath
+
+    resolved = PurePosixPath(path)
+    if ".." in resolved.parts:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    scroll = await _verify_scroll_access(request, url_hash, db)
+
+    if scroll.storage_type != "archive":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    from app.storage import get_storage
+
+    storage = get_storage()
+    key = f"scrolls/{scroll.content_hash}/{path}"
+
+    try:
+        data = await storage.get(key)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={
+            "X-Frame-Options": "SAMEORIGIN",
+            "Cache-Control": "public, max-age=31536000, immutable",
+        },
+    )
