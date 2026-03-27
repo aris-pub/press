@@ -69,7 +69,7 @@ async def test_footer_dark_mode(test_server):
 
         first_scroll_link = page.locator('a[href^="/scroll/"]').first
         await first_scroll_link.click()
-        await page.wait_for_load_state("networkidle")
+        await page.wait_for_load_state("domcontentloaded")
 
         # Check that footer sections are still visible
         article_metadata = page.locator(".scroll-metadata")
