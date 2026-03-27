@@ -1,5 +1,7 @@
 """Tests for Google Scholar meta tag implementation."""
 
+import uuid
+
 from bs4 import BeautifulSoup
 import pytest
 import pytest_asyncio
@@ -295,3 +297,131 @@ async def test_empty_keywords_array_handled_gracefully(client, test_db, test_use
     soup = BeautifulSoup(response.text, "html.parser")
     keyword_tags = soup.find_all("meta", {"name": "citation_keywords"})
     assert len(keyword_tags) == 0  # No keyword tags if empty
+
+
+# VERSION-SPECIFIC SCHOLAR META TAG TESTS
+
+
+@pytest_asyncio.fixture
+async def versioned_scrolls(test_db, test_user, test_subject):
+    """Create v1 and v2 of a scroll series with year/slug routing."""
+    from app.models.scroll import Scroll
+    from app.storage.content_processing import generate_permanent_url
+
+    series_id = uuid.uuid4()
+
+    url_hash_v1, content_hash_v1, _ = await generate_permanent_url(
+        test_db, "<h1>Version 1</h1><p>Original</p>"
+    )
+    v1 = Scroll(
+        title="Versioned Paper",
+        authors="Dr. Alice",
+        abstract="Abstract v1",
+        keywords=["version"],
+        html_content="<h1>Version 1</h1><p>Original</p>",
+        license="cc-by-4.0",
+        content_hash=content_hash_v1,
+        url_hash=url_hash_v1,
+        status="published",
+        user_id=test_user.id,
+        subject_id=test_subject.id,
+        version=1,
+        scroll_series_id=series_id,
+        publication_year=2026,
+        slug="versioned-paper",
+    )
+    v1.publish()
+    test_db.add(v1)
+
+    url_hash_v2, content_hash_v2, _ = await generate_permanent_url(
+        test_db, "<h1>Version 2</h1><p>Updated</p>"
+    )
+    v2 = Scroll(
+        title="Versioned Paper",
+        authors="Dr. Alice, Dr. Bob",
+        abstract="Abstract v2",
+        keywords=["version"],
+        html_content="<h1>Version 2</h1><p>Updated</p>",
+        license="cc-by-4.0",
+        content_hash=content_hash_v2,
+        url_hash=url_hash_v2,
+        status="published",
+        user_id=test_user.id,
+        subject_id=test_subject.id,
+        version=2,
+        scroll_series_id=series_id,
+        publication_year=2026,
+        slug="versioned-paper",
+    )
+    v2.publish()
+    test_db.add(v2)
+
+    await test_db.commit()
+    await test_db.refresh(v1)
+    await test_db.refresh(v2)
+
+    return v1, v2
+
+
+@pytest.mark.asyncio
+async def test_citation_fulltext_url_uses_version_specific_url(client, versioned_scrolls):
+    """citation_fulltext_html_url must point to /{year}/{slug}/v{N}, not /scroll/{hash}."""
+    v1, v2 = versioned_scrolls
+
+    # Check v1
+    response = await client.get(f"/2026/versioned-paper/v1")
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.text, "html.parser")
+    fulltext_tag = soup.find("meta", {"name": "citation_fulltext_html_url"})
+    assert fulltext_tag is not None
+    assert fulltext_tag["content"].endswith("/2026/versioned-paper/v1")
+
+    # Check v2
+    response = await client.get(f"/2026/versioned-paper/v2")
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.text, "html.parser")
+    fulltext_tag = soup.find("meta", {"name": "citation_fulltext_html_url"})
+    assert fulltext_tag is not None
+    assert fulltext_tag["content"].endswith("/2026/versioned-paper/v2")
+
+
+@pytest.mark.asyncio
+async def test_canonical_url_uses_year_slug_without_version(client, versioned_scrolls):
+    """<link rel='canonical'> must point to /{year}/{slug} (latest), not version-specific."""
+    v1, v2 = versioned_scrolls
+
+    # Even on v1 page, canonical should be /{year}/{slug}
+    response = await client.get(f"/2026/versioned-paper/v1")
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.text, "html.parser")
+    canonical = soup.find("link", {"rel": "canonical"})
+    assert canonical is not None
+    assert canonical["href"].endswith("/2026/versioned-paper")
+    assert "/v1" not in canonical["href"]
+
+
+@pytest.mark.asyncio
+async def test_scholar_and_canonical_urls_differ_for_versioned_scroll(client, versioned_scrolls):
+    """Scholar URL and canonical URL intentionally differ for versioned scrolls."""
+    v1, v2 = versioned_scrolls
+
+    response = await client.get(f"/2026/versioned-paper/v1")
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    canonical = soup.find("link", {"rel": "canonical"})
+    fulltext_tag = soup.find("meta", {"name": "citation_fulltext_html_url"})
+
+    assert canonical["href"] != fulltext_tag["content"]
+
+
+@pytest.mark.asyncio
+async def test_fallback_to_scroll_hash_without_year_slug(client, test_scroll):
+    """Scrolls without year/slug should fall back to /scroll/{hash} for Scholar URL."""
+    response = await client.get(f"/scroll/{test_scroll.url_hash}")
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    fulltext_tag = soup.find("meta", {"name": "citation_fulltext_html_url"})
+    assert fulltext_tag is not None
+    assert f"/scroll/{test_scroll.url_hash}" in fulltext_tag["content"]

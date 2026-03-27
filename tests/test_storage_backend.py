@@ -1,5 +1,8 @@
 """Tests for StorageBackend protocol and InMemoryStorage implementation."""
 
+import os
+from unittest.mock import patch
+
 import pytest
 
 from app.storage.backend import StorageBackend
@@ -63,3 +66,50 @@ class TestInMemoryStorage:
         data = b"\x00" * 1024 * 1024
         await storage.put("big", data)
         assert await storage.get("big") == data
+
+
+class TestGetStorageFallback:
+    """Test that get_storage() falls back to InMemoryStorage in test environments."""
+
+    def setup_method(self):
+        import app.storage
+
+        app.storage._storage_instance = None
+
+    def teardown_method(self):
+        import app.storage
+
+        app.storage._storage_instance = None
+
+    def test_returns_inmemory_when_testing_without_bucket(self):
+        with patch.dict(os.environ, {"TESTING": "1"}, clear=False):
+            os.environ.pop("BUCKET_NAME", None)
+            os.environ.pop("AWS_ENDPOINT_URL_S3", None)
+            from app.storage import get_storage
+
+            storage = get_storage()
+            assert isinstance(storage, InMemoryStorage)
+
+    def test_returns_inmemory_when_no_tigris_credentials(self):
+        with patch.dict(os.environ, {"ENVIRONMENT": "preview"}, clear=False):
+            os.environ.pop("BUCKET_NAME", None)
+            os.environ.pop("AWS_ENDPOINT_URL_S3", None)
+            os.environ.pop("TESTING", None)
+            from app.storage import get_storage
+
+            storage = get_storage()
+            assert isinstance(storage, InMemoryStorage)
+
+    def test_returns_tigris_when_bucket_configured(self):
+        env = {
+            "TESTING": "1",
+            "BUCKET_NAME": "test-bucket",
+            "AWS_ENDPOINT_URL_S3": "https://fly.storage.tigris.dev",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            from app.storage import get_storage
+
+            from app.storage.tigris import TigrisStorage
+
+            storage = get_storage()
+            assert isinstance(storage, TigrisStorage)

@@ -90,6 +90,9 @@
   <div id="version-data" data-versions='[{% for v in versions %}{"version":{{ v.version }},"url_hash":"{{ v.url_hash }}"}{% if not loop.last %},{% endif %}{% endfor %}]' data-latest-version="{{ latest_version }}" data-is-latest="{{ is_latest|default(true)|lower }}" hidden></div>
   {% endif %}
 
+  {% set version_count = versions|length if versions is defined and versions else 0 %}
+  {% set show_version_ui = version_count > 1 %}
+
   <!-- Store user HTML content as JSON data for strict-dynamic processing -->
   <div class="scroll-container">
     <div id="iframe-loading" class="loading-overlay">
@@ -103,6 +106,16 @@
       scrolling="no"
     ></iframe>
   </div>
+
+  {% if show_version_ui and not is_latest|default(true) %}
+  <div class="old-version-banner">
+    <span>You are viewing v{{ scroll.version }} of this scroll. A newer version is available.</span>
+    <a href="/{{ scroll.publication_year }}/{{ scroll.slug }}" class="old-version-banner-link">
+      View latest (v{{ latest_version }})
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </a>
+  </div>
+  {% endif %}
 
   <!-- Article Metadata Section -->
   <section class="scroll-metadata">
@@ -121,6 +134,27 @@
         <span class="license-text">All Rights Reserved</span>
       {% endif %}
     </div>
+    {% if show_version_ui %}
+    <div class="version-indicator">
+      <span class="version-label">
+        {% if is_latest|default(true) %}
+          v{{ scroll.version }} (latest)
+        {% else %}
+          v{{ scroll.version }} of {{ latest_version }}
+        {% endif %}
+      </span>
+      <span class="version-divider"></span>
+      <div class="version-selector">
+        {% for v in versions|sort(attribute='version') %}
+          {% if v.version == scroll.version %}
+            <span class="version-current">v{{ v.version }}</span>
+          {% else %}
+            <a href="/{{ scroll.publication_year }}/{{ scroll.slug }}/v{{ v.version }}" class="version-link">v{{ v.version }}</a>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
   </section>
 
   <!-- Platform Attribution Section -->
@@ -183,6 +217,33 @@
             {% endif %}
           </div>
         </div>
+
+        {% if show_version_ui %}
+        <div class="version-history">
+          <div class="version-history-label">Version History</div>
+          {% for v in versions %}
+          <div class="version-history-row">
+            <div class="version-history-left">
+              {% if v.version == scroll.version %}
+                <span class="version-history-current">v{{ v.version }}</span>
+                {% if v.version == latest_version %}
+                  <span class="version-history-tag">(latest)</span>
+                {% endif %}
+              {% else %}
+                <a href="/{{ scroll.publication_year }}/{{ scroll.slug }}/v{{ v.version }}" class="version-history-link">
+                  v{{ v.version }}
+                  {% if v.version == latest_version %}
+                    <span class="version-history-tag">(latest)</span>
+                  {% endif %}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </a>
+              {% endif %}
+            </div>
+            <span class="version-history-date">{{ v.published_at.strftime('%B %d, %Y') if v.published_at else '' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
       <div class="modal-actions">
         <a href="/" class="btn btn-secondary">Back to Scroll Press</a>
@@ -583,6 +644,166 @@ html[data-theme="dark"] .aris-link {
   font-style: italic;
 }
 
+/* Old Version Banner */
+.old-version-banner {
+  background: #fef3c7;
+  color: #92400e;
+  border-top: 1px solid var(--border-light);
+  padding: 1rem 1.5rem;
+  text-align: center;
+  font-size: var(--text-sm, 0.875rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.old-version-banner-link {
+  color: #92400e;
+  font-weight: 600;
+  text-decoration: underline;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.old-version-banner-link:hover {
+  color: #78350f;
+}
+
+html[data-theme="dark"] .old-version-banner {
+  background: #422006;
+  color: #fbbf24;
+  border-top-color: var(--border-dark);
+}
+
+html[data-theme="dark"] .old-version-banner-link {
+  color: #fbbf24;
+}
+
+/* Version Indicator */
+.version-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.version-label {
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--gray);
+  font-weight: 500;
+}
+
+.version-divider {
+  border-left: 1px solid var(--gray-lighter, #d1d5db);
+  height: 1rem;
+}
+
+.version-selector {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.version-link {
+  color: var(--gray-dark, #4b5563);
+  text-decoration: none;
+  font-size: var(--text-sm, 0.875rem);
+  padding: 0.1rem 0.25rem;
+}
+
+.version-link:hover {
+  text-decoration: underline;
+  color: var(--red);
+}
+
+.version-current {
+  font-weight: 600;
+  color: var(--black);
+  font-size: var(--text-sm, 0.875rem);
+  padding: 0.1rem 0.25rem;
+}
+
+html[data-theme="dark"] .version-label {
+  color: #9ca3af;
+}
+
+html[data-theme="dark"] .version-divider {
+  border-left-color: #4b5563;
+}
+
+html[data-theme="dark"] .version-link {
+  color: #9ca3af;
+}
+
+html[data-theme="dark"] .version-current {
+  color: #e5e7eb;
+}
+
+/* Version History in Modal */
+.version-history {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--gray-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-lightest);
+}
+
+.version-history-label {
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.version-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--gray-lightest);
+}
+
+.version-history-row:last-child {
+  border-bottom: none;
+}
+
+.version-history-left {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.version-history-current {
+  font-weight: 600;
+  color: var(--black);
+}
+
+.version-history-tag {
+  color: var(--gray);
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.version-history-link {
+  color: var(--gray-dark);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.version-history-link:hover {
+  color: var(--red);
+}
+
+.version-history-date {
+  color: var(--gray);
+  font-size: var(--text-sm, 0.875rem);
+}
+
 .modal-actions {
   padding: 1.5rem 2rem;
   border-top: 1px solid var(--border-light);
@@ -682,6 +903,15 @@ body.modal-open {
     flex-direction: column;
     width: 100%;
     gap: 0.25rem;
+  }
+
+  .old-version-banner {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .version-indicator {
+    flex-wrap: wrap;
   }
 
   .cta-separator {
