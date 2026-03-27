@@ -128,10 +128,34 @@ async def view_preview(request: Request, url_hash: str, db: AsyncSession = Depen
     from app.auth.session import get_session
 
     session_id = request.cookies.get("session_id")
+    upcoming_version = None
     if session_id:
         session = get_session(session_id)
         session.pop("preview_form_data", None)
         session.pop("current_preview_url_hash", None)
+
+        # Check if this is a new version of an existing scroll
+        revises_hash = session.get("revises_scroll")
+        if revises_hash:
+            from sqlalchemy import func
+
+            parent_result = await db.execute(
+                select(Scroll).where(
+                    Scroll.url_hash == revises_hash,
+                    Scroll.status == "published",
+                    Scroll.user_id == current_user.id,
+                )
+            )
+            parent_scroll = parent_result.scalar_one_or_none()
+            if parent_scroll and parent_scroll.scroll_series_id:
+                max_version_result = await db.execute(
+                    select(func.max(Scroll.version)).where(
+                        Scroll.scroll_series_id == parent_scroll.scroll_series_id,
+                        Scroll.status == "published",
+                    )
+                )
+                max_version = max_version_result.scalar() or 1
+                upcoming_version = max_version + 1
 
     # Update last_accessed_at
     scroll.last_accessed_at = datetime.now(timezone.utc)
@@ -146,7 +170,12 @@ async def view_preview(request: Request, url_hash: str, db: AsyncSession = Depen
     return templates.TemplateResponse(
         request,
         "preview.html",
-        {"scroll": scroll, "current_user": current_user, "csrf_token": csrf_token},
+        {
+            "scroll": scroll,
+            "current_user": current_user,
+            "csrf_token": csrf_token,
+            "upcoming_version": upcoming_version,
+        },
     )
 
 

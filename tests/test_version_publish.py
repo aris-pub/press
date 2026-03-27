@@ -151,6 +151,79 @@ class TestUploadPageRevises:
 
 
 @pytest.mark.asyncio
+class TestPreviewVersionIndicator:
+    """GET /preview/{url_hash} -- shows upcoming version number."""
+
+    async def test_preview_shows_v2_indicator(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """Preview page should indicate this will be v2 when revises_scroll is in session."""
+        v1 = await _create_published_v1(test_db, test_user, test_subject)
+
+        # Create a preview scroll (different content)
+        url_hash, content_hash, _ = await generate_permanent_url(
+            test_db, "<h1>Version 2</h1><p>Updated content</p>"
+        )
+        preview = Scroll(
+            user_id=test_user.id,
+            subject_id=test_subject.id,
+            title="Neural Networks v2",
+            authors="Jane Doe",
+            abstract="Updated abstract",
+            keywords=["neural"],
+            html_content="<h1>Version 2</h1><p>Updated content</p>",
+            license="cc-by-4.0",
+            content_hash=content_hash,
+            url_hash=url_hash,
+            status="preview",
+        )
+        test_db.add(preview)
+        await test_db.commit()
+        await test_db.refresh(preview)
+
+        # Set revises_scroll in session
+        session_id = authenticated_client.cookies.get("session_id")
+        session = get_session(session_id)
+        session["revises_scroll"] = v1.url_hash
+
+        resp = await authenticated_client.get(
+            f"/preview/{preview.url_hash}", follow_redirects=False
+        )
+        assert resp.status_code == 200
+        assert "v2" in resp.text
+
+    async def test_preview_no_version_for_v1(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """Preview page should NOT show version indicator for normal v1 uploads."""
+        url_hash, content_hash, _ = await generate_permanent_url(
+            test_db, "<h1>Brand New</h1><p>First version</p>"
+        )
+        preview = Scroll(
+            user_id=test_user.id,
+            subject_id=test_subject.id,
+            title="Brand New Paper",
+            authors="Jane Doe",
+            abstract="Abstract",
+            keywords=[],
+            html_content="<h1>Brand New</h1><p>First version</p>",
+            license="cc-by-4.0",
+            content_hash=content_hash,
+            url_hash=url_hash,
+            status="preview",
+        )
+        test_db.add(preview)
+        await test_db.commit()
+        await test_db.refresh(preview)
+
+        resp = await authenticated_client.get(
+            f"/preview/{preview.url_hash}", follow_redirects=False
+        )
+        assert resp.status_code == 200
+        assert "will be published as v" not in resp.text
+
+
+@pytest.mark.asyncio
 class TestPublishVersioning:
     """POST /preview/{url_hash}/confirm -- version assignment for v2+."""
 
@@ -349,6 +422,52 @@ class TestDuplicateContentHandling:
         )
         # Should succeed (redirect to preview) rather than 422 error
         assert resp.status_code == 303 or resp.status_code == 200
+
+    async def test_same_content_same_series_publish_succeeds(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """Full flow: upload same content as v1, then publish as v2 -- should succeed."""
+        v1 = await _create_published_v1(test_db, test_user, test_subject)
+
+        session_id = authenticated_client.cookies.get("session_id")
+        session = get_session(session_id)
+        session["revises_scroll"] = v1.url_hash
+
+        # Upload same content as v1
+        resp = await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Updated Title Only",
+                "authors": "Jane Doe",
+                "subject_id": str(test_subject.id),
+                "abstract": "Updated abstract only",
+                "keywords": "neural,networks",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            files={"file": ("paper.html", v1.html_content.encode(), "text/html")},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 303
+        preview_url = resp.headers["location"]
+        preview_url_hash = preview_url.split("/preview/")[1]
+
+        # Now publish the preview
+        resp = await authenticated_client.post(
+            f"/preview/{preview_url_hash}/confirm", follow_redirects=False
+        )
+        assert resp.status_code == 303, f"Publish failed with {resp.status_code}: {resp.text[:500]}"
+
+        # Verify v2 was published correctly
+        result = await test_db.execute(
+            select(Scroll).where(Scroll.url_hash == preview_url_hash)
+        )
+        v2 = result.scalar_one()
+        assert v2.status == "published"
+        assert v2.version == 2
+        assert v2.scroll_series_id == v1.scroll_series_id
+        assert v2.slug == v1.slug
 
     async def test_same_content_different_series_rejected(
         self, authenticated_client, test_user, test_subject, test_db
