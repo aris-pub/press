@@ -35,7 +35,7 @@
 <meta name="citation_keywords" content="{{ keyword | escape }}">
 {% endfor %}
 {% endif %}
-<meta name="citation_fulltext_html_url" content="{{ base_url }}/scroll/{{ scroll.url_hash }}">
+<meta name="citation_fulltext_html_url" content="{{ base_url }}{{ scroll.version_url }}">
 {% if scroll.subject and scroll.subject.name %}
 <meta name="citation_subject" content="{{ scroll.subject.name | escape }}">
 {% endif %}
