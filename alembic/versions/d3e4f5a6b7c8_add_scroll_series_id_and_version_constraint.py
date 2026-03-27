@@ -9,6 +9,7 @@ Create Date: 2026-03-27
 from typing import Sequence, Union
 
 import sqlalchemy as sa
+import sqlalchemy.dialects.postgresql
 from sqlalchemy import text
 
 from alembic import op
@@ -20,10 +21,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add scroll_series_id column
+    # Add scroll_series_id column — use native UUID on PostgreSQL, String on SQLite
+    conn = op.get_bind()
+    if conn.dialect.name == "postgresql":
+        col_type = sa.dialects.postgresql.UUID(as_uuid=True)
+    else:
+        col_type = sa.String(36)
     op.add_column(
         "scrolls",
-        sa.Column("scroll_series_id", sa.String(36), nullable=True),
+        sa.Column("scroll_series_id", col_type, nullable=True),
     )
     op.create_index("ix_scrolls_scroll_series_id", "scrolls", ["scroll_series_id"])
 

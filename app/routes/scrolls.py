@@ -21,7 +21,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 import sentry_sdk
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import load_only, selectinload
 
 from app.auth.session import get_current_user_from_session
 from app.config import get_base_url
@@ -471,11 +471,81 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
     )
 
 
+async def _fetch_versions_for_series(db: AsyncSession, scroll_series_id) -> list[dict]:
+    """Fetch all published versions for a scroll series, ordered newest first."""
+    if not scroll_series_id:
+        return []
+    result = await db.execute(
+        select(Scroll)
+        .options(load_only(Scroll.version, Scroll.url_hash, Scroll.published_at))
+        .where(
+            Scroll.scroll_series_id == scroll_series_id,
+            Scroll.status == "published",
+        )
+        .order_by(Scroll.version.desc())
+    )
+    return [
+        {"version": s.version, "url_hash": s.url_hash, "published_at": s.published_at}
+        for s in result.scalars().all()
+    ]
+
+
+@router.get("/{year:int}/{slug:str}/v{version:int}", response_class=HTMLResponse)
+async def view_scroll_by_year_slug_version(
+    request: Request, year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
+):
+    """Display a specific version of a published scroll."""
+    sentry_sdk.set_tag("operation", "scroll_view")
+    sentry_sdk.set_context("scroll", {"year": year, "slug": slug, "version": version})
+    log_request(request, extra_data={"year": year, "slug": slug, "version": version})
+
+    result = await db.execute(
+        select(Scroll)
+        .options(selectinload(Scroll.subject))
+        .where(
+            Scroll.publication_year == year,
+            Scroll.slug == slug,
+            Scroll.version == version,
+            Scroll.status == "published",
+        )
+    )
+    scroll = result.scalar_one_or_none()
+
+    if not scroll:
+        get_logger().warning(f"Scroll not found: {year}/{slug}/v{version}")
+        return templates.TemplateResponse(
+            request, "404.html", {"message": "Scroll not found"}, status_code=404
+        )
+
+    versions = await _fetch_versions_for_series(db, scroll.scroll_series_id)
+    latest_version = versions[0]["version"] if versions else scroll.version
+
+    log_preview_event(
+        "view",
+        f"{year}/{slug}/v{version}",
+        str(scroll.user_id) if scroll.user_id else None,
+        request,
+        extra_data={"title": scroll.title, "url_hash": scroll.url_hash},
+    )
+
+    return templates.TemplateResponse(
+        request,
+        "scroll.html",
+        {
+            "scroll": scroll,
+            "base_url": get_base_url(),
+            "versions": versions,
+            "latest_version": latest_version,
+            "is_latest": version == latest_version,
+        },
+    )
+
+
 @router.get("/{year:int}/{slug:str}", response_class=HTMLResponse)
 async def view_scroll_by_year_slug(
     request: Request, year: int, slug: str, db: AsyncSession = Depends(get_db)
 ):
-    """Display a published scroll by its year and slug."""
+    """Display the latest published version of a scroll by its year and slug."""
     sentry_sdk.set_tag("operation", "scroll_view")
     sentry_sdk.set_context("scroll", {"year": year, "slug": slug})
     log_request(request, extra_data={"year": year, "slug": slug})
@@ -488,6 +558,8 @@ async def view_scroll_by_year_slug(
             Scroll.slug == slug,
             Scroll.status == "published",
         )
+        .order_by(Scroll.version.desc())
+        .limit(1)
     )
     scroll = result.scalar_one_or_none()
 
@@ -496,6 +568,9 @@ async def view_scroll_by_year_slug(
         return templates.TemplateResponse(
             request, "404.html", {"message": "Scroll not found"}, status_code=404
         )
+
+    versions = await _fetch_versions_for_series(db, scroll.scroll_series_id)
+    latest_version = versions[0]["version"] if versions else scroll.version
 
     log_preview_event(
         "view",
@@ -506,7 +581,15 @@ async def view_scroll_by_year_slug(
     )
 
     return templates.TemplateResponse(
-        request, "scroll.html", {"scroll": scroll, "base_url": get_base_url()}
+        request,
+        "scroll.html",
+        {
+            "scroll": scroll,
+            "base_url": get_base_url(),
+            "versions": versions,
+            "latest_version": latest_version,
+            "is_latest": True,
+        },
     )
 
 
