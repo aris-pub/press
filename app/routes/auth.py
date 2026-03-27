@@ -523,15 +523,15 @@ async def login_form(
 
         log_auth_event("login", normalized_email, True, request, user_id=str(user.id))
 
-        # Return success partial
+        # Return success partial with full page redirect (not HTMX swap)
+        # to ensure navbar re-renders with authenticated state
         response = templates.TemplateResponse(
             request,
-            "auth/partials/success.html",
+            "auth/partials/success_redirect.html",
             {
                 "title": "Welcome Back!",
                 "message": f"Successfully signed in as {user.display_name}",
-                "action_text": "Go to Dashboard",
-                "action_url": "/dashboard",
+                "redirect_url": "/dashboard",
             },
         )
 
@@ -681,12 +681,11 @@ async def resend_verification(
         if current_user.email_verified:
             return templates.TemplateResponse(
                 request,
-                "auth/partials/success.html",
+                "auth/partials/success_redirect.html",
                 {
                     "title": "Already Verified",
                     "message": "Your email is already verified!",
-                    "action_text": "Go to Dashboard",
-                    "action_url": "/dashboard",
+                    "redirect_url": "/dashboard",
                 },
             )
 
@@ -892,12 +891,14 @@ async def reset_password_form(
         # Auto-login user after successful password reset
         session_id = await create_session(db, user.id)
 
+        # Use full page redirect to ensure navbar re-renders with authenticated state
         response = templates.TemplateResponse(
             request,
-            "auth/reset_password.html",
+            "auth/partials/success_redirect.html",
             {
-                "success": True,
-                "message": "Password reset successful! You are now logged in.",
+                "title": "Password Reset Successful!",
+                "message": "Your password has been reset. You are now logged in.",
+                "redirect_url": "/dashboard",
             },
         )
 
