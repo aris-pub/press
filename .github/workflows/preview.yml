@@ -65,8 +65,10 @@ jobs:
           --ha=false \
           --yes
 
-    - name: Seed database
+    - name: Run migrations and seed database
       run: |
+        flyctl ssh console --app "$APP_NAME" \
+          -C "uv run --frozen --no-dev alembic upgrade head"
         flyctl ssh console --app "$APP_NAME" \
           -C "uv run --frozen --no-dev python /app/scripts/seed.py"
 
