@@ -1,6 +1,7 @@
 """Tests for the /api/v1/ public REST API for AI agent access."""
 
 from datetime import datetime, timezone
+import uuid
 
 from httpx import AsyncClient
 import pytest
@@ -386,3 +387,168 @@ class TestResponseFormat:
         """CORS is not configured for MVP -- verify no CORS headers leak."""
         response = await client.get("/api/v1/scrolls")
         assert "access-control-allow-origin" not in response.headers
+
+
+# --- Versioning support ---
+
+
+@pytest_asyncio.fixture
+async def versioned_scrolls(test_db, test_user, test_subject):
+    """Create a scroll series with v1 and v2 sharing the same scroll_series_id."""
+    series_id = uuid.uuid4()
+
+    v1 = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        test_subject,
+        title="Quantum Computing in Practice",
+        authors="Alice Smith, Bob Jones",
+        abstract="A study of practical quantum computing applications.",
+        keywords=["quantum", "computing"],
+        license="cc-by-4.0",
+        html_content="<h1>Quantum v1</h1><p>Version 1 content.</p>",
+    )
+    v1.scroll_series_id = series_id
+    v1.version = 1
+    v1.slug = "quantum-computing-in-practice"
+    v1.publication_year = 2026
+    await test_db.commit()
+    await test_db.refresh(v1)
+
+    v2 = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        test_subject,
+        title="Quantum Computing in Practice",
+        authors="Alice Smith, Bob Jones",
+        abstract="Updated study of practical quantum computing applications.",
+        keywords=["quantum", "computing"],
+        license="cc-by-4.0",
+        html_content="<h1>Quantum v2</h1><p>Version 2 content.</p>",
+    )
+    v2.scroll_series_id = series_id
+    v2.version = 2
+    v2.slug = "quantum-computing-in-practice"
+    v2.publication_year = 2026
+    await test_db.commit()
+    await test_db.refresh(v2)
+
+    return v1, v2
+
+
+class TestListScrollsVersioning:
+    """Tests for version filtering in the scrolls listing endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_list_returns_only_latest_versions_by_default(
+        self, client: AsyncClient, versioned_scrolls
+    ):
+        v1, v2 = versioned_scrolls
+        response = await client.get("/api/v1/scrolls")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        hashes = [s["url_hash"] for s in data["scrolls"]]
+        assert v2.url_hash in hashes
+        assert v1.url_hash not in hashes
+
+    @pytest.mark.asyncio
+    async def test_list_all_versions_parameter(
+        self, client: AsyncClient, versioned_scrolls
+    ):
+        response = await client.get("/api/v1/scrolls", params={"all_versions": "true"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 2
+
+    @pytest.mark.asyncio
+    async def test_list_mixed_versioned_and_unversioned(
+        self, client: AsyncClient, versioned_scrolls, second_scroll
+    ):
+        """Scrolls without scroll_series_id are always included."""
+        response = await client.get("/api/v1/scrolls")
+        data = response.json()
+        assert data["total"] == 2
+
+    @pytest.mark.asyncio
+    async def test_list_total_reflects_filtered_count(
+        self, client: AsyncClient, versioned_scrolls
+    ):
+        response = await client.get("/api/v1/scrolls")
+        data = response.json()
+        assert data["total"] == len(data["scrolls"])
+
+
+class TestGetScrollVersioning:
+    """Tests for version info in the single scroll detail endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_detail_includes_versions_array(
+        self, client: AsyncClient, versioned_scrolls
+    ):
+        v1, v2 = versioned_scrolls
+        response = await client.get(f"/api/v1/scrolls/{v2.url_hash}")
+        assert response.status_code == 200
+        data = response.json()
+        assert "versions" in data
+        versions = data["versions"]
+        assert len(versions) == 2
+        assert versions[0]["version"] > versions[1]["version"]
+
+    @pytest.mark.asyncio
+    async def test_versions_array_ordered_desc(
+        self, client: AsyncClient, versioned_scrolls
+    ):
+        v1, v2 = versioned_scrolls
+        response = await client.get(f"/api/v1/scrolls/{v1.url_hash}")
+        data = response.json()
+        versions = data["versions"]
+        assert versions[0]["version"] == 2
+        assert versions[1]["version"] == 1
+
+    @pytest.mark.asyncio
+    async def test_versions_array_contains_expected_fields(
+        self, client: AsyncClient, versioned_scrolls
+    ):
+        _, v2 = versioned_scrolls
+        response = await client.get(f"/api/v1/scrolls/{v2.url_hash}")
+        data = response.json()
+        entry = data["versions"][0]
+        assert "version" in entry
+        assert "url_hash" in entry
+        assert "published_at" in entry
+
+    @pytest.mark.asyncio
+    async def test_detail_includes_latest_version(
+        self, client: AsyncClient, versioned_scrolls
+    ):
+        _, v2 = versioned_scrolls
+        response = await client.get(f"/api/v1/scrolls/{v2.url_hash}")
+        data = response.json()
+        assert data["latest_version"] == 2
+
+    @pytest.mark.asyncio
+    async def test_detail_includes_canonical_and_version_urls(
+        self, client: AsyncClient, versioned_scrolls
+    ):
+        v1, _ = versioned_scrolls
+        response = await client.get(f"/api/v1/scrolls/{v1.url_hash}")
+        data = response.json()
+        assert data["canonical_url"] == "/2026/quantum-computing-in-practice"
+        assert data["version_url"] == "/2026/quantum-computing-in-practice/v1"
+
+    @pytest.mark.asyncio
+    async def test_detail_no_series_returns_single_version(
+        self, client: AsyncClient, published_scroll
+    ):
+        """Scroll without scroll_series_id returns itself as the only version."""
+        response = await client.get(f"/api/v1/scrolls/{published_scroll.url_hash}")
+        data = response.json()
+        assert data["versions"] == [
+            {
+                "version": published_scroll.version,
+                "url_hash": published_scroll.url_hash,
+                "published_at": published_scroll.published_at.isoformat(),
+            }
+        ]
+        assert data["latest_version"] == 1
