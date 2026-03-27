@@ -36,7 +36,7 @@
 </div>
 {% endif %}
 
-<form id="upload-form" method="POST" action="/upload-form" enctype="multipart/form-data">
+<form id="upload-form" method="POST" action="/upload-form" enctype="multipart/form-data" hx-boost="false">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {{ form_input("Title", "title", "text", form_data.title if form_data else "", required=true, help_text="A clear, descriptive title for your research scroll") }}
 
@@ -272,13 +272,6 @@ function hideMessages() {
     fileError.style.display = 'none';
     fileSuccess.style.display = 'none';
 }
-
-// Restore file input name after HTMX request completes (for error cases)
-document.body.addEventListener('htmx:afterRequest', function(evt) {
-    if (evt.detail.pathInfo.requestPath === '/upload-form') {
-        fileInput.setAttribute('name', 'html_file');
-    }
-});
 
 // Form validation before submission
 document.getElementById('upload-form').addEventListener('submit', function(e) {

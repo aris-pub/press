@@ -349,6 +349,7 @@ class TestFileUploadUIElements:
         assert 'id="html_file"' in response.text
         assert 'accept=".html,.zip,text/html,application/zip"' in response.text
         assert 'type="hidden"' in response.text  # Hidden html_content field
+        assert 'hx-boost="false"' in response.text  # File uploads bypass HTMX boost
 
     async def test_upload_page_contains_validation_messages(
         self, authenticated_client: AsyncClient
