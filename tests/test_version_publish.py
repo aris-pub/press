@@ -620,3 +620,146 @@ class TestNewVersionLink:
         )
         assert resp.status_code == 200
         assert f"/upload?revises={v1.url_hash}" in resp.text
+
+
+@pytest.mark.asyncio
+class TestYearSlugWithMultipleVersions:
+    """GET /{year}/{slug} should return the latest version when multiple exist."""
+
+    async def test_year_slug_returns_latest_version(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """When v1 and v2 share the same year/slug, the route should return the latest."""
+        v1 = await _create_published_v1(test_db, test_user, test_subject)
+
+        # Create v2 with the same year/slug/series
+        url_hash2, content_hash2, _ = await generate_permanent_url(
+            test_db, "<h1>Version 2</h1><p>Updated content for v2</p>"
+        )
+        v2 = Scroll(
+            user_id=test_user.id,
+            subject_id=test_subject.id,
+            title="Neural Networks v2",
+            authors="Jane Doe",
+            abstract="Updated abstract",
+            keywords=["neural"],
+            html_content="<h1>Version 2</h1><p>Updated content for v2</p>",
+            license="cc-by-4.0",
+            content_hash=content_hash2,
+            url_hash=url_hash2,
+            status="preview",
+        )
+        test_db.add(v2)
+        await test_db.commit()
+        await test_db.refresh(v2)
+
+        v2.publish()
+        v2.version = 2
+        v2.scroll_series_id = v1.scroll_series_id
+        v2.slug = v1.slug
+        v2.publication_year = v1.publication_year
+        await test_db.commit()
+        await test_db.refresh(v2)
+
+        resp = await authenticated_client.get(
+            f"/{v1.publication_year}/{v1.slug}", follow_redirects=False
+        )
+        assert resp.status_code == 200
+        assert "Neural Networks v2" in resp.text
+
+    async def test_publish_v2_redirects_to_year_slug_without_500(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """Publishing v2 should redirect to year/slug URL without a 500 error."""
+        v1 = await _create_published_v1(test_db, test_user, test_subject)
+
+        # Create a preview for v2
+        url_hash2, content_hash2, _ = await generate_permanent_url(
+            test_db, "<h1>Version 2</h1><p>New content for publish test</p>"
+        )
+        preview = Scroll(
+            user_id=test_user.id,
+            subject_id=test_subject.id,
+            title="Neural Networks v2",
+            authors="Jane Doe",
+            abstract="Updated abstract",
+            keywords=["neural"],
+            html_content="<h1>Version 2</h1><p>New content for publish test</p>",
+            license="cc-by-4.0",
+            content_hash=content_hash2,
+            url_hash=url_hash2,
+            status="preview",
+        )
+        test_db.add(preview)
+        await test_db.commit()
+        await test_db.refresh(preview)
+
+        # Set revises_scroll in session
+        session_id = authenticated_client.cookies.get("session_id")
+        session = get_session(session_id)
+        session["revises_scroll"] = v1.url_hash
+
+        # Publish v2
+        resp = await authenticated_client.post(
+            f"/preview/{preview.url_hash}/confirm", follow_redirects=False
+        )
+        assert resp.status_code == 303
+
+        # Follow the redirect to year/slug -- should NOT 500
+        redirect_url = resp.headers["location"]
+        resp2 = await authenticated_client.get(redirect_url, follow_redirects=False)
+        assert resp2.status_code == 200
+
+
+@pytest.mark.asyncio
+class TestMetadataOnlyRevision:
+    """Revision upload without re-uploading HTML file (metadata-only version update)."""
+
+    async def test_revision_without_file_uses_parent_content(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """Submitting revision form without a file should use the parent scroll's HTML."""
+        v1 = await _create_published_v1(test_db, test_user, test_subject)
+
+        session_id = authenticated_client.cookies.get("session_id")
+        session = get_session(session_id)
+        session["revises_scroll"] = v1.url_hash
+
+        # Submit form WITHOUT a file
+        resp = await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Updated Title Only",
+                "authors": "Jane Doe",
+                "subject_id": str(test_subject.id),
+                "abstract": "Updated abstract only",
+                "keywords": "neural,networks",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            follow_redirects=False,
+        )
+        # Should succeed (redirect to preview) -- not 422 "HTML file is required"
+        assert resp.status_code == 303
+
+    async def test_revision_without_file_and_no_revises_still_requires_file(
+        self, authenticated_client, test_user, test_subject, test_db
+    ):
+        """Without revises_scroll in session, no file should still fail."""
+        resp = await authenticated_client.post(
+            "/upload-form",
+            data={
+                "title": "Some Title",
+                "authors": "Jane Doe",
+                "subject_id": str(test_subject.id),
+                "abstract": "Some abstract",
+                "keywords": "",
+                "license": "cc-by-4.0",
+                "confirm_rights": "true",
+                "action": "publish",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 422
+        assert "HTML file is required" in resp.text

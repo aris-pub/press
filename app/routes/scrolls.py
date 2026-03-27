@@ -564,6 +564,8 @@ async def view_scroll_by_year_slug(
             Scroll.slug == slug,
             Scroll.status == "published",
         )
+        .order_by(Scroll.version.desc())
+        .limit(1)
     )
     scroll = result.scalar_one_or_none()
 
@@ -903,6 +905,7 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
             "abstract": revising_scroll.abstract,
             "keywords": ", ".join(revising_scroll.keywords) if revising_scroll.keywords else "",
             "license": revising_scroll.license,
+            "original_filename": revising_scroll.original_filename,
         }
 
     # Re-query user to ensure it's attached to session (cleanup commit may have expired it)
@@ -1025,13 +1028,14 @@ async def upload_form(
                     "File must be UTF-8 encoded. Please save your HTML file with UTF-8 encoding."
                 )
         else:
-            # No file uploaded - check if editing existing preview
+            # No file uploaded - check if editing existing preview or revising a scroll
             from app.auth.session import get_session
 
             session_id = request.cookies.get("session_id")
             if session_id:
                 session = get_session(session_id)
                 current_preview_url_hash = session.get("current_preview_url_hash")
+                revises_hash_for_content = session.get("revises_scroll")
 
                 if current_preview_url_hash:
                     # Fetch existing preview scroll
@@ -1046,8 +1050,24 @@ async def upload_form(
 
                     if existing_scroll:
                         html_content = existing_scroll.html_content
-                        # Keep existing filename (will be used when creating/updating scroll)
                         original_filename = existing_scroll.original_filename
+                    else:
+                        raise ValueError("HTML file is required")
+                elif revises_hash_for_content:
+                    # Revising an existing scroll without uploading a new file
+                    # Use the parent scroll's HTML content (metadata-only update)
+                    result = await db.execute(
+                        select(Scroll).where(
+                            Scroll.url_hash == revises_hash_for_content,
+                            Scroll.status == "published",
+                            Scroll.user_id == current_user.id,
+                        )
+                    )
+                    parent_scroll = result.scalar_one_or_none()
+
+                    if parent_scroll:
+                        html_content = parent_scroll.html_content
+                        original_filename = parent_scroll.original_filename
                     else:
                         raise ValueError("HTML file is required")
                 else:
