@@ -79,6 +79,7 @@ async def list_scrolls(
     q: str | None = None,
     author: str | None = None,
     subject: str | None = None,
+    all_versions: bool = Query(default=False),
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=DEFAULT_PER_PAGE, ge=1, le=MAX_PER_PAGE),
     db: AsyncSession = Depends(get_db),
@@ -89,6 +90,28 @@ async def list_scrolls(
         .join(Subject)
         .where(Scroll.status == "published")
     )
+
+    if not all_versions:
+        # Subquery: max version per scroll_series_id
+        latest_version_sq = (
+            select(
+                Scroll.scroll_series_id,
+                func.max(Scroll.version).label("max_version"),
+            )
+            .where(Scroll.scroll_series_id.isnot(None), Scroll.status == "published")
+            .group_by(Scroll.scroll_series_id)
+            .subquery()
+        )
+        # Keep scrolls that are either:
+        # 1. Not part of a series (scroll_series_id is NULL), or
+        # 2. The latest version in their series
+        base = base.outerjoin(
+            latest_version_sq,
+            Scroll.scroll_series_id == latest_version_sq.c.scroll_series_id,
+        ).where(
+            (Scroll.scroll_series_id.is_(None))
+            | (Scroll.version == latest_version_sq.c.max_version)
+        )
 
     if q:
         pattern = f"%{q}%"
@@ -143,6 +166,39 @@ async def get_scroll(url_hash: str, db: AsyncSession = Depends(get_db)):
     scroll, subject_name = row[0], row[1]
     data = _scroll_summary(scroll, subject_name)
     data["citation"] = _format_citation(scroll, subject_name)
+    data["canonical_url"] = scroll.canonical_url
+    data["version_url"] = scroll.version_url
+
+    # Build versions array
+    if scroll.scroll_series_id:
+        siblings = await db.execute(
+            select(Scroll.version, Scroll.url_hash, Scroll.published_at)
+            .where(
+                Scroll.scroll_series_id == scroll.scroll_series_id,
+                Scroll.status == "published",
+            )
+            .order_by(Scroll.version.desc())
+        )
+        versions = [
+            {
+                "version": r.version,
+                "url_hash": r.url_hash,
+                "published_at": r.published_at.isoformat() if r.published_at else None,
+            }
+            for r in siblings.all()
+        ]
+    else:
+        versions = [
+            {
+                "version": scroll.version,
+                "url_hash": scroll.url_hash,
+                "published_at": scroll.published_at.isoformat() if scroll.published_at else None,
+            }
+        ]
+
+    data["versions"] = versions
+    data["latest_version"] = versions[0]["version"] if versions else scroll.version
+
     return data
 
 
