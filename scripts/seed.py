@@ -181,6 +181,7 @@ async def seed_scrolls(session=None):
         scrolls_data = metadata["scrolls"]
 
         from app.storage.content_processing import generate_permanent_url
+        from app.utils.slug import generate_unique_slug
 
         # Load HTML content from files and create scrolls
         created_scrolls = {}
@@ -197,6 +198,9 @@ async def seed_scrolls(session=None):
             url_hash, content_hash, tar_data = await generate_permanent_url(session, html_content)
 
             series_id = uuid.uuid4()
+            publication_year = 2026
+            slug = await generate_unique_slug(session, scroll_data["title"], publication_year)
+
             db_scroll = Scroll(
                 title=scroll_data["title"],
                 authors=scroll_data["authors"],
@@ -212,6 +216,8 @@ async def seed_scrolls(session=None):
                 version=1,
                 scroll_series_id=series_id,
                 is_showcase=True,
+                publication_year=publication_year,
+                slug=slug,
             )
             session.add(db_scroll)
             created_scrolls[scroll_data["title"]] = (db_scroll, series_id)
