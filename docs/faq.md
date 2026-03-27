@@ -10,9 +10,23 @@ Press accepts HTML files from any source:
 - **MyST** - Build with `myst build --html`
 - **Hand-coded HTML** - Upload your HTML file directly
 
-You can upload a single HTML file with inlined assets (images, CSS, JavaScript). Maximum file size is 50MB.
+Maximum file size is 50MB.
 
 **Looking for examples?** Check out our [examples repository](https://github.com/aris-pub/examples-press) with working samples from each format.
+
+## How do I prepare my upload?
+
+**Single HTML file** -- If your paper is one self-contained `.html` file (all CSS/JS inlined), just upload it directly.
+
+**Paper with local assets** -- If your paper references external files (images, stylesheets, scripts, data), put everything in a folder and zip it. The zip should contain your HTML file alongside its assets with relative paths preserved. Press will auto-detect the main HTML file.
+
+**Tool-specific tips:**
+- **Quarto**: `quarto render` with `self-contained: false` produces an HTML file plus a `_files/` directory -- zip the whole output folder
+- **Observable**: Export produces `index.html` plus asset directories -- zip as-is
+- **R Markdown**: `rmarkdown::render()` with `self_contained: FALSE` -- zip the HTML and its `_files/` folder
+- **Jupyter**: `nbconvert --to html` usually produces a single file, but if you have local images, zip them together
+
+**Allowed file types in zip archives:** HTML, CSS, JavaScript, images (PNG, JPG, GIF, WebP, SVG), fonts (WOFF, WOFF2, TTF, OTF), and data files (JSON, CSV, TSV, TXT).
 
 ## What is a "Scroll"?
 

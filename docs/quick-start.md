@@ -6,23 +6,26 @@ Get from signup to published paper in 5 minutes.
 
 [Sign up](/register) with your email address. Check your inbox for a verification email and click the link to activate your account.
 
-## 2. Upload HTML
+## 2. Upload Your Paper
 
 Once logged in, go to your [dashboard](/dashboard) and click "Upload New Scroll."
 
-**File requirements:**
+**What to upload:**
 
-- **Format:** HTML only (`.html` files)
-- **Content:** All JS and CSS must be inlined in a single HTML file
-- **Size limit:** 50MB maximum
+- A single `.html` file with everything inlined, OR
+- A `.zip` archive containing your HTML file and its assets (images, CSS, JS, data files)
+
+**Size limit:** 50MB maximum.
 
 **How to create HTML files:**
 
-- **Quarto:** `quarto render document.qmd --to html`
+- **Quarto:** `quarto render document.qmd --to html` (single file or zip the output folder)
 - **Typst:** Export to HTML when available
 - **Jupyter:** `jupyter nbconvert --to html notebook.ipynb`
 - **MyST:** Use MyST-Parser HTML export
 - **Hand-coded:** Write HTML directly
+
+If your tool produces an HTML file plus a `_files/` or assets directory, zip the whole output folder and upload the zip. Press will auto-detect the entry point.
 
 **Need examples?** Check out our [examples repository](https://github.com/aris-pub/examples-press) with sample scrolls from Quarto, Typst, Jupyter, and more.
 

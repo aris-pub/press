@@ -364,7 +364,7 @@ class TestFileUploadUIElements:
         assert 'id="file-success"' in response.text
 
         # Check for help text
-        assert "Upload a complete HTML document" in response.text
+        assert "Upload your HTML paper" in response.text
         assert "View example scrolls" in response.text
 
     async def test_upload_page_contains_file_handling_javascript(

@@ -44,6 +44,11 @@ Each test gets a fresh database:
 
 This ensures tests don't interfere with each other.
 
+### Storage Testing
+Tests use `InMemoryStorage` (a dict-backed fake implementing the `StorageBackend` protocol) instead of real S3/Tigris. This runs in-process with no external dependencies.
+
+For integration tests that need to verify S3-specific behavior (e.g., `TigrisStorage`), use moto's `@mock_aws` decorator. No MinIO or Docker required.
+
 ## End-to-End Tests
 
 ### Overview
