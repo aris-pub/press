@@ -190,11 +190,57 @@ async def confirm_preview(
     if scroll.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to publish this preview")
 
-    # Publish the scroll and assign year/slug
+    # Check if this is a new version of an existing scroll
+    from app.auth.session import get_session
+
+    session_id_for_revise = request.cookies.get("session_id")
+    revises_hash = None
+    if session_id_for_revise:
+        revise_session = get_session(session_id_for_revise)
+        revises_hash = revise_session.get("revises_scroll")
+
     scroll.publish()
-    current_year = scroll.published_at.year
-    scroll.publication_year = current_year
-    scroll.slug = await generate_unique_slug(db, scroll.title, current_year)
+
+    if revises_hash:
+        # Publishing a new version -- inherit series metadata from parent
+        parent_result = await db.execute(
+            select(Scroll).where(
+                Scroll.url_hash == revises_hash,
+                Scroll.status == "published",
+                Scroll.user_id == current_user.id,
+            )
+        )
+        parent_scroll = parent_result.scalar_one_or_none()
+
+        if parent_scroll and parent_scroll.scroll_series_id:
+            # Find max version in this series
+            from sqlalchemy import func
+
+            max_version_result = await db.execute(
+                select(func.max(Scroll.version)).where(
+                    Scroll.scroll_series_id == parent_scroll.scroll_series_id,
+                    Scroll.status == "published",
+                )
+            )
+            max_version = max_version_result.scalar() or 1
+
+            scroll.version = max_version + 1
+            scroll.scroll_series_id = parent_scroll.scroll_series_id
+            scroll.slug = parent_scroll.slug
+            scroll.publication_year = parent_scroll.publication_year
+        else:
+            # Fallback to normal v1 flow if parent invalid
+            current_year = scroll.published_at.year
+            scroll.publication_year = current_year
+            scroll.slug = await generate_unique_slug(db, scroll.title, current_year)
+            scroll.scroll_series_id = uuid_module.uuid4()
+    else:
+        # Normal v1 flow
+        current_year = scroll.published_at.year
+        scroll.publication_year = current_year
+        scroll.slug = await generate_unique_slug(db, scroll.title, current_year)
+        scroll.scroll_series_id = uuid_module.uuid4()
+
     await db.commit()
 
     log_preview_event(
@@ -221,13 +267,12 @@ async def confirm_preview(
     asyncio.create_task(mint_doi_safe(str(scroll.id)))
 
     # Clear session data after publishing
-    from app.auth.session import get_session
-
-    session_id = request.cookies.get("session_id")
-    if session_id:
-        session = get_session(session_id)
-        session.pop("preview_form_data", None)
-        session.pop("current_preview_url_hash", None)
+    clear_session_id = request.cookies.get("session_id")
+    if clear_session_id:
+        clear_session = get_session(clear_session_id)
+        clear_session.pop("preview_form_data", None)
+        clear_session.pop("current_preview_url_hash", None)
+        clear_session.pop("revises_scroll", None)
 
     # Redirect to published scroll via year/slug URL
     return RedirectResponse(url=f"/{scroll.publication_year}/{scroll.slug}", status_code=303)
@@ -699,6 +744,8 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
     scrolls. Unauthenticated users are redirected to login. Loads available
     academic subjects for categorization.
 
+    Accepts optional ?revises={url_hash} to start a new version of an existing scroll.
+
     """
     log_request(request)
     current_user = await get_current_user_from_session(request, db)
@@ -712,6 +759,29 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
 
     # Eagerly load user ID to avoid lazy-load issues
     user_id = current_user.id
+
+    # Handle ?revises= query parameter for new versions
+    revises_hash = request.query_params.get("revises")
+    revising_scroll = None
+    if revises_hash:
+        from app.auth.session import get_session
+
+        result = await db.execute(
+            select(Scroll)
+            .options(selectinload(Scroll.subject))
+            .where(
+                Scroll.url_hash == revises_hash,
+                Scroll.status == "published",
+                Scroll.user_id == user_id,
+            )
+        )
+        parent = result.scalar_one_or_none()
+        if parent:
+            revising_scroll = parent
+            sid = request.cookies.get("session_id")
+            if sid:
+                sess = get_session(sid)
+                sess["revises_scroll"] = revises_hash
 
     # Load available subjects
     get_logger().info("Loading subjects for upload form...")
@@ -789,6 +859,17 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
                 session.pop("current_preview_url_hash", None)
                 form_data = None
 
+    # Pre-fill from revising scroll if no existing form data
+    if not form_data and revising_scroll:
+        form_data = {
+            "title": revising_scroll.title,
+            "authors": revising_scroll.authors,
+            "subject_id": str(revising_scroll.subject_id),
+            "abstract": revising_scroll.abstract,
+            "keywords": ", ".join(revising_scroll.keywords) if revising_scroll.keywords else "",
+            "license": revising_scroll.license,
+        }
+
     # Re-query user to ensure it's attached to session (cleanup commit may have expired it)
     from app.models.user import User
 
@@ -810,6 +891,7 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
             "form_data": form_data,
             "current_drafts": current_drafts,
             "session": session_data,
+            "revising_scroll": revising_scroll,
         },
     )
 
@@ -1143,14 +1225,57 @@ async def upload_form(
         if session_id:
             session = get_session(session_id)
 
+        # Check if this upload is revising an existing scroll (same series)
+        revises_series_id = None
+        if session_id:
+            revises_hash = session.get("revises_scroll")
+            if revises_hash:
+                parent_result = await db.execute(
+                    select(Scroll.scroll_series_id).where(
+                        Scroll.url_hash == revises_hash,
+                        Scroll.status == "published",
+                        Scroll.user_id == current_user.id,
+                    )
+                )
+                parent_row = parent_result.first()
+                if parent_row:
+                    revises_series_id = parent_row[0]
+
         if existing:
             if existing.status == "published":
-                scroll_link = f"{get_base_url()}/scroll/{existing.url_hash}"
-                raise ValueError(
-                    f"This content has already been published. Each scroll must have unique content. "
-                    f'<a href="{scroll_link}" target="_blank">View existing scroll</a>. '
-                    f"If this is a mistake, please contact us at hello@aris.pub"
-                )
+                # Allow same content within the same series (metadata-only version update)
+                if revises_series_id and existing.scroll_series_id == revises_series_id:
+                    get_logger().info(
+                        f"Same content re-upload allowed for series {revises_series_id} "
+                        f"(metadata-only version update)"
+                    )
+                    # Generate a unique url_hash for the new version by appending a nonce
+                    import secrets
+
+                    nonce = secrets.token_hex(4)
+                    new_url_hash = f"{url_hash}-{nonce}"
+                    scroll = Scroll(
+                        user_id=current_user.id,
+                        title=title,
+                        authors=authors,
+                        subject_id=subject.id,
+                        abstract=abstract,
+                        keywords=keyword_list,
+                        html_content=html_content,
+                        license=license,
+                        content_hash=f"{content_hash}-{nonce}",
+                        url_hash=new_url_hash,
+                        status="preview",
+                        original_filename=original_filename if original_filename else "document.html",
+                    )
+                    db.add(scroll)
+                else:
+                    scroll_link = f"{get_base_url()}/scroll/{existing.url_hash}"
+                    raise ValueError(
+                        f"This content has already been published. Each scroll must have unique content. "
+                        f'<a href="{scroll_link}" target="_blank">View existing scroll</a>. '
+                        f"If this is a mistake, please contact us at hello@aris.pub"
+                    )
             elif existing.user_id == current_user.id and existing.status == "preview":
                 # User is resubmitting their own preview - update it instead of creating new
                 existing.title = title
