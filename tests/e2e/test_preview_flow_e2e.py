@@ -246,8 +246,8 @@ async def test_cancel_preview_flow(test_server):
                 # Capture preview URL for later verification
                 preview_url = page.url
 
-                # Click Cancel & Discard button
-                await page.click('button:has-text("Cancel & Discard")')
+                # Click Discard button
+                await page.click('button:has-text("Discard")')
 
                 # Should redirect to upload page
                 await page.wait_for_url(f"{test_server}/upload", timeout=5000)
