@@ -68,8 +68,7 @@ jobs:
     - name: Seed database
       run: |
         flyctl ssh console --app "$APP_NAME" \
-          -C "cd /app && uv run --frozen --no-dev python scripts/seed.py" \
-          || true
+          -C "uv run --frozen --no-dev python /app/scripts/seed.py"
 
     - name: Comment preview URL
       uses: actions/github-script@v7
