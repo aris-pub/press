@@ -25,7 +25,9 @@ async def reset():
     url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     url = _fix_asyncpg_url(url)
-    engine = create_async_engine(url)
+    # Always disable SSL: this script only runs in Fly preview deployments
+    # where the Postgres connection is internal (no TLS support).
+    engine = create_async_engine(url, connect_args={"ssl": False})
     async with engine.begin() as conn:
         await conn.execute(text("DROP SCHEMA public CASCADE"))
         await conn.execute(text("CREATE SCHEMA public"))
