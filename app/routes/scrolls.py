@@ -1254,6 +1254,9 @@ async def upload_form(
 
                     nonce = secrets.token_hex(4)
                     new_url_hash = f"{url_hash}-{nonce}"
+                    # Truncate content_hash so that "{hash}-{nonce}" fits VARCHAR(64)
+                    max_base_len = 64 - len(nonce) - 1
+                    truncated_hash = content_hash[:max_base_len]
                     scroll = Scroll(
                         user_id=current_user.id,
                         title=title,
@@ -1263,7 +1266,7 @@ async def upload_form(
                         keywords=keyword_list,
                         html_content=html_content,
                         license=license,
-                        content_hash=f"{content_hash}-{nonce}",
+                        content_hash=f"{truncated_hash}-{nonce}",
                         url_hash=new_url_hash,
                         status="preview",
                         original_filename=original_filename if original_filename else "document.html",
