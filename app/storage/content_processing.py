@@ -130,8 +130,12 @@ async def check_hash_collision(session: AsyncSession, hash_prefix: str) -> bool:
 
     from app.models.scroll import Scroll
 
-    result = await session.execute(select(Scroll).where(Scroll.url_hash == hash_prefix).limit(1))
-    return result.scalar_one_or_none() is not None
+    from sqlalchemy import exists as sa_exists
+
+    result = await session.execute(
+        select(sa_exists().where(Scroll.url_hash == hash_prefix))
+    )
+    return result.scalar()
 
 
 async def resolve_hash_collision(
@@ -156,17 +160,14 @@ async def resolve_hash_collision(
     for length in range(start_length, len(hash_value) + 1):
         hash_prefix = generate_url_from_hash(hash_value, length)
 
-        # Check if this prefix is already used
         result = await session.execute(
-            select(Scroll).where(Scroll.url_hash == hash_prefix).limit(1)
+            select(Scroll.content_hash).where(Scroll.url_hash == hash_prefix).limit(1)
         )
-        existing_scroll = result.scalar_one_or_none()
+        existing_hash = result.scalar_one_or_none()
 
-        if not existing_scroll:
-            # No conflict, use this prefix
+        if existing_hash is None:
             return hash_prefix
-        elif existing_scroll.content_hash == hash_value:
-            # Same content, can reuse the same prefix
+        elif existing_hash == hash_value:
             return hash_prefix
         # else: different content with same prefix, try longer
 
