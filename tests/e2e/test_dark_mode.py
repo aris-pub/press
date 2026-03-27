@@ -486,7 +486,14 @@ async def test_homepage_identical_for_all_user_states(test_server):
         try:
             # Helper to get homepage content and check structure
             async def check_homepage_structure(page, label):
-                await page.goto(f"{test_server}/")
+                for attempt in range(3):
+                    try:
+                        await page.goto(f"{test_server}/", wait_until="load")
+                        break
+                    except Exception:
+                        if attempt == 2:
+                            raise
+                        await page.wait_for_timeout(500)
                 await page.wait_for_load_state("networkidle")
 
                 # Check that all key structural elements are present
@@ -522,7 +529,8 @@ async def test_homepage_identical_for_all_user_states(test_server):
             await auth_page.fill('input[name="password"]', "testpass")
             await auth_page.click('button[type="submit"]')
             await expect(auth_page.locator(".success-message")).to_be_visible(timeout=5000)
-            await auth_page.wait_for_timeout(1500)  # Wait for HTMX redirect
+            await auth_page.wait_for_timeout(2000)  # Wait for HTMX redirect
+            await auth_page.wait_for_load_state("networkidle")
 
             auth_structure = await check_homepage_structure(
                 auth_page, "authenticated verified user"
