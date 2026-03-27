@@ -86,6 +86,10 @@
 </head>
 <body>
 
+  {% if versions is defined and versions %}
+  <div id="version-data" data-versions='[{% for v in versions %}{"version":{{ v.version }},"url_hash":"{{ v.url_hash }}"}{% if not loop.last %},{% endif %}{% endfor %}]' data-latest-version="{{ latest_version }}" data-is-latest="{{ is_latest|default(true)|lower }}" hidden></div>
+  {% endif %}
+
   <!-- Store user HTML content as JSON data for strict-dynamic processing -->
   <div class="scroll-container">
     <div id="iframe-loading" class="loading-overlay">

@@ -23,6 +23,30 @@ from app.templates_config import templates
 router = APIRouter()
 
 
+def _latest_version_filter():
+    """Return a SQLAlchemy filter clause that keeps only the latest version per series.
+
+    Scrolls without a scroll_series_id (legacy) are always included.
+    Uses a correlated subquery for cross-database compatibility.
+    """
+    from sqlalchemy.orm import aliased
+
+    ScrollAlias = aliased(Scroll)
+    max_version_subq = (
+        select(func.max(ScrollAlias.version))
+        .where(
+            ScrollAlias.scroll_series_id == Scroll.scroll_series_id,
+            ScrollAlias.status == "published",
+        )
+        .correlate(Scroll)
+        .scalar_subquery()
+    )
+    return or_(
+        Scroll.scroll_series_id.is_(None),
+        Scroll.version == max_version_subq,
+    )
+
+
 @router.get("/", response_class=HTMLResponse)
 async def landing_page(
     request: Request,
@@ -52,6 +76,7 @@ async def landing_page(
     subjects = subjects_result.all()
 
     # Get recent published scrolls with subjects (exclude html_content for performance)
+    # Only show latest version per series to avoid duplicates
     scroll_columns = load_only(
         Scroll.title,
         Scroll.authors,
@@ -67,7 +92,7 @@ async def landing_page(
     scrolls_result = await db.execute(
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
-        .where(Scroll.status == "published")
+        .where(Scroll.status == "published", _latest_version_filter())
         .options(scroll_columns)
         .order_by(Scroll.created_at.desc())
         .limit(20)
@@ -100,11 +125,11 @@ async def get_scrolls_partial(
     """
     log_request(request)
 
-    # Query scrolls with subject join
+    # Query scrolls with subject join (latest version per series only)
     query = (
         select(Scroll, Subject.name)
         .join(Subject, Scroll.subject_id == Subject.id)
-        .where(Scroll.status == "published")
+        .where(Scroll.status == "published", _latest_version_filter())
         .options(selectinload(Scroll.subject))
     )
 
@@ -144,7 +169,7 @@ async def get_scrolls(
     query = (
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
-        .where(Scroll.status == "published")
+        .where(Scroll.status == "published", _latest_version_filter())
         .options(
             load_only(
                 Scroll.title,
@@ -637,6 +662,10 @@ async def search_results(
                 FROM scrolls p
                 JOIN subjects s ON p.subject_id = s.id
                 WHERE p.status = 'published'
+                AND (p.scroll_series_id IS NULL OR p.version = (
+                    SELECT MAX(p2.version) FROM scrolls p2
+                    WHERE p2.scroll_series_id = p.scroll_series_id AND p2.status = 'published'
+                ))
                 AND (
                     -- Full-text search (higher priority)
                     to_tsvector('english', p.title) @@ plainto_tsquery('english', :query)
@@ -664,6 +693,7 @@ async def search_results(
                 .join(Subject)
                 .where(
                     Scroll.status == "published",
+                    _latest_version_filter(),
                     or_(
                         Scroll.title.ilike(like_pattern),
                         Scroll.authors.ilike(like_pattern),
