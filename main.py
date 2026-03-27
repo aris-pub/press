@@ -16,10 +16,10 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from app.exception_handlers import (
+    http_exception_handler,
     internal_server_error_handler,
-    not_found_handler,
-    rate_limit_handler,
 )
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.logging_config import get_logger
 from app.memory_profiling_middleware import MemoryProfilingMiddleware
 from app.middleware import (
@@ -154,10 +154,9 @@ for path in brand_paths:
 if brand_dir:
     app.mount("/brand", StaticFiles(directory=brand_dir), name="brand")
 
-# Exception handlers
-app.add_exception_handler(404, not_found_handler)
-app.add_exception_handler(429, rate_limit_handler)
-app.add_exception_handler(500, internal_server_error_handler)
+# Exception handlers -- HTTPException must be registered explicitly so the generic
+# Exception handler doesn't swallow it and return HTML for non-HTML assets.
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(Exception, internal_server_error_handler)
 
 

@@ -1,6 +1,5 @@
 """Tests for serving archive (multi-file) scroll content from Tigris storage."""
 
-
 from unittest.mock import patch
 
 import pytest
@@ -151,9 +150,7 @@ class TestArchiveAssetServing:
 
     async def test_serves_css_asset(self, client, archive_scroll, storage):
         with _patch_storage(storage):
-            response = await client.get(
-                f"/scroll/{archive_scroll.url_hash}/paper/styles/main.css"
-            )
+            response = await client.get(f"/scroll/{archive_scroll.url_hash}/paper/styles/main.css")
         assert response.status_code == 200
         assert b"h1 { color: red; }" in response.content
         assert response.headers["content-type"].startswith("text/css")
@@ -177,25 +174,19 @@ class TestArchiveAssetServing:
 
     async def test_immutable_cache_on_assets(self, client, archive_scroll, storage):
         with _patch_storage(storage):
-            response = await client.get(
-                f"/scroll/{archive_scroll.url_hash}/paper/styles/main.css"
-            )
+            response = await client.get(f"/scroll/{archive_scroll.url_hash}/paper/styles/main.css")
         cache = response.headers["cache-control"]
         assert "max-age=31536000" in cache
         assert "immutable" in cache
 
     async def test_frame_headers_on_assets(self, client, archive_scroll, storage):
         with _patch_storage(storage):
-            response = await client.get(
-                f"/scroll/{archive_scroll.url_hash}/paper/styles/main.css"
-            )
+            response = await client.get(f"/scroll/{archive_scroll.url_hash}/paper/styles/main.css")
         assert response.headers["x-frame-options"] == "SAMEORIGIN"
 
     async def test_404_for_missing_asset(self, client, archive_scroll, storage):
         with _patch_storage(storage):
-            response = await client.get(
-                f"/scroll/{archive_scroll.url_hash}/paper/nonexistent.js"
-            )
+            response = await client.get(f"/scroll/{archive_scroll.url_hash}/paper/nonexistent.js")
         assert response.status_code == 404
 
     async def test_404_for_nonexistent_scroll(self, client, storage):
@@ -218,9 +209,7 @@ class TestArchiveAssetServing:
             b"some binary data",
         )
         with _patch_storage(storage):
-            response = await client.get(
-                f"/scroll/{archive_scroll.url_hash}/paper/data.qzx"
-            )
+            response = await client.get(f"/scroll/{archive_scroll.url_hash}/paper/data.qzx")
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/octet-stream"
 
@@ -237,9 +226,7 @@ class TestPaperRedirect:
                 f"/scroll/{archive_scroll.url_hash}/paper", follow_redirects=False
             )
         assert response.status_code == 301
-        assert response.headers["location"].endswith(
-            f"/scroll/{archive_scroll.url_hash}/paper/"
-        )
+        assert response.headers["location"].endswith(f"/scroll/{archive_scroll.url_hash}/paper/")
 
     async def test_inline_scroll_serves_directly(self, client, inline_scroll):
         """Inline scrolls should still serve HTML directly without redirect."""
@@ -312,9 +299,7 @@ class TestArchivePreviewAuth:
         )
 
         with _patch_storage(storage):
-            response = await authenticated_client.get(
-                f"/scroll/{scroll.url_hash}/paper/"
-            )
+            response = await authenticated_client.get(f"/scroll/{scroll.url_hash}/paper/")
         assert response.status_code == 200
         assert b"Owner Preview" in response.content
 
@@ -323,12 +308,10 @@ class TestArchivePreviewAuth:
 class TestIframeSrcForArchive:
     """Test that scroll.html template uses trailing-slash src for archive scrolls."""
 
-    async def test_archive_scroll_iframe_has_trailing_slash(
-        self, client, archive_scroll, storage
-    ):
+    async def test_archive_scroll_iframe_has_trailing_slash(self, client, archive_scroll, storage):
         response = await client.get(f"/scroll/{archive_scroll.url_hash}")
         assert response.status_code == 200
-        assert f'/scroll/{archive_scroll.url_hash}/paper/' in response.text
+        assert f"/scroll/{archive_scroll.url_hash}/paper/" in response.text
 
     async def test_inline_scroll_iframe_no_trailing_slash(self, client, inline_scroll):
         response = await client.get(f"/scroll/{inline_scroll.url_hash}")

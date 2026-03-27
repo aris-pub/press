@@ -1,8 +1,9 @@
 """Global exception handlers for the FastAPI application."""
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.logging_config import get_logger
 
@@ -10,7 +11,7 @@ logger = get_logger()
 templates = Jinja2Templates(directory="app/templates")
 
 
-async def not_found_handler(request: Request, exc: HTTPException) -> HTMLResponse | JSONResponse:
+async def not_found_handler(request: Request, exc: StarletteHTTPException) -> HTMLResponse | JSONResponse:
     """Handle 404 Not Found errors with custom template or JSON for API routes."""
     logger.warning(f"404 error: {request.url} - {exc.detail}")
 
@@ -22,7 +23,7 @@ async def not_found_handler(request: Request, exc: HTTPException) -> HTMLRespons
     )
 
 
-async def rate_limit_handler(request: Request, exc: HTTPException) -> HTMLResponse:
+async def rate_limit_handler(request: Request, exc: StarletteHTTPException) -> HTMLResponse:
     """Handle 429 Too Many Requests errors with custom template."""
     logger.warning(
         f"Rate limit exceeded: {request.client.host if request.client else 'unknown'} - {request.url}"
@@ -40,3 +41,24 @@ async def internal_server_error_handler(request: Request, exc: Exception) -> HTM
     return templates.TemplateResponse(
         request=request, name="500.html", context={}, status_code=500
     )
+
+
+async def http_exception_handler(
+    request: Request, exc: StarletteHTTPException
+) -> HTMLResponse | JSONResponse:
+    """Dispatch HTTP exceptions to the appropriate status-specific handler.
+
+    Without this, the generic Exception handler catches HTTPException (since it's
+    a subclass of Exception) and returns HTML error pages for all errors -- breaking
+    asset serving where browsers expect CSS/JS/SVG content types.
+    """
+    if exc.status_code == 404:
+        return await not_found_handler(request, exc)
+    if exc.status_code == 429:
+        return await rate_limit_handler(request, exc)
+    if exc.status_code >= 500:
+        return await internal_server_error_handler(request, exc)
+    accept = request.headers.get("accept", "")
+    if "text/html" not in accept:
+        return JSONResponse(content={"detail": str(exc.detail)}, status_code=exc.status_code)
+    return HTMLResponse(content=str(exc.detail), status_code=exc.status_code)

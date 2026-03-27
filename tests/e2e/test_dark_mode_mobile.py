@@ -231,7 +231,7 @@ async def test_mobile_scroll_page_dark_mode_sync(test_server):
             await page.wait_for_load_state("networkidle")
 
             # Find and click a scroll link
-            scroll_link = page.locator('a[href*="/scroll/"]').first
+            scroll_link = page.locator("a.scroll-card-link").first
             if await scroll_link.count() > 0:
                 await scroll_link.tap()
                 await page.wait_for_load_state("networkidle")

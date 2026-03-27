@@ -1,0 +1,145 @@
+{% from "components/button.html" import button %}
+
+<div class="upload-header" id="upload-header">
+    <h1>Select Entry Point</h1>
+    <p>Choose the main HTML file that viewers will see when they open your scroll</p>
+</div>
+
+{% if error %}
+<div class="form-errors" id="form-errors">
+    {{ error|safe }}
+</div>
+{% endif %}
+
+<div class="entry-point-picker">
+    <div class="archive-summary">
+        <div class="archive-summary-row">
+            <span class="archive-summary-label">Files in archive</span>
+            <span class="archive-summary-value">{{ file_count }}</span>
+        </div>
+        <div class="archive-summary-row">
+            <span class="archive-summary-label">Total size</span>
+            <span class="archive-summary-value">{{ total_size_display }}</span>
+        </div>
+        <div class="archive-summary-row">
+            <span class="archive-summary-label">HTML files found</span>
+            <span class="archive-summary-value">{{ html_files|length }}</span>
+        </div>
+    </div>
+
+    <form id="entry-point-form" method="POST" action="/upload/confirm-entry-point" hx-boost="false">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label class="form-label">Entry point file:</label>
+            <div class="entry-point-options">
+                {% for html_file in html_files %}
+                <label class="entry-point-option {% if html_file == detected_entry_point %}entry-point-detected{% endif %}">
+                    <input type="radio" name="entry_point" value="{{ html_file }}"
+                           {% if html_file == detected_entry_point %}checked{% endif %}>
+                    <div class="entry-point-option-content">
+                        <span class="entry-point-filename">{{ html_file }}</span>
+                        {% if html_file == detected_entry_point %}
+                        <span class="entry-point-badge">auto-detected</span>
+                        {% endif %}
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            <div class="help-text">
+                This file will be displayed when someone opens your scroll.
+                Relative paths (images, CSS, JS) within the archive will resolve correctly.
+            </div>
+        </div>
+
+        <div class="form-actions">
+            {{ button("Confirm & Continue", type="submit", variant="primary", loading_text="Processing...") }}
+            <a href="/upload" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.entry-point-picker {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.archive-summary {
+    background: var(--color-surface-alt, #f8f9fa);
+    border: 1px solid var(--color-border, #dee2e6);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.archive-summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.35rem 0;
+}
+
+.archive-summary-label {
+    color: var(--color-text-secondary, #6c757d);
+}
+
+.archive-summary-value {
+    font-weight: 600;
+}
+
+.entry-point-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.entry-point-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-border, #dee2e6);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.entry-point-option:hover {
+    border-color: var(--color-primary, #4a6fa5);
+    background: var(--color-surface-alt, #f8f9fa);
+}
+
+.entry-point-option input[type="radio"]:checked ~ .entry-point-option-content {
+    font-weight: 500;
+}
+
+.entry-point-option:has(input:checked) {
+    border-color: var(--color-primary, #4a6fa5);
+    background: var(--color-primary-light, #eef2f7);
+}
+
+.entry-point-option-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.entry-point-filename {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.9rem;
+}
+
+.entry-point-badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: var(--color-primary, #4a6fa5);
+    color: white;
+}
+
+.entry-point-detected {
+    border-color: var(--color-primary-light, #b3c7e0);
+}
+</style>

@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+import tempfile
 import time
 import uuid as uuid_module
 
@@ -636,9 +637,7 @@ _PAPER_CSP = (
 )
 
 
-async def _verify_scroll_access(
-    request: Request, url_hash: str, db: AsyncSession
-) -> Scroll:
+async def _verify_scroll_access(request: Request, url_hash: str, db: AsyncSession) -> Scroll:
     """Look up a scroll by url_hash and verify access. Raises HTTPException on failure."""
     result = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
     scroll = result.scalar_one_or_none()
@@ -669,9 +668,7 @@ async def get_paper_html(
     scroll = await _verify_scroll_access(request, url_hash, db)
 
     if scroll.storage_type == "archive":
-        return RedirectResponse(
-            url=f"/scroll/{url_hash}/paper/", status_code=301
-        )
+        return RedirectResponse(url=f"/scroll/{url_hash}/paper/", status_code=301)
 
     headers = {
         "X-Frame-Options": "SAMEORIGIN",
@@ -979,9 +976,91 @@ async def upload_form(
         original_filename = None
 
         if file and file.filename:
-            # New file uploaded - use it
-            html_content_bytes = await file.read()
             original_filename = file.filename
+            is_zip = (
+                original_filename.lower().endswith(".zip")
+                or file.content_type == "application/zip"
+            )
+
+            if is_zip:
+                # Zip upload flow: validate, detect entry point, show picker
+                from app.upload.archive_processor import cleanup_extracted, process_zip_upload
+
+                temp_zip = Path(tempfile.mkdtemp(prefix="press_upload_")) / original_filename
+                zip_bytes = await file.read()
+                temp_zip.write_bytes(zip_bytes)
+
+                try:
+                    errors, archive_result = await process_zip_upload(str(temp_zip), db)
+                finally:
+                    temp_zip.unlink(missing_ok=True)
+                    temp_zip.parent.rmdir()
+
+                if errors:
+                    if archive_result:
+                        cleanup_extracted(archive_result.extracted_dir)
+                    raise ValueError(
+                        "<strong>Archive validation failed:</strong><ul style='margin-top: 0.5rem;'>"
+                        + "".join(f"<li>{__import__('html').escape(e)}</li>" for e in errors[:10])
+                        + "</ul>"
+                    )
+
+                # Store archive data and form metadata in session for the picker step
+                from app.auth.session import get_session
+
+                session_id = request.cookies.get("session_id")
+                if session_id:
+                    session = get_session(session_id)
+                    session["pending_zip_upload"] = {
+                        "extracted_dir": archive_result.extracted_dir,
+                        "entry_point": archive_result.entry_point,
+                        "html_files": archive_result.html_files,
+                        "all_files": archive_result.all_files,
+                        "manifest": archive_result.manifest,
+                        "total_size": archive_result.total_size,
+                        "file_count": archive_result.file_count,
+                        "url_hash": archive_result.url_hash,
+                        "content_hash": archive_result.content_hash,
+                        "original_filename": original_filename,
+                        "form_data": {
+                            "title": title,
+                            "authors": authors,
+                            "subject_id": subject_id,
+                            "abstract": abstract,
+                            "keywords": keywords,
+                            "license": license,
+                            "confirm_rights": confirm_rights,
+                        },
+                    }
+
+                # Return the picker page
+                from app.auth.csrf import get_csrf_token
+
+                csrf_token = await get_csrf_token(session_id) if session_id else None
+
+                def _format_size(size_bytes):
+                    if size_bytes < 1024:
+                        return f"{size_bytes} B"
+                    elif size_bytes < 1024 * 1024:
+                        return f"{size_bytes / 1024:.1f} KB"
+                    else:
+                        return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+                return templates.TemplateResponse(
+                    request,
+                    "entry_point_picker.html",
+                    {
+                        "current_user": current_user,
+                        "csrf_token": csrf_token,
+                        "detected_entry_point": archive_result.entry_point,
+                        "html_files": archive_result.html_files,
+                        "file_count": archive_result.file_count,
+                        "total_size_display": _format_size(archive_result.total_size),
+                    },
+                )
+
+            # HTML file upload - existing flow
+            html_content_bytes = await file.read()
 
             # Validate UTF-8 encoding
             try:
@@ -1391,6 +1470,195 @@ async def upload_form(
         )
 
 
+@router.post("/upload/confirm-entry-point", response_class=HTMLResponse)
+async def confirm_entry_point(
+    request: Request,
+    entry_point: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Confirm entry point selection for zip archive upload and create the scroll."""
+    current_user = await get_current_user_from_session(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    from app.auth.session import get_session
+    from app.storage import get_storage
+    from app.upload.archive_processor import (
+        cleanup_extracted,
+        store_archive_files,
+    )
+
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="No session found")
+
+    session = get_session(session_id)
+    pending = session.get("pending_zip_upload")
+    if not pending:
+        raise HTTPException(
+            status_code=400, detail="No pending zip upload found. Please start over."
+        )
+
+    extracted_dir = pending["extracted_dir"]
+
+    try:
+        # Validate chosen entry point is in the archive
+        if entry_point not in pending["html_files"]:
+            raise ValueError(f"Selected file '{entry_point}' is not in the archive.")
+
+        form_data = pending["form_data"]
+
+        # Validate required fields
+        title = form_data["title"].strip()
+        authors = form_data["authors"].strip()
+        abstract = form_data["abstract"].strip()
+        if not title or not authors or not abstract:
+            raise ValueError("Title, authors, and abstract are required.")
+
+        license_val = form_data["license"]
+        if license_val not in ("cc-by-4.0", "arr"):
+            raise ValueError("Invalid license selection.")
+
+        # Find subject
+        subject_uuid = uuid_module.UUID(form_data["subject_id"])
+        result = await db.execute(select(Subject).where(Subject.id == subject_uuid))
+        subject = result.scalar_one_or_none()
+        if not subject:
+            raise ValueError("Invalid subject selected.")
+
+        # Process keywords
+        keyword_list = []
+        kw_str = form_data.get("keywords", "")
+        if kw_str.strip():
+            keyword_list = [kw.strip() for kw in kw_str.split(",") if kw.strip()]
+
+        url_hash = pending["url_hash"]
+        content_hash = pending["content_hash"]
+
+        # Store files in Tigris BEFORE DB commit so failures don't leave orphaned records
+        storage = get_storage()
+        await store_archive_files(storage, extracted_dir, content_hash)
+
+        # Check for duplicate content
+        existing = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
+        existing_scroll = existing.scalar_one_or_none()
+
+        if existing_scroll:
+            if existing_scroll.status == "published":
+                scroll_link = f"{get_base_url()}/scroll/{existing_scroll.url_hash}"
+                raise ValueError(
+                    f"This content has already been published. "
+                    f'<a href="{scroll_link}" target="_blank">View existing scroll</a>.'
+                )
+            elif (
+                existing_scroll.user_id == current_user.id and existing_scroll.status == "preview"
+            ):
+                existing_scroll.title = title
+                existing_scroll.authors = authors
+                existing_scroll.subject_id = subject.id
+                existing_scroll.abstract = abstract
+                existing_scroll.keywords = keyword_list
+                existing_scroll.license = license_val
+                existing_scroll.entry_point = entry_point
+                existing_scroll.archive_manifest = pending["manifest"]
+                existing_scroll.storage_type = "archive"
+                await db.commit()
+                await db.refresh(existing_scroll)
+                scroll = existing_scroll
+            else:
+                raise ValueError("A preview with identical content already exists.")
+        else:
+            # Read entry point HTML for inline preview rendering
+            entry_point_path = os.path.join(extracted_dir, entry_point)
+            with open(entry_point_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+
+            scroll = Scroll(
+                user_id=current_user.id,
+                title=title,
+                authors=authors,
+                subject_id=subject.id,
+                abstract=abstract,
+                keywords=keyword_list,
+                html_content=html_content,
+                license=license_val,
+                content_hash=content_hash,
+                url_hash=url_hash,
+                status="preview",
+                storage_type="archive",
+                entry_point=entry_point,
+                archive_manifest=pending["manifest"],
+                original_filename=pending["original_filename"],
+                file_size=pending["total_size"],
+            )
+            db.add(scroll)
+
+        await db.commit()
+        await db.refresh(scroll)
+
+        # Success: remove pending data from session and set preview context
+        session.pop("pending_zip_upload", None)
+        session["preview_form_data"] = form_data
+        session["preview_form_data"]["original_filename"] = pending["original_filename"]
+        session["current_preview_url_hash"] = url_hash
+
+        log_preview_event(
+            "create_archive_preview",
+            str(scroll.id),
+            str(current_user.id),
+            request,
+            extra_data={
+                "title": scroll.title,
+                "storage_type": "archive",
+                "entry_point": entry_point,
+                "file_count": pending["file_count"],
+            },
+        )
+
+        cleanup_extracted(extracted_dir)
+        return RedirectResponse(url=f"/preview/{scroll.url_hash}", status_code=303)
+
+    except Exception as e:
+        import traceback
+
+        error_message = str(e) if str(e) else "Upload failed. Please try again."
+        get_logger().error(
+            f"Entry point confirmation failed: {e}\n{traceback.format_exc()}"
+        )
+        if db.dirty or db.new:
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+
+        from app.auth.csrf import get_csrf_token
+
+        csrf_token = await get_csrf_token(session_id)
+
+        def _format_size(size_bytes):
+            if size_bytes < 1024:
+                return f"{size_bytes} B"
+            elif size_bytes < 1024 * 1024:
+                return f"{size_bytes / 1024:.1f} KB"
+            else:
+                return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+        return templates.TemplateResponse(
+            request,
+            "entry_point_picker.html",
+            {
+                "current_user": current_user,
+                "csrf_token": csrf_token,
+                "detected_entry_point": pending["entry_point"],
+                "html_files": pending["html_files"],
+                "file_count": pending["file_count"],
+                "total_size_display": _format_size(pending["total_size"]),
+                "error": error_message,
+            },
+            status_code=422,
+        )
+
+
 @router.post("/upload/html")
 async def upload_html_paper(
     request: Request,
@@ -1787,3 +2055,53 @@ async def get_raw_content(request: Request, identifier: str, db: AsyncSession = 
     else:
         # Legacy scroll without content-addressable storage
         raise HTTPException(status_code=422, detail="Raw content not available for legacy scrolls")
+
+
+@router.get("/scroll/{url_hash}/{path:path}")
+async def get_archive_asset_parent(
+    request: Request,
+    url_hash: str,
+    path: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Serve archive assets referenced with ../ paths that escape /paper/.
+
+    When an archive entry point uses relative paths like ../styles/paper.css,
+    the browser resolves them above the /paper/ prefix. This catch-all route
+    handles those requests by looking up the asset in Tigris storage.
+
+    Must be registered AFTER all other /scroll/{url_hash}/ routes.
+    """
+    import mimetypes
+
+    from pathlib import PurePosixPath
+
+    resolved = PurePosixPath(path)
+    if ".." in resolved.parts:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    scroll = await _verify_scroll_access(request, url_hash, db)
+
+    if scroll.storage_type != "archive":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    from app.storage import get_storage
+
+    storage = get_storage()
+    key = f"scrolls/{scroll.content_hash}/{path}"
+
+    try:
+        data = await storage.get(key)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={
+            "X-Frame-Options": "SAMEORIGIN",
+            "Cache-Control": "public, max-age=31536000, immutable",
+        },
+    )
