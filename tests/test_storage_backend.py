@@ -84,6 +84,17 @@ class TestGetStorageFallback:
     def test_returns_inmemory_when_testing_without_bucket(self):
         with patch.dict(os.environ, {"TESTING": "1"}, clear=False):
             os.environ.pop("BUCKET_NAME", None)
+            os.environ.pop("AWS_ENDPOINT_URL_S3", None)
+            from app.storage import get_storage
+
+            storage = get_storage()
+            assert isinstance(storage, InMemoryStorage)
+
+    def test_returns_inmemory_when_no_tigris_credentials(self):
+        with patch.dict(os.environ, {"ENVIRONMENT": "preview"}, clear=False):
+            os.environ.pop("BUCKET_NAME", None)
+            os.environ.pop("AWS_ENDPOINT_URL_S3", None)
+            os.environ.pop("TESTING", None)
             from app.storage import get_storage
 
             storage = get_storage()
