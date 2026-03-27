@@ -1,5 +1,7 @@
 """Tests for SEO-related endpoints (robots.txt, sitemap.xml, meta tags)."""
 
+import uuid
+
 import pytest
 
 from app.models.scroll import Scroll
@@ -115,3 +117,103 @@ async def test_scroll_page_has_article_meta_tags(client, test_db, test_user, tes
         f'<meta property="og:url" content="https://scroll.press/scroll/{scroll.url_hash}">' in html
     )
     assert f'<meta property="article:author" content="{scroll.authors}">' in html
+
+
+@pytest.mark.asyncio
+async def test_sitemap_uses_canonical_urls_for_versioned_scrolls(
+    client, test_db, test_user, test_subject
+):
+    """Sitemap should list canonical /{year}/{slug} URLs, not version-specific ones."""
+    from app.storage.content_processing import generate_permanent_url
+
+    series_id = uuid.uuid4()
+
+    url_hash_v1, content_hash_v1, _ = await generate_permanent_url(
+        test_db, "<html><body>Sitemap V1</body></html>"
+    )
+    v1 = Scroll(
+        user_id=test_user.id,
+        subject_id=test_subject.id,
+        title="Sitemap Test",
+        authors="Author",
+        abstract="Abstract",
+        html_content="<html><body>Sitemap V1</body></html>",
+        license="cc-by-4.0",
+        status="published",
+        url_hash=url_hash_v1,
+        content_hash=content_hash_v1,
+        version=1,
+        scroll_series_id=series_id,
+        publication_year=2026,
+        slug="sitemap-test",
+    )
+    v1.publish()
+    test_db.add(v1)
+
+    url_hash_v2, content_hash_v2, _ = await generate_permanent_url(
+        test_db, "<html><body>Sitemap V2</body></html>"
+    )
+    v2 = Scroll(
+        user_id=test_user.id,
+        subject_id=test_subject.id,
+        title="Sitemap Test",
+        authors="Author",
+        abstract="Abstract",
+        html_content="<html><body>Sitemap V2</body></html>",
+        license="cc-by-4.0",
+        status="published",
+        url_hash=url_hash_v2,
+        content_hash=content_hash_v2,
+        version=2,
+        scroll_series_id=series_id,
+        publication_year=2026,
+        slug="sitemap-test",
+    )
+    v2.publish()
+    test_db.add(v2)
+
+    await test_db.commit()
+
+    response = await client.get("/sitemap.xml")
+    assert response.status_code == 200
+
+    # Should have canonical URL (no /v1, /v2)
+    assert "<loc>https://scroll.press/2026/sitemap-test</loc>" in response.text
+
+    # Should NOT have version-specific URLs
+    assert "/v1</loc>" not in response.text
+    assert "/v2</loc>" not in response.text
+
+    # Should only appear once (deduplicated across versions)
+    assert response.text.count("sitemap-test</loc>") == 1
+
+
+@pytest.mark.asyncio
+async def test_sitemap_falls_back_to_hash_url_without_year_slug(
+    client, test_db, test_user, test_subject
+):
+    """Scrolls without year/slug should still use /scroll/{hash} in sitemap."""
+    from app.storage.content_processing import generate_permanent_url
+
+    url_hash, content_hash, _ = await generate_permanent_url(
+        test_db, "<html><body>No slug scroll</body></html>"
+    )
+    scroll = Scroll(
+        user_id=test_user.id,
+        subject_id=test_subject.id,
+        title="No Slug Scroll",
+        authors="Author",
+        abstract="Abstract",
+        html_content="<html><body>No slug scroll</body></html>",
+        license="cc-by-4.0",
+        status="published",
+        url_hash=url_hash,
+        content_hash=content_hash,
+    )
+    scroll.publish()
+    test_db.add(scroll)
+    await test_db.commit()
+
+    response = await client.get("/sitemap.xml")
+    assert response.status_code == 200
+    assert f"<loc>https://scroll.press/scroll/{url_hash}</loc>" in response.text
