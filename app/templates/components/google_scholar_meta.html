@@ -23,6 +23,9 @@
 {% for author in scroll.authors.split(',') if author.strip() %}
 <meta name="citation_author" content="{{ author.strip() | escape }}">
 {% endfor %}
+{% if scroll.user and scroll.user.orcid_id %}
+<meta name="citation_author_orcid" content="https://orcid.org/{{ scroll.user.orcid_id }}">
+{% endif %}
 {% endif %}
 <meta name="citation_publication_date" content="{{ scroll.published_at.strftime('%Y/%m/%d') if scroll.published_at else scroll.created_at.strftime('%Y/%m/%d') }}">
 <meta name="citation_journal_title" content="Scroll Press">
