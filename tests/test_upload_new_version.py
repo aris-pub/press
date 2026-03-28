@@ -144,6 +144,74 @@ async def test_upload_revises_other_users_scroll_rejected(
 
 
 @pytest.mark.asyncio
+async def test_dashboard_shows_only_latest_version_per_scroll(
+    authenticated_client: AsyncClient, test_db, test_user, test_subject
+):
+    """When a scroll has multiple versions, dashboard should show only the latest."""
+    import uuid
+
+    series_id = uuid.uuid4()
+
+    # Create v1 of a scroll
+    v1 = await create_content_addressable_scroll(
+        test_db, test_user, test_subject, title="My Paper v1", html_content="<h1>v1</h1>"
+    )
+    v1.version = 1
+    v1.scroll_series_id = series_id
+    v1.slug = "my-paper"
+    v1.publication_year = 2026
+
+    # Create v2 of the same scroll
+    v2 = await create_content_addressable_scroll(
+        test_db, test_user, test_subject, title="My Paper v2", html_content="<h1>v2</h1>"
+    )
+    v2.version = 2
+    v2.scroll_series_id = series_id
+    v2.slug = "my-paper"
+    v2.publication_year = 2026
+
+    await test_db.commit()
+
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    # v2 (latest) should be shown, v1 should not
+    assert "My Paper v2" in response.text
+    assert "My Paper v1" not in response.text
+    # Only one Upload New Version button
+    assert response.text.count("Upload New Version") == 1
+
+
+@pytest.mark.asyncio
+async def test_dashboard_shows_separate_cards_for_different_scrolls(
+    authenticated_client: AsyncClient, test_db, test_user, test_subject
+):
+    """Different scroll series should each get their own card."""
+    import uuid
+
+    scroll_a = await create_content_addressable_scroll(
+        test_db, test_user, test_subject, title="Paper Alpha", html_content="<h1>Alpha</h1>"
+    )
+    scroll_a.scroll_series_id = uuid.uuid4()
+    scroll_a.slug = "paper-alpha"
+    scroll_a.publication_year = 2026
+
+    scroll_b = await create_content_addressable_scroll(
+        test_db, test_user, test_subject, title="Paper Beta", html_content="<h1>Beta</h1>"
+    )
+    scroll_b.scroll_series_id = uuid.uuid4()
+    scroll_b.slug = "paper-beta"
+    scroll_b.publication_year = 2026
+
+    await test_db.commit()
+
+    response = await authenticated_client.get("/dashboard")
+    assert response.status_code == 200
+    assert "Paper Alpha" in response.text
+    assert "Paper Beta" in response.text
+    assert response.text.count("Upload New Version") == 2
+
+
+@pytest.mark.asyncio
 async def test_upload_form_normal_mode_unchanged(
     authenticated_client: AsyncClient, test_db, test_user, test_subject
 ):
