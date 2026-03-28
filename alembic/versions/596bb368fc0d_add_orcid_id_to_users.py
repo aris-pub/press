@@ -1,6 +1,6 @@
 """Add orcid_id column to users
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: 596bb368fc0d
 Revises: d3a7b8c1e2f4
 Create Date: 2026-03-28
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "a1b2c3d4e5f6"
+revision: str = "596bb368fc0d"
 down_revision: Union[str, Sequence[str], None] = "d3a7b8c1e2f4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
