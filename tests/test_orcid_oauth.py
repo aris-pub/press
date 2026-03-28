@@ -22,13 +22,17 @@ def orcid_env(monkeypatch):
     monkeypatch.setenv("ORCID_BASE_URL", "https://sandbox.orcid.org")
 
     import app.routes.orcid as orcid_mod
+    from app import templates_config
 
     monkeypatch.setattr(orcid_mod, "ORCID_CLIENT_ID", "APP-TESTCLIENTID")
     monkeypatch.setattr(orcid_mod, "ORCID_CLIENT_SECRET", "test-secret")
     monkeypatch.setattr(orcid_mod, "ORCID_BASE_URL", "https://sandbox.orcid.org")
+    monkeypatch.setattr(templates_config, "ORCID_CLIENT_ID", "APP-TESTCLIENTID")
+    templates_config.templates.env.globals["orcid_client_id"] = "APP-TESTCLIENTID"
     orcid_mod._pending_states.clear()
     yield
     orcid_mod._pending_states.clear()
+    templates_config.templates.env.globals["orcid_client_id"] = templates_config.ORCID_CLIENT_ID
 
 
 @pytest_asyncio.fixture
@@ -267,7 +271,7 @@ class TestOrcidCallback:
 
         assert resp.status_code == 302
         # Should redirect with an error, not link
-        assert "/settings" in resp.headers["location"] or "/login" in resp.headers["location"]
+        assert "/dashboard" in resp.headers["location"] or "/login" in resp.headers["location"]
 
         # ORCID should NOT be linked to user2
         await test_db.refresh(user2)
@@ -306,3 +310,38 @@ class TestOrcidUnlink:
         # ORCID should still be linked
         await test_db.refresh(passwordless_orcid_user)
         assert passwordless_orcid_user.orcid_id == FAKE_ORCID_2
+
+
+@pytest.mark.asyncio
+class TestOrcidUI:
+    """ORCID buttons appear on login/register pages and dashboard."""
+
+    async def test_login_page_shows_orcid_button(self, client):
+        resp = await client.get("/login")
+        assert resp.status_code == 200
+        body = resp.text
+        assert "/auth/orcid" in body
+        assert "Sign in with ORCID" in body
+
+    async def test_register_page_shows_orcid_button(self, client):
+        resp = await client.get("/register")
+        assert resp.status_code == 200
+        body = resp.text
+        assert "/auth/orcid" in body
+        assert "Sign up with ORCID" in body
+
+    async def test_dashboard_shows_link_orcid(self, authenticated_client, test_user):
+        """Dashboard shows 'Link ORCID' when user has no ORCID linked."""
+        resp = await authenticated_client.get("/dashboard")
+        assert resp.status_code == 200
+        assert "Link ORCID" in resp.text
+
+    async def test_dashboard_shows_linked_orcid(self, authenticated_client, test_user, test_db):
+        """Dashboard shows linked ORCID iD and unlink button."""
+        test_user.orcid_id = FAKE_ORCID
+        await test_db.commit()
+
+        resp = await authenticated_client.get("/dashboard")
+        assert resp.status_code == 200
+        assert FAKE_ORCID in resp.text
+        assert "Unlink ORCID" in resp.text

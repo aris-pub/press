@@ -90,6 +90,30 @@
     {% endif %}
   </div>
 
+  {% if orcid_client_id %}
+  <!-- ORCID Integration -->
+  <div class="account-management">
+    <h2>ORCID</h2>
+    {% if current_user.orcid_id %}
+    <p class="orcid-status">
+      Linked: <a href="https://orcid.org/{{ current_user.orcid_id }}" target="_blank" rel="noopener">{{ current_user.orcid_id }}</a>
+    </p>
+    <div class="account-actions">
+      {% if current_user.password_hash and current_user.password_hash != "!orcid-only" %}
+      <a href="/auth/orcid/unlink" class="btn btn-secondary">Unlink ORCID</a>
+      {% else %}
+      <button class="btn btn-secondary" disabled title="Set a password before unlinking ORCID">Unlink ORCID</button>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="orcid-status">No ORCID linked to your account.</p>
+    <div class="account-actions">
+      <a href="/auth/orcid" class="btn btn-secondary">Link ORCID</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <!-- Account Management Section -->
   <div class="account-management">
     <h2>Account Management</h2>

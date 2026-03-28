@@ -127,12 +127,12 @@ async def _link_orcid(db: AsyncSession, user: User, orcid_id: str) -> RedirectRe
     existing = result.scalar_one_or_none()
     if existing and existing.id != user.id:
         logger.warning(f"ORCID {orcid_id} already linked to user {existing.id}")
-        return RedirectResponse(url="/settings?error=orcid_taken", status_code=302)
+        return RedirectResponse(url="/dashboard?error=orcid_taken", status_code=302)
 
     user.orcid_id = orcid_id
     await db.commit()
     logger.info(f"Linked ORCID {orcid_id} to user {user.id}")
-    return RedirectResponse(url="/settings?orcid=linked", status_code=302)
+    return RedirectResponse(url="/dashboard?orcid=linked", status_code=302)
 
 
 async def _login_or_register(
@@ -193,9 +193,9 @@ async def orcid_unlink(request: Request, db: AsyncSession = Depends(get_db)):
     # Block unlink if user has no password (would lock them out)
     if not current_user.password_hash or current_user.password_hash == "!orcid-only":
         logger.warning(f"User {current_user.id} tried to unlink ORCID without password")
-        return RedirectResponse(url="/settings?error=orcid_no_password", status_code=302)
+        return RedirectResponse(url="/dashboard?error=orcid_no_password", status_code=302)
 
     current_user.orcid_id = None
     await db.commit()
     logger.info(f"Unlinked ORCID from user {current_user.id}")
-    return RedirectResponse(url="/settings?orcid=unlinked", status_code=302)
+    return RedirectResponse(url="/dashboard?orcid=unlinked", status_code=302)
