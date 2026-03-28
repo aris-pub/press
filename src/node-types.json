@@ -1,0 +1,2003 @@
+[
+  {
+    "type": "appendix",
+    "named": true,
+    "fields": {
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":appendix:",
+            "named": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "bibitem",
+    "named": true,
+    "fields": {
+      "kind": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "kind",
+            "named": true
+          }
+        ]
+      },
+      "label": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "label",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "bibitempair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "bibitempair",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "key",
+          "named": true
+        },
+        {
+          "type": "value",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "block",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "abstract",
+            "named": true
+          },
+          {
+            "type": "author",
+            "named": true
+          },
+          {
+            "type": "config",
+            "named": true
+          },
+          {
+            "type": "corollary",
+            "named": true
+          },
+          {
+            "type": "definition",
+            "named": true
+          },
+          {
+            "type": "enumerate",
+            "named": true
+          },
+          {
+            "type": "example",
+            "named": true
+          },
+          {
+            "type": "figure",
+            "named": true
+          },
+          {
+            "type": "html",
+            "named": true
+          },
+          {
+            "type": "itemize",
+            "named": true
+          },
+          {
+            "type": "lemma",
+            "named": true
+          },
+          {
+            "type": "proof",
+            "named": true
+          },
+          {
+            "type": "proposition",
+            "named": true
+          },
+          {
+            "type": "remark",
+            "named": true
+          },
+          {
+            "type": "sketch",
+            "named": true
+          },
+          {
+            "type": "step",
+            "named": true
+          },
+          {
+            "type": "subproof",
+            "named": true
+          },
+          {
+            "type": "theorem",
+            "named": true
+          },
+          {
+            "type": "video",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "codeblock",
+          "named": true
+        },
+        {
+          "type": "mathblock",
+          "named": true
+        },
+        {
+          "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "specialblock",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "blockmeta",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "pair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "caption",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "inlinemeta",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "codeblock",
+          "named": true
+        },
+        {
+          "type": "construct",
+          "named": true
+        },
+        {
+          "type": "inline",
+          "named": true
+        },
+        {
+          "type": "mathblock",
+          "named": true
+        },
+        {
+          "type": "specialconstruct",
+          "named": true
+        },
+        {
+          "type": "specialinline",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "codeblock",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "asis_text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "construct",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "inlinemeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "assume",
+            "named": true
+          },
+          {
+            "type": "case",
+            "named": true
+          },
+          {
+            "type": "claim",
+            "named": true
+          },
+          {
+            "type": "define",
+            "named": true
+          },
+          {
+            "type": "let",
+            "named": true
+          },
+          {
+            "type": "new",
+            "named": true
+          },
+          {
+            "type": "pick",
+            "named": true
+          },
+          {
+            "type": "prove",
+            "named": true
+          },
+          {
+            "type": "st",
+            "named": true
+          },
+          {
+            "type": "suffices",
+            "named": true
+          },
+          {
+            "type": "suppose",
+            "named": true
+          },
+          {
+            "type": "then",
+            "named": true
+          },
+          {
+            "type": "wlog",
+            "named": true
+          },
+          {
+            "type": "write",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "construct",
+          "named": true
+        },
+        {
+          "type": "inline",
+          "named": true
+        },
+        {
+          "type": "specialconstruct",
+          "named": true
+        },
+        {
+          "type": "specialinline",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "inline",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "inlinemeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "draft",
+            "named": true
+          },
+          {
+            "type": "note",
+            "named": true
+          },
+          {
+            "type": "span",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "construct",
+          "named": true
+        },
+        {
+          "type": "inline",
+          "named": true
+        },
+        {
+          "type": "specialconstruct",
+          "named": true
+        },
+        {
+          "type": "specialinline",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "inlinemeta",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "pair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "item",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "inlinemeta",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "codeblock",
+          "named": true
+        },
+        {
+          "type": "construct",
+          "named": true
+        },
+        {
+          "type": "inline",
+          "named": true
+        },
+        {
+          "type": "mathblock",
+          "named": true
+        },
+        {
+          "type": "specialconstruct",
+          "named": true
+        },
+        {
+          "type": "specialinline",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "mathblock",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "asis_text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metakey_any",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "accent",
+          "named": true
+        },
+        {
+          "type": "author_display_first",
+          "named": true
+        },
+        {
+          "type": "author_display_last",
+          "named": true
+        },
+        {
+          "type": "dark",
+          "named": true
+        },
+        {
+          "type": "lang",
+          "named": true
+        },
+        {
+          "type": "numbering",
+          "named": true
+        },
+        {
+          "type": "override_date",
+          "named": true
+        },
+        {
+          "type": "path",
+          "named": true
+        },
+        {
+          "type": "scale",
+          "named": true
+        },
+        {
+          "type": "static",
+          "named": true
+        },
+        {
+          "type": "theme",
+          "named": true
+        },
+        {
+          "type": "toc_depth",
+          "named": true
+        },
+        {
+          "type": "typography",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metakey_bool",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "emphas",
+          "named": true
+        },
+        {
+          "type": "isclaim",
+          "named": true
+        },
+        {
+          "type": "nonum",
+          "named": true
+        },
+        {
+          "type": "strong",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metakey_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "class",
+          "named": true
+        },
+        {
+          "type": "keywords",
+          "named": true
+        },
+        {
+          "type": "msc",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metakey_text",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "affiliation",
+          "named": true
+        },
+        {
+          "type": "alt",
+          "named": true
+        },
+        {
+          "type": "author_note",
+          "named": true
+        },
+        {
+          "type": "email",
+          "named": true
+        },
+        {
+          "type": "goal",
+          "named": true
+        },
+        {
+          "type": "icon",
+          "named": true
+        },
+        {
+          "type": "label",
+          "named": true
+        },
+        {
+          "type": "lang",
+          "named": true
+        },
+        {
+          "type": "name",
+          "named": true
+        },
+        {
+          "type": "orcid",
+          "named": true
+        },
+        {
+          "type": "reftext",
+          "named": true
+        },
+        {
+          "type": "title",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metaval_any",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "metaval_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "metaval_list_item",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "metaval_text",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "pair",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "metakey_any",
+          "named": true
+        },
+        {
+          "type": "metakey_bool",
+          "named": true
+        },
+        {
+          "type": "metakey_list",
+          "named": true
+        },
+        {
+          "type": "metakey_text",
+          "named": true
+        },
+        {
+          "type": "metaval_any",
+          "named": true
+        },
+        {
+          "type": "metaval_list",
+          "named": true
+        },
+        {
+          "type": "metaval_text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "paragraph",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "inlinemeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": ":paragraph:",
+            "named": false
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "caption",
+          "named": true
+        },
+        {
+          "type": "codeblock",
+          "named": true
+        },
+        {
+          "type": "construct",
+          "named": true
+        },
+        {
+          "type": "inline",
+          "named": true
+        },
+        {
+          "type": "item",
+          "named": true
+        },
+        {
+          "type": "mathblock",
+          "named": true
+        },
+        {
+          "type": "specialconstruct",
+          "named": true
+        },
+        {
+          "type": "specialinline",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "references",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "bibitem",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "section",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":section:",
+            "named": false
+          }
+        ]
+      },
+      "title": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "text",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "codeblock",
+          "named": true
+        },
+        {
+          "type": "mathblock",
+          "named": true
+        },
+        {
+          "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "specialblock",
+          "named": true
+        },
+        {
+          "type": "subsection",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "source_file",
+    "named": true,
+    "root": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      },
+      "title": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "text",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "appendix",
+          "named": true
+        },
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "codeblock",
+          "named": true
+        },
+        {
+          "type": "mathblock",
+          "named": true
+        },
+        {
+          "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "references",
+          "named": true
+        },
+        {
+          "type": "section",
+          "named": true
+        },
+        {
+          "type": "specialblock",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "specialblock",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "algorithm",
+            "named": true
+          },
+          {
+            "type": "toc",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "asis_text",
+          "named": true
+        },
+        {
+          "type": "table",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "specialconstruct",
+    "named": true,
+    "fields": {
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "qed",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "specialinline",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "inlinemeta",
+            "named": true
+          }
+        ]
+      },
+      "reftext": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "text",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "cite",
+            "named": true
+          },
+          {
+            "type": "code",
+            "named": true
+          },
+          {
+            "type": "math",
+            "named": true
+          },
+          {
+            "type": "previous",
+            "named": true
+          },
+          {
+            "type": "ref",
+            "named": true
+          },
+          {
+            "type": "spanemphas",
+            "named": true
+          },
+          {
+            "type": "spanstrong",
+            "named": true
+          },
+          {
+            "type": "url",
+            "named": true
+          }
+        ]
+      },
+      "target": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "text",
+            "named": true
+          }
+        ]
+      },
+      "targetlabels": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "text",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "asis_text",
+          "named": true
+        },
+        {
+          "type": "construct",
+          "named": true
+        },
+        {
+          "type": "inline",
+          "named": true
+        },
+        {
+          "type": "prev",
+          "named": true
+        },
+        {
+          "type": "prev2",
+          "named": true
+        },
+        {
+          "type": "prev3",
+          "named": true
+        },
+        {
+          "type": "specialconstruct",
+          "named": true
+        },
+        {
+          "type": "specialinline",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "subsection",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":subsection:",
+            "named": false
+          }
+        ]
+      },
+      "title": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "text",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "codeblock",
+          "named": true
+        },
+        {
+          "type": "mathblock",
+          "named": true
+        },
+        {
+          "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "specialblock",
+          "named": true
+        },
+        {
+          "type": "subsubsection",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "subsubsection",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":subsubsection:",
+            "named": false
+          }
+        ]
+      },
+      "title": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "text",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        },
+        {
+          "type": "codeblock",
+          "named": true
+        },
+        {
+          "type": "mathblock",
+          "named": true
+        },
+        {
+          "type": "paragraph",
+          "named": true
+        },
+        {
+          "type": "specialblock",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "table",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "tbody",
+            "named": true
+          }
+        ]
+      },
+      "caption": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "caption",
+            "named": true
+          }
+        ]
+      },
+      "head": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "thead",
+            "named": true
+          }
+        ]
+      },
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "blockmeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":table:",
+            "named": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "tbody",
+    "named": true,
+    "fields": {
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":tbody:",
+            "named": false
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "tr",
+          "named": true
+        },
+        {
+          "type": "trshort",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "td",
+    "named": true,
+    "fields": {
+      "meta": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "inlinemeta",
+            "named": true
+          }
+        ]
+      },
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":td:",
+            "named": false
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "tdcontent",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "tdcontent",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "construct",
+          "named": true
+        },
+        {
+          "type": "inline",
+          "named": true
+        },
+        {
+          "type": "specialconstruct",
+          "named": true
+        },
+        {
+          "type": "specialinline",
+          "named": true
+        },
+        {
+          "type": "text",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "thead",
+    "named": true,
+    "fields": {
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":thead:",
+            "named": false
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "tr",
+          "named": true
+        },
+        {
+          "type": "trshort",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "tr",
+    "named": true,
+    "fields": {
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":tr:",
+            "named": false
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "td",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "trshort",
+    "named": true,
+    "fields": {
+      "tag": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": ":tr:",
+            "named": false
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "tdcontent",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "*",
+    "named": false
+  },
+  {
+    "type": "**",
+    "named": false
+  },
+  {
+    "type": ",",
+    "named": false
+  },
+  {
+    "type": ":",
+    "named": false
+  },
+  {
+    "type": ":-:",
+    "named": false
+  },
+  {
+    "type": "::",
+    "named": false
+  },
+  {
+    "type": ":appendix:",
+    "named": false
+  },
+  {
+    "type": ":caption:",
+    "named": false
+  },
+  {
+    "type": ":codeblock:",
+    "named": false
+  },
+  {
+    "type": ":mathblock:",
+    "named": false
+  },
+  {
+    "type": ":paragraph:",
+    "named": false
+  },
+  {
+    "type": ":references:",
+    "named": false
+  },
+  {
+    "type": ":section:",
+    "named": false
+  },
+  {
+    "type": ":subsection:",
+    "named": false
+  },
+  {
+    "type": ":subsubsection:",
+    "named": false
+  },
+  {
+    "type": ":table:",
+    "named": false
+  },
+  {
+    "type": ":tbody:",
+    "named": false
+  },
+  {
+    "type": ":td:",
+    "named": false
+  },
+  {
+    "type": ":thead:",
+    "named": false
+  },
+  {
+    "type": ":tr:",
+    "named": false
+  },
+  {
+    "type": "=",
+    "named": false
+  },
+  {
+    "type": "@",
+    "named": false
+  },
+  {
+    "type": "abstract",
+    "named": true
+  },
+  {
+    "type": "accent",
+    "named": true
+  },
+  {
+    "type": "affiliation",
+    "named": true
+  },
+  {
+    "type": "algorithm",
+    "named": true
+  },
+  {
+    "type": "alt",
+    "named": true
+  },
+  {
+    "type": "asis_text",
+    "named": true
+  },
+  {
+    "type": "assume",
+    "named": true
+  },
+  {
+    "type": "author",
+    "named": true
+  },
+  {
+    "type": "author_display_first",
+    "named": true
+  },
+  {
+    "type": "author_display_last",
+    "named": true
+  },
+  {
+    "type": "author_note",
+    "named": true
+  },
+  {
+    "type": "case",
+    "named": true
+  },
+  {
+    "type": "cite",
+    "named": true
+  },
+  {
+    "type": "claim",
+    "named": true
+  },
+  {
+    "type": "class",
+    "named": true
+  },
+  {
+    "type": "code",
+    "named": true
+  },
+  {
+    "type": "comment",
+    "named": true,
+    "extra": true
+  },
+  {
+    "type": "config",
+    "named": true
+  },
+  {
+    "type": "corollary",
+    "named": true
+  },
+  {
+    "type": "dark",
+    "named": true
+  },
+  {
+    "type": "define",
+    "named": true
+  },
+  {
+    "type": "definition",
+    "named": true
+  },
+  {
+    "type": "draft",
+    "named": true
+  },
+  {
+    "type": "email",
+    "named": true
+  },
+  {
+    "type": "emphas",
+    "named": true
+  },
+  {
+    "type": "enumerate",
+    "named": true
+  },
+  {
+    "type": "example",
+    "named": true
+  },
+  {
+    "type": "figure",
+    "named": true
+  },
+  {
+    "type": "goal",
+    "named": true
+  },
+  {
+    "type": "html",
+    "named": true
+  },
+  {
+    "type": "icon",
+    "named": true
+  },
+  {
+    "type": "isclaim",
+    "named": true
+  },
+  {
+    "type": "itemize",
+    "named": true
+  },
+  {
+    "type": "key",
+    "named": true
+  },
+  {
+    "type": "keywords",
+    "named": true
+  },
+  {
+    "type": "kind",
+    "named": true
+  },
+  {
+    "type": "label",
+    "named": true
+  },
+  {
+    "type": "lang",
+    "named": true
+  },
+  {
+    "type": "lemma",
+    "named": true
+  },
+  {
+    "type": "let",
+    "named": true
+  },
+  {
+    "type": "math",
+    "named": false
+  },
+  {
+    "type": "math",
+    "named": true
+  },
+  {
+    "type": "metaval_list_item",
+    "named": true
+  },
+  {
+    "type": "msc",
+    "named": true
+  },
+  {
+    "type": "name",
+    "named": true
+  },
+  {
+    "type": "new",
+    "named": true
+  },
+  {
+    "type": "nonum",
+    "named": true
+  },
+  {
+    "type": "note",
+    "named": true
+  },
+  {
+    "type": "numbering",
+    "named": true
+  },
+  {
+    "type": "orcid",
+    "named": true
+  },
+  {
+    "type": "override_date",
+    "named": true
+  },
+  {
+    "type": "paragraph_end",
+    "named": false
+  },
+  {
+    "type": "path",
+    "named": true
+  },
+  {
+    "type": "pick",
+    "named": true
+  },
+  {
+    "type": "prev",
+    "named": true
+  },
+  {
+    "type": "prev2",
+    "named": true
+  },
+  {
+    "type": "prev3",
+    "named": true
+  },
+  {
+    "type": "previous",
+    "named": true
+  },
+  {
+    "type": "proof",
+    "named": true
+  },
+  {
+    "type": "proposition",
+    "named": true
+  },
+  {
+    "type": "prove",
+    "named": true
+  },
+  {
+    "type": "qed",
+    "named": true
+  },
+  {
+    "type": "ref",
+    "named": true
+  },
+  {
+    "type": "reftext",
+    "named": true
+  },
+  {
+    "type": "remark",
+    "named": true
+  },
+  {
+    "type": "scale",
+    "named": true
+  },
+  {
+    "type": "sketch",
+    "named": true
+  },
+  {
+    "type": "span",
+    "named": true
+  },
+  {
+    "type": "spanemphas",
+    "named": true
+  },
+  {
+    "type": "spanstrong",
+    "named": true
+  },
+  {
+    "type": "st",
+    "named": true
+  },
+  {
+    "type": "static",
+    "named": true
+  },
+  {
+    "type": "step",
+    "named": true
+  },
+  {
+    "type": "strong",
+    "named": true
+  },
+  {
+    "type": "subproof",
+    "named": true
+  },
+  {
+    "type": "suffices",
+    "named": true
+  },
+  {
+    "type": "suppose",
+    "named": true
+  },
+  {
+    "type": "text",
+    "named": false
+  },
+  {
+    "type": "text",
+    "named": true
+  },
+  {
+    "type": "theme",
+    "named": true
+  },
+  {
+    "type": "then",
+    "named": true
+  },
+  {
+    "type": "theorem",
+    "named": true
+  },
+  {
+    "type": "title",
+    "named": true
+  },
+  {
+    "type": "toc",
+    "named": true
+  },
+  {
+    "type": "toc_depth",
+    "named": true
+  },
+  {
+    "type": "typography",
+    "named": true
+  },
+  {
+    "type": "url",
+    "named": true
+  },
+  {
+    "type": "value",
+    "named": true
+  },
+  {
+    "type": "video",
+    "named": true
+  },
+  {
+    "type": "wlog",
+    "named": true
+  },
+  {
+    "type": "write",
+    "named": true
+  },
+  {
+    "type": "{",
+    "named": false
+  },
+  {
+    "type": "}",
+    "named": false
+  }
+]

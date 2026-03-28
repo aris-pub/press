@@ -18,7 +18,7 @@
     <div class="preview-banner-content">
       <div class="preview-banner-left">
         <span class="preview-banner-icon">⚠️</span>
-        <span class="preview-banner-text">PREVIEW MODE - Review your scroll below</span>
+        <span class="preview-banner-text">PREVIEW MODE{% if upcoming_version %} - This will be published as v{{ upcoming_version }}{% else %} - Review your scroll below{% endif %}</span>
       </div>
       <div class="preview-banner-actions">
         <form method="POST" action="/preview/{{ scroll.url_hash }}/edit">
@@ -59,7 +59,7 @@
       {{ scroll.authors }} • {{ scroll.subject.name }}
     </div>
     <div class="metadata-info">
-      <span>Preview</span>
+      <span>Preview{% if upcoming_version %} (v{{ upcoming_version }}){% endif %}</span>
       <span class="metadata-separator">•</span>
       {% if scroll.license == 'cc-by-4.0' %}
         <span>CC BY 4.0</span>

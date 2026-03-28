@@ -247,6 +247,9 @@
       </div>
       <div class="modal-actions">
         <a href="/" class="btn btn-secondary">Back to Scroll Press</a>
+        {% if is_owner %}
+        <a href="/upload?revises={{ scroll.url_hash }}" class="btn btn-secondary">New Version</a>
+        {% endif %}
         <button class="btn btn-primary" id="download-btn">Download HTML</button>
       </div>
     </div>
