@@ -104,12 +104,25 @@ class TestOrcidRedirect:
         assert "client_id" in params
 
     async def test_redirect_blocked_when_not_configured(self, client, monkeypatch):
-        """Returns error redirect when ORCID credentials are not set."""
+        """Unauthenticated user gets redirected to /login when ORCID not configured."""
         import app.routes.orcid as orcid_mod
 
         monkeypatch.setattr(orcid_mod, "ORCID_CLIENT_ID", "")
         resp = await client.get("/auth/orcid", follow_redirects=False)
         assert resp.status_code == 302
+        assert "/login" in resp.headers["location"]
+        assert "orcid_not_configured" in resp.headers["location"]
+
+    async def test_redirect_blocked_when_not_configured_authenticated(
+        self, authenticated_client, monkeypatch
+    ):
+        """Authenticated user gets redirected to /dashboard when ORCID not configured."""
+        import app.routes.orcid as orcid_mod
+
+        monkeypatch.setattr(orcid_mod, "ORCID_CLIENT_ID", "")
+        resp = await authenticated_client.get("/auth/orcid", follow_redirects=False)
+        assert resp.status_code == 302
+        assert "/dashboard" in resp.headers["location"]
         assert "orcid_not_configured" in resp.headers["location"]
 
     async def test_state_param_is_random(self, client):
@@ -240,6 +253,26 @@ class TestOrcidCallback:
 
         assert resp.status_code == 302
         assert "/login" in resp.headers["location"]
+
+    async def test_token_exchange_failure_authenticated(self, authenticated_client):
+        """Authenticated user gets error redirect to /dashboard, not /login."""
+        redir = await authenticated_client.get("/auth/orcid", follow_redirects=False)
+        state = parse_qs(urlparse(redir.headers["location"]).query)["state"][0]
+
+        mock_resp = _mock_orcid_token_error()
+        with patch("app.routes.orcid.httpx.AsyncClient") as MockClient:
+            MockClient.return_value.__aenter__ = AsyncMock(return_value=MockClient.return_value)
+            MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value.post = AsyncMock(return_value=mock_resp)
+
+            resp = await authenticated_client.get(
+                f"/auth/orcid/callback?code=bad-code&state={state}",
+                follow_redirects=False,
+            )
+
+        assert resp.status_code == 302
+        assert "/dashboard" in resp.headers["location"]
+        assert "orcid_token" in resp.headers["location"]
 
     async def test_duplicate_orcid_link_rejected(self, client, orcid_user, test_db):
         """Cannot link an ORCID that already belongs to another user."""
@@ -385,3 +418,18 @@ class TestOrcidUI:
         resp = await authenticated_client.get("/dashboard?error=orcid_no_password")
         assert resp.status_code == 200
         assert "password" in resp.text.lower()
+
+    async def test_dashboard_shows_orcid_not_configured_error(self, authenticated_client, test_user):
+        resp = await authenticated_client.get("/dashboard?error=orcid_not_configured")
+        assert resp.status_code == 200
+        assert "not available" in resp.text.lower()
+
+    async def test_dashboard_shows_orcid_state_error(self, authenticated_client, test_user):
+        resp = await authenticated_client.get("/dashboard?error=orcid_state")
+        assert resp.status_code == 200
+        assert "try again" in resp.text.lower()
+
+    async def test_dashboard_shows_orcid_token_error(self, authenticated_client, test_user):
+        resp = await authenticated_client.get("/dashboard?error=orcid_token")
+        assert resp.status_code == 200
+        assert "try again" in resp.text.lower()

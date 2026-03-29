@@ -33,10 +33,12 @@ def _get_redirect_uri(request: Request) -> str:
 
 
 @router.get("", name="orcid_redirect")
-async def orcid_redirect(request: Request):
+async def orcid_redirect(request: Request, db: AsyncSession = Depends(get_db)):
     """Redirect to ORCID authorize URL with CSRF state."""
     if not ORCID_CLIENT_ID or not ORCID_CLIENT_SECRET:
-        return RedirectResponse(url="/login?error=orcid_not_configured", status_code=302)
+        current_user = await get_current_user_from_session(request, db)
+        error_url = "/dashboard?error=orcid_not_configured" if current_user else "/login?error=orcid_not_configured"
+        return RedirectResponse(url=error_url, status_code=302)
 
     state = secrets.token_urlsafe(32)
     _pending_states[state] = True
@@ -68,18 +70,23 @@ async def orcid_callback(
 ):
     """Handle ORCID OAuth2 callback."""
     logger = get_logger()
+    current_user = await get_current_user_from_session(request, db)
+
+    def _error_redirect(error: str) -> RedirectResponse:
+        base = "/dashboard" if current_user else "/login"
+        return RedirectResponse(url=f"{base}?error={error}", status_code=302)
 
     # Validate state
     cookie_state = request.cookies.get("orcid_state")
     if not state or not cookie_state or state != cookie_state or state not in _pending_states:
         logger.warning("ORCID callback: invalid or missing state")
-        return RedirectResponse(url="/login?error=orcid_state", status_code=302)
+        return _error_redirect("orcid_state")
 
     _pending_states.pop(state, None)
 
     if not code:
         logger.warning("ORCID callback: missing code")
-        return RedirectResponse(url="/login?error=orcid_missing_code", status_code=302)
+        return _error_redirect("orcid_missing_code")
 
     # Exchange code for token
     redirect_uri = _get_redirect_uri(request)
@@ -99,21 +106,19 @@ async def orcid_callback(
 
         if token_resp.status_code != 200:
             logger.error(f"ORCID token exchange failed: {token_resp.status_code}")
-            return RedirectResponse(url="/login?error=orcid_token", status_code=302)
+            return _error_redirect("orcid_token")
 
         token_data = token_resp.json()
     except Exception as e:
         logger.error(f"ORCID token exchange error: {e}")
-        return RedirectResponse(url="/login?error=orcid_token", status_code=302)
+        return _error_redirect("orcid_token")
 
     orcid_id = token_data.get("orcid")
     orcid_name = token_data.get("name", "")
 
     if not orcid_id:
         logger.error("ORCID token response missing orcid field")
-        return RedirectResponse(url="/login?error=orcid_token", status_code=302)
-
-    current_user = await get_current_user_from_session(request, db)
+        return _error_redirect("orcid_token")
 
     if current_user:
         return await _link_orcid(db, current_user, orcid_id)
