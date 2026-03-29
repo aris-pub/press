@@ -350,3 +350,38 @@ class TestOrcidUI:
         assert resp.status_code == 200
         assert FAKE_ORCID in resp.text
         assert "Unlink ORCID" in resp.text
+
+    async def test_login_shows_orcid_not_configured_error(self, client):
+        resp = await client.get("/login?error=orcid_not_configured")
+        assert resp.status_code == 200
+        assert "not available" in resp.text
+
+    async def test_login_shows_orcid_state_error(self, client):
+        resp = await client.get("/login?error=orcid_state")
+        assert resp.status_code == 200
+        assert "try again" in resp.text.lower()
+
+    async def test_register_shows_orcid_error(self, client):
+        resp = await client.get("/register?error=orcid_not_configured")
+        assert resp.status_code == 200
+        assert "not available" in resp.text
+
+    async def test_dashboard_shows_orcid_taken_error(self, authenticated_client, test_user):
+        resp = await authenticated_client.get("/dashboard?error=orcid_taken")
+        assert resp.status_code == 200
+        assert "already linked" in resp.text.lower()
+
+    async def test_dashboard_shows_orcid_linked_success(self, authenticated_client, test_user):
+        resp = await authenticated_client.get("/dashboard?orcid=linked")
+        assert resp.status_code == 200
+        assert "linked successfully" in resp.text.lower()
+
+    async def test_dashboard_shows_orcid_unlinked_success(self, authenticated_client, test_user):
+        resp = await authenticated_client.get("/dashboard?orcid=unlinked")
+        assert resp.status_code == 200
+        assert "unlinked" in resp.text.lower()
+
+    async def test_dashboard_shows_no_password_error(self, authenticated_client, test_user):
+        resp = await authenticated_client.get("/dashboard?error=orcid_no_password")
+        assert resp.status_code == 200
+        assert "password" in resp.text.lower()

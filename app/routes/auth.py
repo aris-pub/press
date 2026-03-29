@@ -89,7 +89,10 @@ async def login_page(request: Request, db: AsyncSession = Depends(get_db)):
         get_logger().info(f"Authenticated user {current_user.id} redirected from login page")
         return RedirectResponse(url="/", status_code=302)
 
-    return templates.TemplateResponse(request, "auth/login.html", {"current_user": current_user})
+    error = request.query_params.get("error")
+    return templates.TemplateResponse(
+        request, "auth/login.html", {"current_user": current_user, "error": error}
+    )
 
 
 @router.post("/logout")
@@ -244,8 +247,9 @@ async def register_page(request: Request, db: AsyncSession = Depends(get_db)):
         get_logger().info(f"Authenticated user {current_user.id} redirected from register page")
         return RedirectResponse(url="/", status_code=302)
 
+    error = request.query_params.get("error")
     return templates.TemplateResponse(
-        request, "auth/register.html", {"current_user": current_user}
+        request, "auth/register.html", {"current_user": current_user, "error": error}
     )
 
 

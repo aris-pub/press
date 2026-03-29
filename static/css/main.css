@@ -582,6 +582,26 @@ button.btn, a.btn {
 .form-errors li:last-child {
   margin-bottom: 0;
 }
+.alert {
+  border-radius: var(--border-radius);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  font-size: var(--text-sm);
+}
+.alert-error {
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: #991b1b;
+}
+[data-theme="dark"] .alert-error,
+.dark .alert-error {
+  color: #fca5a5;
+}
+.alert-success {
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
+}
 .success-message {
   background: var(--success-bg);
   border: 1px solid var(--success-border);
