@@ -35,6 +35,9 @@ def _get_redirect_uri(request: Request) -> str:
 @router.get("", name="orcid_redirect")
 async def orcid_redirect(request: Request):
     """Redirect to ORCID authorize URL with CSRF state."""
+    if not ORCID_CLIENT_ID or not ORCID_CLIENT_SECRET:
+        return RedirectResponse(url="/login?error=orcid_not_configured", status_code=302)
+
     state = secrets.token_urlsafe(32)
     _pending_states[state] = True
 
