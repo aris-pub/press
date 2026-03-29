@@ -100,6 +100,16 @@
 
   <div class="account-management">
     <h2>ORCID</h2>
+    {% if error == "orcid_taken" %}
+    <div class="alert alert-error" role="alert">This ORCID iD is already linked to another account.</div>
+    {% elif error == "orcid_no_password" %}
+    <div class="alert alert-error" role="alert">Set a password before unlinking ORCID, otherwise you would be locked out.</div>
+    {% endif %}
+    {% if orcid_status == "linked" %}
+    <div class="alert alert-success" role="alert">ORCID linked successfully.</div>
+    {% elif orcid_status == "unlinked" %}
+    <div class="alert alert-success" role="alert">ORCID unlinked from your account.</div>
+    {% endif %}
     {% if current_user.orcid_id %}
     <p class="orcid-status">
       Linked: <a href="https://orcid.org/{{ current_user.orcid_id }}" target="_blank" rel="noopener">{{ current_user.orcid_id }}</a>
