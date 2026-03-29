@@ -22,17 +22,13 @@ def orcid_env(monkeypatch):
     monkeypatch.setenv("ORCID_BASE_URL", "https://sandbox.orcid.org")
 
     import app.routes.orcid as orcid_mod
-    from app import templates_config
 
     monkeypatch.setattr(orcid_mod, "ORCID_CLIENT_ID", "APP-TESTCLIENTID")
     monkeypatch.setattr(orcid_mod, "ORCID_CLIENT_SECRET", "test-secret")
     monkeypatch.setattr(orcid_mod, "ORCID_BASE_URL", "https://sandbox.orcid.org")
-    monkeypatch.setattr(templates_config, "ORCID_CLIENT_ID", "APP-TESTCLIENTID")
-    templates_config.templates.env.globals["orcid_client_id"] = "APP-TESTCLIENTID"
     orcid_mod._pending_states.clear()
     yield
     orcid_mod._pending_states.clear()
-    templates_config.templates.env.globals["orcid_client_id"] = templates_config.ORCID_CLIENT_ID
 
 
 @pytest_asyncio.fixture
@@ -106,6 +102,15 @@ class TestOrcidRedirect:
         assert "redirect_uri" in params
         assert "state" in params
         assert "client_id" in params
+
+    async def test_redirect_blocked_when_not_configured(self, client, monkeypatch):
+        """Returns error redirect when ORCID credentials are not set."""
+        import app.routes.orcid as orcid_mod
+
+        monkeypatch.setattr(orcid_mod, "ORCID_CLIENT_ID", "")
+        resp = await client.get("/auth/orcid", follow_redirects=False)
+        assert resp.status_code == 302
+        assert "orcid_not_configured" in resp.headers["location"]
 
     async def test_state_param_is_random(self, client):
         """Each redirect should generate a unique state."""

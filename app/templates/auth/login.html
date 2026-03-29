@@ -11,7 +11,6 @@
 
   {% include "auth/partials/login_form.html" %}
 
-  {% if orcid_client_id %}
   <div class="auth-divider"><span>or</span></div>
   <a href="/auth/orcid" class="btn btn-orcid">
     <svg class="orcid-icon" viewBox="0 0 256 256" width="20" height="20" aria-hidden="true">
@@ -20,7 +19,6 @@
     </svg>
     Sign in with ORCID
   </a>
-  {% endif %}
 
   <div class="auth-links">
     <p><a href="/forgot-password">Forgot your password?</a></p>
