@@ -14,12 +14,12 @@ import sentry_sdk
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.exception_handlers import (
     http_exception_handler,
     internal_server_error_handler,
 )
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.logging_config import get_logger
 from app.memory_profiling_middleware import MemoryProfilingMiddleware
 from app.middleware import (
@@ -31,7 +31,7 @@ from app.middleware import (
     SecurityHeadersMiddleware,
     StaticFilesCacheMiddleware,
 )
-from app.routes import api, auth, main, scrolls
+from app.routes import api, auth, main, orcid, scrolls
 from app.security.nonce_middleware import NonceMiddleware
 from app.sentry_config import before_send
 
@@ -226,3 +226,4 @@ app.include_router(main.router)
 app.include_router(auth.router)
 app.include_router(scrolls.router)
 app.include_router(api.router)
+app.include_router(orcid.router)
