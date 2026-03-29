@@ -104,6 +104,14 @@
     <div class="alert alert-error" role="alert">This ORCID iD is already linked to another account.</div>
     {% elif error == "orcid_no_password" %}
     <div class="alert alert-error" role="alert">Set a password before unlinking ORCID, otherwise you would be locked out.</div>
+    {% elif error == "orcid_not_configured" %}
+    <div class="alert alert-error" role="alert">ORCID integration is not available at this time.</div>
+    {% elif error == "orcid_state" %}
+    <div class="alert alert-error" role="alert">ORCID linking failed. Please try again.</div>
+    {% elif error == "orcid_token" %}
+    <div class="alert alert-error" role="alert">Could not complete ORCID linking. Please try again.</div>
+    {% elif error == "orcid_missing_code" %}
+    <div class="alert alert-error" role="alert">ORCID linking was cancelled or failed. Please try again.</div>
     {% endif %}
     {% if orcid_status == "linked" %}
     <div class="alert alert-success" role="alert">ORCID linked successfully.</div>
