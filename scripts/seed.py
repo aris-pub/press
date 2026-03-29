@@ -22,6 +22,7 @@ async def seed_users(session=None):
                 "email": "testuser@example.com",
                 "display_name": "Test User",
                 "password": "testpass",
+                "orcid_id": "0000-0002-1825-0097",
             },
             {
                 "email": "john.smith@university.edu",
@@ -77,6 +78,7 @@ async def seed_users(session=None):
                 password_hash=get_password_hash(user_data["password"]),
                 display_name=user_data["display_name"],
                 email_verified=True,  # Pre-verify for testing
+                orcid_id=user_data.get("orcid_id"),
             )
             session.add(db_user)
 
@@ -188,8 +190,8 @@ async def seed_scrolls(session=None):
         for scroll_data in scrolls_data:
             html_file = examples_dir / scroll_data["file"]
 
-            if not html_file.exists():
-                print(f"Warning: {scroll_data['file']} not found, skipping...")
+            if not html_file.exists() or html_file.is_dir():
+                print(f"Warning: {scroll_data['file']} not found or is a directory, skipping...")
                 continue
 
             with open(html_file, "r", encoding="utf-8") as f:
