@@ -57,19 +57,27 @@
         {% for paper_row in papers %}
         {% set paper = paper_row[0] %}
         {% set subject_name = paper_row[1] %}
-        {{ scroll_card(
-            paper.title,
-            paper.authors,
-            paper.abstract,
-            paper.keywords,
-            subject_name,
-            "recently",
-            "v" + paper.version|string,
-            paper.url_hash,
-            doi=paper.doi,
-            doi_status=paper.doi_status,
-            canonical_url=paper.canonical_url
-        ) }}
+        <div class="scroll-card-wrapper">
+          {{ scroll_card(
+              paper.title,
+              paper.authors,
+              paper.abstract,
+              paper.keywords,
+              subject_name,
+              "recently",
+              "v" + paper.version|string,
+              paper.url_hash,
+              doi=paper.doi,
+              doi_status=paper.doi_status,
+              canonical_url=paper.canonical_url
+          ) }}
+          <div class="scroll-card-actions">
+            <a href="/upload?revises={{ paper.url_hash }}" class="btn btn-secondary btn-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              Upload New Version
+            </a>
+          </div>
+        </div>
         {% endfor %}
       </div>
     {% else %}
@@ -575,6 +583,41 @@
 .btn-sm {
   padding: var(--space-sm) var(--space-md);
   font-size: var(--text-sm);
+}
+
+.scroll-card-wrapper {
+  border: 1px solid var(--gray-lightest);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.scroll-card-wrapper .scroll.preview {
+  border: none;
+  border-radius: 0;
+}
+
+.scroll-card-actions {
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--gray-lightest);
+  background: var(--gray-bg);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.scroll-card-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+@media (max-width: 768px) {
+  .scroll-card-actions {
+    justify-content: center;
+  }
+  .scroll-card-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
 

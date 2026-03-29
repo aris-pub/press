@@ -3,9 +3,22 @@
 {% from "components/button.html" import button %}
 
 <div class="upload-header" id="upload-header">
+    {% if revising_scroll %}
+    <h1>Upload New Version</h1>
+    {% else %}
     <h1>Upload New Scroll</h1>
     <p>Share your interactive, web-native research with the world</p>
+    {% endif %}
 </div>
+
+{% if revising_scroll %}
+<div class="revision-context">
+    <div class="revision-context-label">Updating:</div>
+    <div class="revision-context-title">{{ revising_scroll.title }}</div>
+    <div class="revision-context-meta">Currently at v{{ revising_scroll.version }}{% if revising_scroll.published_at %} &middot; Published {{ revising_scroll.published_at.strftime('%B %-d, %Y') }}{% endif %}</div>
+    <div class="revision-context-next">This will become v{{ revising_scroll.version + 1 }}.</div>
+</div>
+{% endif %}
 
 {% if current_drafts and not form_data and not session.get('dismissed_draft_banner') %}
 <div class="drafts-banner">
@@ -130,7 +143,7 @@
     {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
 
     <div class="form-actions">
-        {{ button("Preview Scroll", type="submit", variant="primary", name="action", value="publish", loading_text="Uploading...") }}
+        {{ button("Preview New Version" if revising_scroll else "Preview Scroll", type="submit", variant="primary", name="action", value="publish", loading_text="Uploading...") }}
     </div>
 </form>
 
