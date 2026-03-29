@@ -1948,6 +1948,43 @@ mark {
     font-family: var(--font-serif);
 }
 
+.revision-context {
+    background: var(--gray-bg);
+    border: 1px solid var(--gray-lightest);
+    border-left: 3px solid var(--red);
+    border-radius: var(--border-radius);
+    padding: var(--space-lg);
+    margin-top: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.revision-context-label {
+    font-size: var(--text-sm);
+    color: var(--gray);
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+}
+
+.revision-context-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--black);
+    margin-bottom: var(--space-sm);
+}
+
+.revision-context-meta {
+    font-size: var(--text-sm);
+    color: var(--gray);
+}
+
+.revision-context-next {
+    font-size: var(--text-sm);
+    color: var(--gray-dark);
+    font-weight: 500;
+    margin-top: var(--space-sm);
+}
+
 .form-group {
     margin-bottom: 2rem;
 }

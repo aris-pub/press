@@ -537,10 +537,15 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
         session.pop("current_preview_url_hash", None)
 
     # Get user's published papers with subject names (exclude html_content for performance)
+    # Only show the latest version of each scroll series
     published_papers = await db.execute(
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
-        .where(Scroll.user_id == current_user.id, Scroll.status == "published")
+        .where(
+            Scroll.user_id == current_user.id,
+            Scroll.status == "published",
+            _latest_version_filter(),
+        )
         .options(
             load_only(
                 Scroll.title,
@@ -553,6 +558,7 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
                 Scroll.doi_status,
                 Scroll.slug,
                 Scroll.publication_year,
+                Scroll.scroll_series_id,
             )
         )
         .order_by(Scroll.created_at.desc())
