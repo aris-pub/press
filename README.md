@@ -6,10 +6,10 @@
 [![CI](https://github.com/aris-pub/press/actions/workflows/ci.yml/badge.svg)](https://github.com/aris-pub/press/actions/workflows/ci.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-Scroll Press is an HTML-native preprint archive for research authored by humans. Built with
-FastAPI, it accepts output from any authoring tool that produces HTML—Typst,
-Quarto, MyST, Jupyter, or handwritten HTML. Format freedom, instant publication,
-permanent URLs.
+Scroll Press is an HTML-native preprint archive for research authored by humans.
+Part of [Aris: the open research stack](https://aris.pub). Built with FastAPI, it
+accepts output from any authoring tool that produces HTML—Typst, Quarto, MyST,
+Jupyter, or handwritten HTML. Format freedom, instant publication, permanent URLs.
 
 **Governance**: Press is fully community-owned—open source, community contributions
 accepted, roadmap driven by community needs, forever free. Supported by community
