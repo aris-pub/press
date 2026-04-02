@@ -61,7 +61,9 @@ jobs:
             AWS_ENDPOINT_URL_S3="${{ secrets.AWS_ENDPOINT_URL_S3 }}" \
             AWS_REGION="auto" \
             AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            BUCKET_NAME="${{ secrets.BUCKET_NAME }}"
+            BUCKET_NAME="${{ secrets.BUCKET_NAME }}" \
+            ORCID_CLIENT_ID="${{ secrets.ORCID_CLIENT_ID }}" \
+            ORCID_CLIENT_SECRET="${{ secrets.ORCID_CLIENT_SECRET }}"
         fi
 
     - name: Deploy preview
