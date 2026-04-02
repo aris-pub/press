@@ -98,6 +98,45 @@
     {% endif %}
   </div>
 
+  <div class="account-management">
+    <h2>ORCID</h2>
+    {% if error == "orcid_taken" %}
+    <div class="alert alert-error" role="alert">This ORCID iD is already linked to another account.</div>
+    {% elif error == "orcid_no_password" %}
+    <div class="alert alert-error" role="alert">Set a password before unlinking ORCID, otherwise you would be locked out.</div>
+    {% elif error == "orcid_not_configured" %}
+    <div class="alert alert-error" role="alert">ORCID integration is not available at this time.</div>
+    {% elif error == "orcid_state" %}
+    <div class="alert alert-error" role="alert">ORCID linking failed. Please try again.</div>
+    {% elif error == "orcid_token" %}
+    <div class="alert alert-error" role="alert">Could not complete ORCID linking. Please try again.</div>
+    {% elif error == "orcid_missing_code" %}
+    <div class="alert alert-error" role="alert">ORCID linking was cancelled or failed. Please try again.</div>
+    {% endif %}
+    {% if orcid_status == "linked" %}
+    <div class="alert alert-success" role="alert">ORCID linked successfully.</div>
+    {% elif orcid_status == "unlinked" %}
+    <div class="alert alert-success" role="alert">ORCID unlinked from your account.</div>
+    {% endif %}
+    {% if current_user.orcid_id %}
+    <p class="orcid-status">
+      Linked: <a href="https://orcid.org/{{ current_user.orcid_id }}" target="_blank" rel="noopener">{{ current_user.orcid_id }}</a>
+    </p>
+    <div class="account-actions">
+      {% if current_user.password_hash and current_user.password_hash != "!orcid-only" %}
+      <a href="/auth/orcid/unlink" class="btn btn-secondary">Unlink ORCID</a>
+      {% else %}
+      <button class="btn btn-secondary" disabled title="Set a password before unlinking ORCID">Unlink ORCID</button>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="orcid-status">No ORCID linked to your account.</p>
+    <div class="account-actions">
+      <a href="/auth/orcid" class="btn btn-secondary">Link ORCID</a>
+    </div>
+    {% endif %}
+  </div>
+
   <!-- Account Management Section -->
   <div class="account-management">
     <h2>Account Management</h2>

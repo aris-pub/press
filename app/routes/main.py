@@ -597,6 +597,9 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     is_boosted = request.headers.get("HX-Boosted") == "true"
     use_partial = is_htmx and not is_boosted
 
+    error = request.query_params.get("error")
+    orcid_status = request.query_params.get("orcid")
+
     return templates.TemplateResponse(
         request,
         "dashboard_content.html" if use_partial else "dashboard.html",
@@ -605,6 +608,8 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
             "papers": papers,
             "drafts": drafts,
             "csrf_token": csrf_token,
+            "error": error,
+            "orcid_status": orcid_status,
         },
     )
 
