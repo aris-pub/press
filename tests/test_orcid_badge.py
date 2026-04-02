@@ -4,7 +4,6 @@ import json
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
 
 from tests.conftest import create_content_addressable_scroll
 

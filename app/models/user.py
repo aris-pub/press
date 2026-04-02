@@ -17,8 +17,7 @@ def validate_orcid_id(value: str | None) -> str | None:
         return None
     if not ORCID_PATTERN.match(value):
         raise ValueError(
-            f"Invalid ORCID iD format: '{value}'. "
-            "Expected format: 0000-0002-1234-5678"
+            f"Invalid ORCID iD format: '{value}'. Expected format: 0000-0002-1234-5678"
         )
     return value
 
