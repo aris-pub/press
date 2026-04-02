@@ -329,6 +329,7 @@ async def sitemap_xml(db: AsyncSession = Depends(get_db)):
         ("https://scroll.press/about", "0.8", "monthly"),
         ("https://scroll.press/how-it-works", "0.8", "monthly"),
         ("https://scroll.press/contact", "0.6", "monthly"),
+        ("https://scroll.press/content-policy", "0.5", "monthly"),
         ("https://scroll.press/terms", "0.4", "yearly"),
         ("https://scroll.press/privacy", "0.4", "yearly"),
         ("https://scroll.press/legal", "0.4", "yearly"),
@@ -459,6 +460,20 @@ async def legal_page(request: Request, db: AsyncSession = Depends(get_db)):
         log_request(request, user_id=str(current_user.id))
 
     return templates.TemplateResponse(request, "legal.html", {"current_user": current_user})
+
+
+@router.get("/content-policy", response_class=HTMLResponse)
+async def content_policy_page(request: Request, db: AsyncSession = Depends(get_db)):
+    """Display the Content Policy page."""
+    log_request(request)
+    current_user = await get_current_user_from_session(request, db)
+
+    if current_user:
+        log_request(request, user_id=str(current_user.id))
+
+    return templates.TemplateResponse(
+        request, "content-policy.html", {"current_user": current_user}
+    )
 
 
 @router.get("/roadmap", response_class=HTMLResponse)
