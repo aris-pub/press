@@ -31,7 +31,7 @@ from app.middleware import (
     SecurityHeadersMiddleware,
     StaticFilesCacheMiddleware,
 )
-from app.routes import api, auth, main, scrolls
+from app.routes import api, auth, main, orcid, scrolls
 from app.security.nonce_middleware import NonceMiddleware
 from app.sentry_config import before_send
 
@@ -226,3 +226,4 @@ app.include_router(main.router)
 app.include_router(auth.router)
 app.include_router(scrolls.router)
 app.include_router(api.router)
+app.include_router(orcid.router)

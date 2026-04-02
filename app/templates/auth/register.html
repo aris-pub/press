@@ -15,6 +15,20 @@
     <p>Join the academic community on Press</p>
   </div>
 
+  {% if error %}
+  <div class="alert alert-error" role="alert">
+    {% if error == "orcid_not_configured" %}
+      ORCID sign-up is not available at this time.
+    {% elif error == "orcid_state" %}
+      ORCID sign-up failed. Please try again.
+    {% elif error == "orcid_token" %}
+      Could not complete ORCID sign-up. Please try again.
+    {% else %}
+      An error occurred. Please try again.
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% from "auth/partials/orcid_button.html" import orcid_button %}
   {{ orcid_button(orcid_enabled, "Register with ORCID", "or register with email") }}
 

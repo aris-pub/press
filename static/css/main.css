@@ -525,37 +525,6 @@ button.btn, a.btn {
   font-style: italic;
   font-family: var(--font-serif);
 }
-.btn-orcid {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: #a6ce39;
-  color: #fff;
-  font-weight: 600;
-  border-radius: var(--border-radius);
-  text-decoration: none;
-  font-size: var(--text-base);
-  transition: background-color 0.2s;
-}
-.btn-orcid:hover { background: #8fb830; }
-.btn-orcid .orcid-logo { flex-shrink: 0; }
-.auth-separator {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  margin: var(--space-lg) 0;
-  color: var(--gray-medium);
-  font-size: var(--text-sm);
-}
-.auth-separator::before,
-.auth-separator::after {
-  content: "";
-  flex: 1;
-  border-top: 1px solid var(--gray-lighter);
-}
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -613,6 +582,26 @@ button.btn, a.btn {
 .form-errors li:last-child {
   margin-bottom: 0;
 }
+.alert {
+  border-radius: var(--border-radius);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  font-size: var(--text-sm);
+}
+.alert-error {
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: #991b1b;
+}
+[data-theme="dark"] .alert-error,
+.dark .alert-error {
+  color: #fca5a5;
+}
+.alert-success {
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
+}
 .success-message {
   background: var(--success-bg);
   border: 1px solid var(--success-border);
@@ -644,6 +633,49 @@ button.btn, a.btn {
 }
 .auth-links a:hover {
   text-decoration: underline;
+}
+.auth-separator {
+  display: flex;
+  align-items: center;
+  margin: var(--space-lg) 0;
+  color: var(--gray);
+  font-size: var(--text-sm);
+}
+.auth-separator::before,
+.auth-separator::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--gray-lightest);
+}
+.auth-separator span {
+  padding: 0 var(--space-md);
+}
+.btn-orcid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  background: #a6ce39;
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--text-base);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.btn-orcid:hover {
+  background: #8fb830;
+}
+.orcid-logo {
+  flex-shrink: 0;
+}
+.orcid-status {
+  color: var(--gray-dark);
+  margin-bottom: var(--space-md);
 }
 .back-link {
   text-align: center;
@@ -742,15 +774,25 @@ button.btn, a.btn {
     margin-bottom: var(--mobile-space-lg);
   }
   
+  .auth-separator {
+    margin: var(--mobile-space-lg) 0;
+  }
+
+  .btn-orcid {
+    padding: var(--mobile-space-lg);
+    font-size: var(--mobile-text-base);
+    min-height: 44px;
+  }
+
   .auth-links {
     margin-top: var(--mobile-space-xl);
     padding-top: var(--mobile-space-xl);
   }
-  
+
   .auth-links a {
     font-size: var(--mobile-text-base);
   }
-  
+
   .back-link {
     margin-top: var(--mobile-space-xl);
   }

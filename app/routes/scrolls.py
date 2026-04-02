@@ -518,7 +518,7 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
     # Find scroll by content-addressable hash only (no legacy preview_id support)
     result = await db.execute(
         select(Scroll)
-        .options(selectinload(Scroll.subject))
+        .options(selectinload(Scroll.subject), selectinload(Scroll.user))
         .where(
             Scroll.url_hash == identifier,
             Scroll.status == "published",
@@ -580,7 +580,7 @@ async def view_scroll_by_year_slug_version(
 
     result = await db.execute(
         select(Scroll)
-        .options(selectinload(Scroll.subject))
+        .options(selectinload(Scroll.subject), selectinload(Scroll.user))
         .where(
             Scroll.publication_year == year,
             Scroll.slug == slug,
@@ -631,7 +631,7 @@ async def view_scroll_by_year_slug(
 
     result = await db.execute(
         select(Scroll)
-        .options(selectinload(Scroll.subject))
+        .options(selectinload(Scroll.subject), selectinload(Scroll.user))
         .where(
             Scroll.publication_year == year,
             Scroll.slug == slug,

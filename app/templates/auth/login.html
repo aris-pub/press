@@ -9,6 +9,22 @@
     <p>Sign in to your Press account</p>
   </div>
 
+  {% if error %}
+  <div class="alert alert-error" role="alert">
+    {% if error == "orcid_not_configured" %}
+      ORCID sign-in is not available at this time.
+    {% elif error == "orcid_state" %}
+      ORCID sign-in failed. Please try again.
+    {% elif error == "orcid_token" %}
+      Could not complete ORCID sign-in. Please try again.
+    {% elif error == "orcid_missing_code" %}
+      ORCID sign-in was cancelled or failed. Please try again.
+    {% else %}
+      An error occurred. Please try again.
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% from "auth/partials/orcid_button.html" import orcid_button %}
   {{ orcid_button(orcid_enabled, "Sign in with ORCID", "or sign in with email") }}
 

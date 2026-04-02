@@ -89,8 +89,11 @@ async def login_page(request: Request, db: AsyncSession = Depends(get_db)):
         get_logger().info(f"Authenticated user {current_user.id} redirected from login page")
         return RedirectResponse(url="/", status_code=302)
 
+    error = request.query_params.get("error")
     return templates.TemplateResponse(
-        request, "auth/login.html", {"current_user": current_user, "orcid_enabled": ORCID_ENABLED}
+        request,
+        "auth/login.html",
+        {"current_user": current_user, "error": error, "orcid_enabled": ORCID_ENABLED},
     )
 
 
@@ -246,10 +249,11 @@ async def register_page(request: Request, db: AsyncSession = Depends(get_db)):
         get_logger().info(f"Authenticated user {current_user.id} redirected from register page")
         return RedirectResponse(url="/", status_code=302)
 
+    error = request.query_params.get("error")
     return templates.TemplateResponse(
         request,
         "auth/register.html",
-        {"current_user": current_user, "orcid_enabled": ORCID_ENABLED},
+        {"current_user": current_user, "error": error, "orcid_enabled": ORCID_ENABLED},
     )
 
 
