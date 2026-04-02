@@ -2,7 +2,7 @@
 {% macro orcid_button(enabled, button_text="Sign in with ORCID", separator_text="or sign in with email") %}
 {% if enabled %}
 <div class="orcid-signin">
-  <a href="/auth/orcid" class="btn btn-orcid">
+  <a href="/auth/orcid" class="btn btn-orcid" hx-boost="false">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="20" height="20" class="orcid-logo">
       <circle cx="128" cy="128" r="128" fill="#a6ce39"/>
       <g fill="#fff">
