@@ -80,3 +80,4 @@ seed_papers/graph_traversal_myst.md
 
 # Dolt database files (added by bd init)
 .dolt/
+server.log
