@@ -148,7 +148,7 @@ async def test_login_success_uses_full_page_redirect_not_htmx(client: AsyncClien
     assert response.status_code == 200
 
     # Must NOT use HTMX partial navigation (causes stale navbar)
-    assert 'hx-get=' not in response.text
+    assert "hx-get=" not in response.text
     assert 'hx-target="#main-content"' not in response.text
     # Must use full page redirect
     assert "window.location.href" in response.text

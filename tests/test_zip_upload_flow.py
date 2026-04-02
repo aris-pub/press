@@ -263,9 +263,7 @@ class TestConfirmEntryPointErrorHandling:
             assert "/preview/" in response.headers.get("location", "")
 
     @pytest.mark.asyncio
-    async def test_storage_failure_shows_error_message(
-        self, authenticated_client, test_subject
-    ):
+    async def test_storage_failure_shows_error_message(self, authenticated_client, test_subject):
         """Storage failure should show error in the picker UI, not bare HTML."""
         zip_bytes = make_zip_bytes({"index.html": VALID_HTML})
 
@@ -341,9 +339,7 @@ class TestFullUploadToServingRoundTrip:
         self, authenticated_client, test_subject, mock_storage
     ):
         """Upload zip → confirm → serve entry point + assets. The key round-trip test."""
-        html_with_assets = VALID_HTML.replace(
-            "</head>", '<link href="styles/main.css"></head>'
-        )
+        html_with_assets = VALID_HTML.replace("</head>", '<link href="styles/main.css"></head>')
         zip_bytes = make_zip_bytes(
             {
                 "index.html": html_with_assets,
@@ -387,9 +383,7 @@ class TestFullUploadToServingRoundTrip:
         assert b"Research Paper Title" in response.content
 
         # Step 4: Verify CSS asset is servable
-        response = await authenticated_client.get(
-            f"/scroll/{url_hash}/paper/styles/main.css"
-        )
+        response = await authenticated_client.get(f"/scroll/{url_hash}/paper/styles/main.css")
         assert response.status_code == 200
         assert b"color: navy" in response.content
 
@@ -398,9 +392,7 @@ class TestFullUploadToServingRoundTrip:
         self, authenticated_client, test_subject, mock_storage
     ):
         """Nested zip (my-paper/index.html) should serve assets after flattening."""
-        nested_html = VALID_HTML.replace(
-            "</head>", '<link href="css/style.css"></head>'
-        )
+        nested_html = VALID_HTML.replace("</head>", '<link href="css/style.css"></head>')
         zip_bytes = make_zip_bytes(
             {
                 "my-paper/index.html": nested_html,
@@ -439,19 +431,14 @@ class TestFullUploadToServingRoundTrip:
         assert b"Research Paper Title" in response.content
 
         # Verify CSS (should be at css/style.css after stripping my-paper/ prefix)
-        response = await authenticated_client.get(
-            f"/scroll/{url_hash}/paper/css/style.css"
-        )
+        response = await authenticated_client.get(f"/scroll/{url_hash}/paper/css/style.css")
         assert response.status_code == 200
         assert b"margin: 0" in response.content
 
         # Verify JSON data
-        response = await authenticated_client.get(
-            f"/scroll/{url_hash}/paper/data/results.json"
-        )
+        response = await authenticated_client.get(f"/scroll/{url_hash}/paper/data/results.json")
         assert response.status_code == 200
         assert b'"x"' in response.content
-
 
     @pytest.mark.asyncio
     async def test_sibling_dir_assets_servable_via_parent_path(
@@ -501,22 +488,16 @@ class TestFullUploadToServingRoundTrip:
 
         # Assets in sibling directories are accessible via the parent-level route
         # (simulating what ../styles/paper.css resolves to from /scroll/{hash}/paper/)
-        response = await authenticated_client.get(
-            f"/scroll/{url_hash}/styles/paper.css"
-        )
+        response = await authenticated_client.get(f"/scroll/{url_hash}/styles/paper.css")
         assert response.status_code == 200
         assert response.headers["content-type"].startswith("text/css")
         assert b"color: red" in response.content
 
-        response = await authenticated_client.get(
-            f"/scroll/{url_hash}/images/figure1.svg"
-        )
+        response = await authenticated_client.get(f"/scroll/{url_hash}/images/figure1.svg")
         assert response.status_code == 200
         assert response.headers["content-type"].startswith("image/svg+xml")
 
-        response = await authenticated_client.get(
-            f"/scroll/{url_hash}/scripts/plot.js"
-        )
+        response = await authenticated_client.get(f"/scroll/{url_hash}/scripts/plot.js")
         assert response.status_code == 200
         assert b"console.log" in response.content
 
@@ -541,9 +522,7 @@ class TestFullUploadToServingRoundTrip:
         )
         url_hash = response.headers["location"].split("/preview/")[1].rstrip("/")
 
-        response = await authenticated_client.get(
-            f"/scroll/{url_hash}/styles/paper.css"
-        )
+        response = await authenticated_client.get(f"/scroll/{url_hash}/styles/paper.css")
         assert response.status_code == 404
 
 

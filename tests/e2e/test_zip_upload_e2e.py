@@ -1,6 +1,5 @@
 """E2E tests for zip archive upload with entry point picker and asset serving."""
 
-import io
 import os
 import tempfile
 import zipfile
@@ -65,9 +64,7 @@ async def test_zip_upload_shows_entry_point_picker(test_server):
             await page.fill('input[name="title"]', "Zip Upload E2E Test")
             await page.fill('input[name="authors"]', "E2E Author")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
-            await page.fill(
-                'textarea[name="abstract"]', "Test abstract for zip upload e2e test"
-            )
+            await page.fill('textarea[name="abstract"]', "Test abstract for zip upload e2e test")
             await page.fill('input[name="keywords"]', "zip, e2e, test")
 
             # Create test zip
@@ -99,9 +96,7 @@ async def test_zip_upload_shows_entry_point_picker(test_server):
                 await page.click('#entry-point-form button[type="submit"]')
 
                 # Should redirect to preview
-                await expect(page.locator("body")).to_contain_text(
-                    "PREVIEW MODE", timeout=10000
-                )
+                await expect(page.locator("body")).to_contain_text("PREVIEW MODE", timeout=10000)
 
             finally:
                 if os.path.exists(zip_path):
@@ -154,9 +149,7 @@ async def test_zip_upload_assets_load_in_iframe(test_server):
                 await page.click('#entry-point-form button[type="submit"]')
 
                 # Wait for preview page
-                await expect(page.locator("body")).to_contain_text(
-                    "PREVIEW MODE", timeout=10000
-                )
+                await expect(page.locator("body")).to_contain_text("PREVIEW MODE", timeout=10000)
 
                 # Verify entry point HTML loaded in iframe
                 iframe = page.frame_locator("#paper-frame")

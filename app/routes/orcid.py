@@ -37,7 +37,11 @@ async def orcid_redirect(request: Request, db: AsyncSession = Depends(get_db)):
     """Redirect to ORCID authorize URL with CSRF state."""
     if not ORCID_CLIENT_ID or not ORCID_CLIENT_SECRET:
         current_user = await get_current_user_from_session(request, db)
-        error_url = "/dashboard?error=orcid_not_configured" if current_user else "/login?error=orcid_not_configured"
+        error_url = (
+            "/dashboard?error=orcid_not_configured"
+            if current_user
+            else "/login?error=orcid_not_configured"
+        )
         return RedirectResponse(url=error_url, status_code=302)
 
     state = secrets.token_urlsafe(32)
@@ -55,8 +59,12 @@ async def orcid_redirect(request: Request, db: AsyncSession = Depends(get_db)):
 
     response = RedirectResponse(url=authorize_url, status_code=302)
     response.set_cookie(
-        "orcid_state", state, httponly=True, secure=IS_PRODUCTION,
-        samesite="lax", max_age=600,
+        "orcid_state",
+        state,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
+        max_age=600,
     )
     return response
 
@@ -144,7 +152,9 @@ async def _link_orcid(db: AsyncSession, user: User, orcid_id: str) -> RedirectRe
 
 
 async def _login_or_register(
-    db: AsyncSession, orcid_id: str, orcid_name: str,
+    db: AsyncSession,
+    orcid_id: str,
+    orcid_name: str,
 ) -> RedirectResponse:
     """Log in existing ORCID user or create a new account."""
     logger = get_logger()
@@ -157,8 +167,11 @@ async def _login_or_register(
         logger.info(f"ORCID login for user {user.id}")
         response = RedirectResponse(url="/dashboard", status_code=302)
         response.set_cookie(
-            "session_id", session_id, httponly=True,
-            secure=IS_PRODUCTION, samesite="lax",
+            "session_id",
+            session_id,
+            httponly=True,
+            secure=IS_PRODUCTION,
+            samesite="lax",
         )
         return response
 
@@ -183,8 +196,11 @@ async def _login_or_register(
 
     response = RedirectResponse(url="/dashboard", status_code=302)
     response.set_cookie(
-        "session_id", session_id, httponly=True,
-        secure=IS_PRODUCTION, samesite="lax",
+        "session_id",
+        session_id,
+        httponly=True,
+        secure=IS_PRODUCTION,
+        samesite="lax",
     )
     return response
 

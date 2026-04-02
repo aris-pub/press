@@ -1,7 +1,6 @@
 """Tests for ORCID iD storage on the User model."""
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -134,9 +133,7 @@ class TestUserOrcidColumn:
 
         await test_db.commit()
 
-        result = await test_db.execute(
-            select(User).where(User.orcid_id.is_(None))
-        )
+        result = await test_db.execute(select(User).where(User.orcid_id.is_(None)))
         users = result.scalars().all()
         assert len(users) == 3
 

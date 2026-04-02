@@ -27,7 +27,7 @@ from app.logging_config import get_logger, log_auth_event, log_error, log_reques
 from app.models.session import Session
 from app.models.token import Token
 from app.models.user import User
-from app.templates_config import templates
+from app.templates_config import ORCID_ENABLED, templates
 
 router = APIRouter()
 
@@ -91,7 +91,9 @@ async def login_page(request: Request, db: AsyncSession = Depends(get_db)):
 
     error = request.query_params.get("error")
     return templates.TemplateResponse(
-        request, "auth/login.html", {"current_user": current_user, "error": error}
+        request,
+        "auth/login.html",
+        {"current_user": current_user, "error": error, "orcid_enabled": ORCID_ENABLED},
     )
 
 
@@ -249,7 +251,9 @@ async def register_page(request: Request, db: AsyncSession = Depends(get_db)):
 
     error = request.query_params.get("error")
     return templates.TemplateResponse(
-        request, "auth/register.html", {"current_user": current_user, "error": error}
+        request,
+        "auth/register.html",
+        {"current_user": current_user, "error": error, "orcid_enabled": ORCID_ENABLED},
     )
 
 

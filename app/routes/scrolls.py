@@ -544,7 +544,9 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
     is_owner = current_user is not None and scroll.user_id == current_user.id
 
     return templates.TemplateResponse(
-        request, "scroll.html", {"scroll": scroll, "base_url": get_base_url(), "is_owner": is_owner}
+        request,
+        "scroll.html",
+        {"scroll": scroll, "base_url": get_base_url(), "is_owner": is_owner},
     )
 
 
@@ -1487,7 +1489,9 @@ async def upload_form(
                         content_hash=f"{truncated_hash}-{nonce}",
                         url_hash=new_url_hash,
                         status="preview",
-                        original_filename=original_filename if original_filename else "document.html",
+                        original_filename=original_filename
+                        if original_filename
+                        else "document.html",
                     )
                     db.add(scroll)
                 else:
@@ -1806,9 +1810,7 @@ async def confirm_entry_point(
         import traceback
 
         error_message = str(e) if str(e) else "Upload failed. Please try again."
-        get_logger().error(
-            f"Entry point confirmation failed: {e}\n{traceback.format_exc()}"
-        )
+        get_logger().error(f"Entry point confirmation failed: {e}\n{traceback.format_exc()}")
         if db.dirty or db.new:
             try:
                 await db.rollback()
@@ -2257,7 +2259,6 @@ async def get_archive_asset_parent(
     Must be registered AFTER all other /scroll/{url_hash}/ routes.
     """
     import mimetypes
-
     from pathlib import PurePosixPath
 
     resolved = PurePosixPath(path)

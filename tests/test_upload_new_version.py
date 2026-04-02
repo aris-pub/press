@@ -1,9 +1,8 @@
 """Tests for Upload New Version button on dashboard and upload form revision variant."""
 
-import pytest
 from httpx import AsyncClient
+import pytest
 
-from app.models.scroll import Scroll, Subject
 from tests.conftest import create_content_addressable_scroll
 
 

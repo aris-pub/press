@@ -453,9 +453,7 @@ class TestListScrollsVersioning:
         assert v1.url_hash not in hashes
 
     @pytest.mark.asyncio
-    async def test_list_all_versions_parameter(
-        self, client: AsyncClient, versioned_scrolls
-    ):
+    async def test_list_all_versions_parameter(self, client: AsyncClient, versioned_scrolls):
         response = await client.get("/api/v1/scrolls", params={"all_versions": "true"})
         assert response.status_code == 200
         data = response.json()
@@ -483,9 +481,7 @@ class TestGetScrollVersioning:
     """Tests for version info in the single scroll detail endpoint."""
 
     @pytest.mark.asyncio
-    async def test_detail_includes_versions_array(
-        self, client: AsyncClient, versioned_scrolls
-    ):
+    async def test_detail_includes_versions_array(self, client: AsyncClient, versioned_scrolls):
         v1, v2 = versioned_scrolls
         response = await client.get(f"/api/v1/scrolls/{v2.url_hash}")
         assert response.status_code == 200
@@ -496,9 +492,7 @@ class TestGetScrollVersioning:
         assert versions[0]["version"] > versions[1]["version"]
 
     @pytest.mark.asyncio
-    async def test_versions_array_ordered_desc(
-        self, client: AsyncClient, versioned_scrolls
-    ):
+    async def test_versions_array_ordered_desc(self, client: AsyncClient, versioned_scrolls):
         v1, v2 = versioned_scrolls
         response = await client.get(f"/api/v1/scrolls/{v1.url_hash}")
         data = response.json()
@@ -519,9 +513,7 @@ class TestGetScrollVersioning:
         assert "published_at" in entry
 
     @pytest.mark.asyncio
-    async def test_detail_includes_latest_version(
-        self, client: AsyncClient, versioned_scrolls
-    ):
+    async def test_detail_includes_latest_version(self, client: AsyncClient, versioned_scrolls):
         _, v2 = versioned_scrolls
         response = await client.get(f"/api/v1/scrolls/{v2.url_hash}")
         data = response.json()

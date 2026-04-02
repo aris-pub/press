@@ -3,7 +3,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -89,9 +88,7 @@ class TestUploadPageRevises:
         session = get_session(session_id)
         assert "revises_scroll" not in session
 
-    async def test_revises_not_owner_rejected(
-        self, authenticated_client, test_subject, test_db
-    ):
+    async def test_revises_not_owner_rejected(self, authenticated_client, test_subject, test_db):
         """Cannot revise a scroll owned by someone else."""
         from app.auth.utils import get_password_hash
 
@@ -120,9 +117,7 @@ class TestUploadPageRevises:
         self, authenticated_client, test_user, test_subject, test_db
     ):
         """Cannot revise a scroll that is still in preview status."""
-        url_hash, content_hash, _ = await generate_permanent_url(
-            test_db, "<h1>Draft</h1>"
-        )
+        url_hash, content_hash, _ = await generate_permanent_url(test_db, "<h1>Draft</h1>")
         draft = Scroll(
             user_id=test_user.id,
             subject_id=test_subject.id,
@@ -282,7 +277,9 @@ class TestPublishVersioning:
     ):
         """Publishing without revises_scroll uses normal v1 flow."""
         preview = await self._create_preview(
-            test_db, test_user, test_subject,
+            test_db,
+            test_user,
+            test_subject,
             html_content="<h1>Brand New</h1><p>First version</p>",
         )
 
@@ -336,7 +333,9 @@ class TestPublishVersioning:
 
         # Now create v3 preview
         v3_preview = await self._create_preview(
-            test_db, test_user, test_subject,
+            test_db,
+            test_user,
+            test_subject,
             html_content="<h1>V3 Content</h1><p>Version three</p>",
         )
 
@@ -457,12 +456,12 @@ class TestDuplicateContentHandling:
         resp = await authenticated_client.post(
             f"/preview/{preview_url_hash}/confirm", follow_redirects=False
         )
-        assert resp.status_code == 303, f"Publish failed with {resp.status_code}: {resp.text[:500]}"
+        assert resp.status_code == 303, (
+            f"Publish failed with {resp.status_code}: {resp.text[:500]}"
+        )
 
         # Verify v2 was published correctly
-        result = await test_db.execute(
-            select(Scroll).where(Scroll.url_hash == preview_url_hash)
-        )
+        result = await test_db.execute(select(Scroll).where(Scroll.url_hash == preview_url_hash))
         v2 = result.scalar_one()
         assert v2.status == "published"
         assert v2.version == 2
@@ -500,9 +499,7 @@ class TestDuplicateContentHandling:
 class TestOwnershipValidation:
     """Only scroll owners can upload new versions."""
 
-    async def test_non_owner_cannot_revise(
-        self, client, test_subject, test_db
-    ):
+    async def test_non_owner_cannot_revise(self, client, test_subject, test_db):
         """A different user cannot use revises for someone else's scroll."""
         from app.auth.utils import get_password_hash
 
@@ -533,9 +530,7 @@ class TestOwnershipValidation:
         other_session_id = await create_session(test_db, other_user.id)
         client.cookies.set("session_id", other_session_id)
 
-        resp = await client.get(
-            f"/upload?revises={v1.url_hash}", follow_redirects=False
-        )
+        resp = await client.get(f"/upload?revises={v1.url_hash}", follow_redirects=False)
         assert resp.status_code == 200
 
         session = get_session(other_session_id)
@@ -559,9 +554,7 @@ class TestNewVersionLink:
         assert f"/upload?revises={v1.url_hash}" in resp.text
         assert "New Version" in resp.text
 
-    async def test_non_owner_does_not_see_new_version_link(
-        self, client, test_subject, test_db
-    ):
+    async def test_non_owner_does_not_see_new_version_link(self, client, test_subject, test_db):
         """A different user should NOT see the 'New Version' link."""
         from app.auth.utils import get_password_hash
 
@@ -590,9 +583,7 @@ class TestNewVersionLink:
         other_session_id = await create_session(test_db, other_user.id)
         client.cookies.set("session_id", other_session_id)
 
-        resp = await client.get(
-            f"/{v1.publication_year}/{v1.slug}", follow_redirects=False
-        )
+        resp = await client.get(f"/{v1.publication_year}/{v1.slug}", follow_redirects=False)
         assert resp.status_code == 200
         assert f"/upload?revises={v1.url_hash}" not in resp.text
 
@@ -602,9 +593,7 @@ class TestNewVersionLink:
         """An unauthenticated user should NOT see the 'New Version' link."""
         v1 = await _create_published_v1(test_db, test_user, test_subject)
 
-        resp = await client.get(
-            f"/{v1.publication_year}/{v1.slug}", follow_redirects=False
-        )
+        resp = await client.get(f"/{v1.publication_year}/{v1.slug}", follow_redirects=False)
         assert resp.status_code == 200
         assert f"/upload?revises={v1.url_hash}" not in resp.text
         assert "New Version" not in resp.text
@@ -615,9 +604,7 @@ class TestNewVersionLink:
         """The 'New Version' link also appears on the /scroll/{url_hash} route."""
         v1 = await _create_published_v1(test_db, test_user, test_subject)
 
-        resp = await authenticated_client.get(
-            f"/scroll/{v1.url_hash}", follow_redirects=False
-        )
+        resp = await authenticated_client.get(f"/scroll/{v1.url_hash}", follow_redirects=False)
         assert resp.status_code == 200
         assert f"/upload?revises={v1.url_hash}" in resp.text
 

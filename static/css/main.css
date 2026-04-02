@@ -634,20 +634,20 @@ button.btn, a.btn {
 .auth-links a:hover {
   text-decoration: underline;
 }
-.auth-divider {
+.auth-separator {
   display: flex;
   align-items: center;
   margin: var(--space-lg) 0;
   color: var(--gray);
   font-size: var(--text-sm);
 }
-.auth-divider::before,
-.auth-divider::after {
+.auth-separator::before,
+.auth-separator::after {
   content: "";
   flex: 1;
   border-bottom: 1px solid var(--gray-lightest);
 }
-.auth-divider span {
+.auth-separator span {
   padding: 0 var(--space-md);
 }
 .btn-orcid {
@@ -657,21 +657,20 @@ button.btn, a.btn {
   gap: var(--space-sm);
   width: 100%;
   padding: var(--space-md) var(--space-lg);
-  background: var(--white);
-  color: var(--text-color);
-  border: 1px solid var(--gray-lighter);
+  background: #a6ce39;
+  color: #fff;
+  border: none;
   border-radius: var(--border-radius);
   font-size: var(--text-base);
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: background-color 0.2s;
 }
 .btn-orcid:hover {
-  background: var(--gray-bg);
-  border-color: #a6ce39;
+  background: #8fb830;
 }
-.orcid-icon {
+.orcid-logo {
   flex-shrink: 0;
 }
 .orcid-status {
@@ -775,7 +774,7 @@ button.btn, a.btn {
     margin-bottom: var(--mobile-space-lg);
   }
   
-  .auth-divider {
+  .auth-separator {
     margin: var(--mobile-space-lg) 0;
   }
 

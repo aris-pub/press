@@ -369,7 +369,7 @@ async def test_citation_fulltext_url_uses_version_specific_url(client, versioned
     v1, v2 = versioned_scrolls
 
     # Check v1
-    response = await client.get(f"/2026/versioned-paper/v1")
+    response = await client.get("/2026/versioned-paper/v1")
     assert response.status_code == 200
     soup = BeautifulSoup(response.text, "html.parser")
     fulltext_tag = soup.find("meta", {"name": "citation_fulltext_html_url"})
@@ -377,7 +377,7 @@ async def test_citation_fulltext_url_uses_version_specific_url(client, versioned
     assert fulltext_tag["content"].endswith("/2026/versioned-paper/v1")
 
     # Check v2
-    response = await client.get(f"/2026/versioned-paper/v2")
+    response = await client.get("/2026/versioned-paper/v2")
     assert response.status_code == 200
     soup = BeautifulSoup(response.text, "html.parser")
     fulltext_tag = soup.find("meta", {"name": "citation_fulltext_html_url"})
@@ -391,7 +391,7 @@ async def test_canonical_url_uses_year_slug_without_version(client, versioned_sc
     v1, v2 = versioned_scrolls
 
     # Even on v1 page, canonical should be /{year}/{slug}
-    response = await client.get(f"/2026/versioned-paper/v1")
+    response = await client.get("/2026/versioned-paper/v1")
     assert response.status_code == 200
     soup = BeautifulSoup(response.text, "html.parser")
     canonical = soup.find("link", {"rel": "canonical"})
@@ -405,7 +405,7 @@ async def test_scholar_and_canonical_urls_differ_for_versioned_scroll(client, ve
     """Scholar URL and canonical URL intentionally differ for versioned scrolls."""
     v1, v2 = versioned_scrolls
 
-    response = await client.get(f"/2026/versioned-paper/v1")
+    response = await client.get("/2026/versioned-paper/v1")
     assert response.status_code == 200
     soup = BeautifulSoup(response.text, "html.parser")
 

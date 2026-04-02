@@ -159,9 +159,7 @@ class TestOrcidCallback:
         redir = await client.get("/auth/orcid", follow_redirects=False)
         state = parse_qs(urlparse(redir.headers["location"]).query)["state"][0]
 
-        resp = await client.get(
-            f"/auth/orcid/callback?state={state}", follow_redirects=False
-        )
+        resp = await client.get(f"/auth/orcid/callback?state={state}", follow_redirects=False)
         assert resp.status_code == 302
         assert "/login" in resp.headers["location"]
 
@@ -190,7 +188,9 @@ class TestOrcidCallback:
         redir = await client.get("/auth/orcid", follow_redirects=False)
         state = parse_qs(urlparse(redir.headers["location"]).query)["state"][0]
 
-        mock_resp = _mock_orcid_token_response(orcid_id="0000-0003-0000-0001", name="New Researcher")
+        mock_resp = _mock_orcid_token_response(
+            orcid_id="0000-0003-0000-0001", name="New Researcher"
+        )
         with patch("app.routes.orcid.httpx.AsyncClient") as MockClient:
             MockClient.return_value.__aenter__ = AsyncMock(return_value=MockClient.return_value)
             MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -205,9 +205,7 @@ class TestOrcidCallback:
         assert "/dashboard" in resp.headers["location"]
 
         # Verify user was created
-        result = await test_db.execute(
-            select(User).where(User.orcid_id == "0000-0003-0000-0001")
-        )
+        result = await test_db.execute(select(User).where(User.orcid_id == "0000-0003-0000-0001"))
         user = result.scalar_one_or_none()
         assert user is not None
         assert user.display_name == "New Researcher"
@@ -355,18 +353,20 @@ class TestOrcidUI:
     """ORCID buttons appear on login/register pages and dashboard."""
 
     async def test_login_page_shows_orcid_button(self, client):
-        resp = await client.get("/login")
+        with patch("app.routes.auth.ORCID_ENABLED", True):
+            resp = await client.get("/login")
         assert resp.status_code == 200
         body = resp.text
         assert "/auth/orcid" in body
         assert "Sign in with ORCID" in body
 
     async def test_register_page_shows_orcid_button(self, client):
-        resp = await client.get("/register")
+        with patch("app.routes.auth.ORCID_ENABLED", True):
+            resp = await client.get("/register")
         assert resp.status_code == 200
         body = resp.text
         assert "/auth/orcid" in body
-        assert "Sign up with ORCID" in body
+        assert "Register with ORCID" in body
 
     async def test_dashboard_shows_link_orcid(self, authenticated_client, test_user):
         """Dashboard shows 'Link ORCID' when user has no ORCID linked."""
@@ -419,7 +419,9 @@ class TestOrcidUI:
         assert resp.status_code == 200
         assert "password" in resp.text.lower()
 
-    async def test_dashboard_shows_orcid_not_configured_error(self, authenticated_client, test_user):
+    async def test_dashboard_shows_orcid_not_configured_error(
+        self, authenticated_client, test_user
+    ):
         resp = await authenticated_client.get("/dashboard?error=orcid_not_configured")
         assert resp.status_code == 200
         assert "not available" in resp.text.lower()
