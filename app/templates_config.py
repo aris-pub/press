@@ -15,6 +15,7 @@ from app.security.nonce import get_nonce_from_request
 load_dotenv()
 
 TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "")
+ORCID_ENABLED = bool(os.getenv("ORCID_CLIENT_ID", ""))
 
 
 class TemplatesWithGlobals(Jinja2Templates):

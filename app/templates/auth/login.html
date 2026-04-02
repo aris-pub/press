@@ -9,6 +9,9 @@
     <p>Sign in to your Press account</p>
   </div>
 
+  {% from "auth/partials/orcid_button.html" import orcid_button %}
+  {{ orcid_button(orcid_enabled, "Sign in with ORCID", "or sign in with email") }}
+
   {% include "auth/partials/login_form.html" %}
 
   <div class="auth-links">
