@@ -239,6 +239,7 @@ class TestCanonicalLinkTag:
         # Canonical should point to the canonical URL (no version suffix)
         # Check that the canonical link does NOT include /v1
         import re
+
         canonical_match = re.search(r'<link rel="canonical" href="([^"]+)"', response.text)
         assert canonical_match is not None
         canonical_url = canonical_match.group(1)

@@ -11,7 +11,9 @@ logger = get_logger()
 templates = Jinja2Templates(directory="app/templates")
 
 
-async def not_found_handler(request: Request, exc: StarletteHTTPException) -> HTMLResponse | JSONResponse:
+async def not_found_handler(
+    request: Request, exc: StarletteHTTPException
+) -> HTMLResponse | JSONResponse:
     """Handle 404 Not Found errors with custom template or JSON for API routes."""
     logger.warning(f"404 error: {request.url} - {exc.detail}")
 

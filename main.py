@@ -14,12 +14,12 @@ import sentry_sdk
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.exception_handlers import (
     http_exception_handler,
     internal_server_error_handler,
 )
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.logging_config import get_logger
 from app.memory_profiling_middleware import MemoryProfilingMiddleware
 from app.middleware import (

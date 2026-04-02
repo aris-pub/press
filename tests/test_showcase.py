@@ -9,7 +9,9 @@ from tests.conftest import create_content_addressable_scroll
 async def test_showcase_column_defaults_to_false(test_db, test_user, test_subject):
     """New scrolls should have is_showcase=False by default."""
     scroll = await create_content_addressable_scroll(
-        test_db, test_user, test_subject,
+        test_db,
+        test_user,
+        test_subject,
         title="Regular Scroll",
         html_content="<h1>Regular</h1>",
     )
@@ -19,7 +21,9 @@ async def test_showcase_column_defaults_to_false(test_db, test_user, test_subjec
 async def test_showcase_column_can_be_set_true(test_db, test_user, test_subject):
     """Scrolls can be explicitly marked as showcase."""
     scroll = await create_content_addressable_scroll(
-        test_db, test_user, test_subject,
+        test_db,
+        test_user,
+        test_subject,
         title="Showcase Scroll",
         html_content="<h1>Showcase</h1>",
     )
@@ -37,7 +41,9 @@ async def test_homepage_all_showcase_single_section(client: AsyncClient, test_db
     await test_db.refresh(subject)
 
     scroll = await create_content_addressable_scroll(
-        test_db, test_user, subject,
+        test_db,
+        test_user,
+        subject,
         title="Spectral Theorem Demo",
         html_content="<h1>Spectral</h1>",
     )
@@ -61,7 +67,9 @@ async def test_homepage_mixed_two_sections(client: AsyncClient, test_db, test_us
 
     # Real scroll
     real = await create_content_addressable_scroll(
-        test_db, test_user, subject,
+        test_db,
+        test_user,
+        subject,
         title="Real Research Paper",
         html_content="<h1>Real research</h1>",
     )
@@ -69,7 +77,9 @@ async def test_homepage_mixed_two_sections(client: AsyncClient, test_db, test_us
 
     # Showcase scroll
     showcase = await create_content_addressable_scroll(
-        test_db, test_user, subject,
+        test_db,
+        test_user,
+        subject,
         title="Demo Showcase Paper",
         html_content="<h1>Demo content</h1>",
     )
@@ -94,7 +104,9 @@ async def test_homepage_no_showcase_subtitle_when_only_real(
     await test_db.refresh(subject)
 
     await create_content_addressable_scroll(
-        test_db, test_user, subject,
+        test_db,
+        test_user,
+        subject,
         title="Real Biology Paper",
         html_content="<h1>Biology</h1>",
     )
@@ -114,7 +126,9 @@ async def test_showcase_label_in_card_meta(client: AsyncClient, test_db, test_us
     await test_db.refresh(subject)
 
     scroll = await create_content_addressable_scroll(
-        test_db, test_user, subject,
+        test_db,
+        test_user,
+        subject,
         title="Showcase Card Test",
         html_content="<h1>Test</h1>",
     )
@@ -134,7 +148,9 @@ async def test_real_card_shows_submitted(client: AsyncClient, test_db, test_user
     await test_db.refresh(subject)
 
     await create_content_addressable_scroll(
-        test_db, test_user, subject,
+        test_db,
+        test_user,
+        subject,
         title="Real Chem Paper",
         html_content="<h1>Chemistry</h1>",
     )
@@ -153,13 +169,17 @@ async def test_partials_endpoint_splits_showcase(client: AsyncClient, test_db, t
     await test_db.refresh(subject)
 
     await create_content_addressable_scroll(
-        test_db, test_user, subject,
+        test_db,
+        test_user,
+        subject,
         title="Real Econ Paper",
         html_content="<h1>Economics</h1>",
     )
 
     showcase = await create_content_addressable_scroll(
-        test_db, test_user, subject,
+        test_db,
+        test_user,
+        subject,
         title="Demo Econ Paper",
         html_content="<h1>Demo Econ</h1>",
     )

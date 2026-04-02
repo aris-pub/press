@@ -108,7 +108,6 @@ class TestGetStorageFallback:
         }
         with patch.dict(os.environ, env, clear=False):
             from app.storage import get_storage
-
             from app.storage.tigris import TigrisStorage
 
             storage = get_storage()

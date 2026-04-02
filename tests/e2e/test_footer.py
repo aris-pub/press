@@ -17,7 +17,7 @@ async def test_footer_structure_light_mode(test_server):
         await page.wait_for_load_state("networkidle")
 
         # Click on the first scroll to view it
-        first_scroll_link = page.locator('a.scroll-card-link').first
+        first_scroll_link = page.locator("a.scroll-card-link").first
         await first_scroll_link.click()
         await page.wait_for_load_state("networkidle")
 
@@ -67,7 +67,7 @@ async def test_footer_dark_mode(test_server):
         await page.goto(f"{test_server}/")
         await page.wait_for_load_state("networkidle")
 
-        first_scroll_link = page.locator('a.scroll-card-link').first
+        first_scroll_link = page.locator("a.scroll-card-link").first
         await first_scroll_link.click()
         await page.wait_for_load_state("networkidle")
 
@@ -116,7 +116,7 @@ async def test_footer_mobile_responsive(test_server):
         await page.goto(f"{test_server}/")
         await page.wait_for_load_state("networkidle")
 
-        first_scroll_link = page.locator('a.scroll-card-link').first
+        first_scroll_link = page.locator("a.scroll-card-link").first
         await first_scroll_link.click()
         await page.wait_for_load_state("networkidle")
 
@@ -154,7 +154,7 @@ async def test_footer_cta_links_work(test_server):
         await page.goto(f"{test_server}/")
         await page.wait_for_load_state("networkidle")
 
-        first_scroll_link = page.locator('a.scroll-card-link').first
+        first_scroll_link = page.locator("a.scroll-card-link").first
         await first_scroll_link.click()
         await page.wait_for_load_state("networkidle")
 
@@ -197,7 +197,7 @@ async def test_footer_aris_link_external(test_server):
         await page.goto(f"{test_server}/")
         await page.wait_for_load_state("networkidle")
 
-        first_scroll_link = page.locator('a.scroll-card-link').first
+        first_scroll_link = page.locator("a.scroll-card-link").first
         await first_scroll_link.click()
         await page.wait_for_load_state("networkidle")
 
@@ -230,7 +230,7 @@ async def test_footer_license_display_cc_by(test_server):
         await page.wait_for_load_state("networkidle")
 
         # Find a scroll (seed data should have CC BY scrolls)
-        first_scroll_link = page.locator('a.scroll-card-link').first
+        first_scroll_link = page.locator("a.scroll-card-link").first
         await first_scroll_link.click()
         await page.wait_for_load_state("networkidle")
 

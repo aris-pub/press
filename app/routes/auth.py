@@ -247,7 +247,9 @@ async def register_page(request: Request, db: AsyncSession = Depends(get_db)):
         return RedirectResponse(url="/", status_code=302)
 
     return templates.TemplateResponse(
-        request, "auth/register.html", {"current_user": current_user, "orcid_enabled": ORCID_ENABLED}
+        request,
+        "auth/register.html",
+        {"current_user": current_user, "orcid_enabled": ORCID_ENABLED},
     )
 
 

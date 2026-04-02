@@ -110,7 +110,10 @@ class TestYearSlugResolvesLatest:
     async def test_single_version_works(self, client, test_db, user, subject):
         series_id = uuid.uuid4()
         scroll = _make_scroll(
-            user, subject, version=1, scroll_series_id=series_id,
+            user,
+            subject,
+            version=1,
+            scroll_series_id=series_id,
             url_hash="single-ver-hash",
         )
         test_db.add(scroll)

@@ -126,15 +126,12 @@ async def check_hash_collision(session: AsyncSession, hash_prefix: str) -> bool:
         True if collision exists, False otherwise
     """
     # Import here to avoid circular imports
+    from sqlalchemy import exists as sa_exists
     from sqlalchemy import select
 
     from app.models.scroll import Scroll
 
-    from sqlalchemy import exists as sa_exists
-
-    result = await session.execute(
-        select(sa_exists().where(Scroll.url_hash == hash_prefix))
-    )
+    result = await session.execute(select(sa_exists().where(Scroll.url_hash == hash_prefix)))
     return result.scalar()
 
 
