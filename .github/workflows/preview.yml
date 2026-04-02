@@ -33,6 +33,11 @@ jobs:
         DB_APP: ${{ env.APP_NAME }}-db
       run: |
         if ! flyctl status --app "$APP_NAME" 2>/dev/null; then
+          # Clean up stale DB app from a previous failed run
+          if flyctl status --app "$DB_APP" 2>/dev/null; then
+            flyctl apps destroy "$DB_APP" --yes
+          fi
+
           # Create ephemeral Postgres for this PR
           flyctl postgres create \
             --name "$DB_APP" \
