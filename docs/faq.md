@@ -40,6 +40,14 @@ Yes, forever. Publishing and hosting on Press is completely free with no paywall
 
 We may introduce optional premium features in the future (custom domains, advanced analytics), but core publishing will always remain free.
 
+## Does Press review submissions before publishing?
+
+No. Press does not do pre-publication review for quality, novelty, or correctness. We are infrastructure for research, not a gatekeeper of it.
+
+We do run automated checks at upload time (spam detection, content structure validation, security scanning), and we will remove content that violates our [Content Policy](/content-policy) -- things like spam, plagiarism, or malicious code. But we do not judge whether your research is good enough to publish. That is for the research community to decide.
+
+For full details, see our [Content Policy](/content-policy).
+
 ## Who owns my content?
 
 You do, 100%. You retain full ownership and copyright of your work.
