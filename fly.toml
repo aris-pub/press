@@ -39,7 +39,7 @@ primary_region = "fra"
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 1024
+  memory_mb = 512
 
 [deploy]
   release_command = "uv run --frozen alembic upgrade head"
