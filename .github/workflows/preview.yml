@@ -17,7 +17,10 @@ permissions:
 
 jobs:
   deploy:
-    if: github.event.action != 'closed'
+    # Skip deploy for dependabot PRs — dependency bumps don't need preview environments
+    # and creating fly apps for them generates orphans + cost without value.
+    # Let CI run on these PRs; just skip the fly preview.
+    if: github.event.action != 'closed' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
 
     steps:
@@ -123,5 +126,21 @@ jobs:
 
     - name: Destroy preview app and database
       run: |
-        flyctl apps destroy "$APP_NAME" --yes || true
-        flyctl apps destroy "$APP_NAME-db" --yes || true
+        # Treat "app does not exist" as success (not every closed PR had a deploy);
+        # any other failure is reported loudly so orphans don't accumulate silently.
+        destroy_app() {
+          local app="$1"
+          if ! flyctl status --app "$app" >/dev/null 2>&1; then
+            echo "App $app does not exist; skipping."
+            return 0
+          fi
+          if ! flyctl apps destroy "$app" --yes; then
+            echo "::error title=Destroy failed::Failed to destroy fly app $app — investigate manually with 'flyctl apps destroy $app'"
+            return 1
+          fi
+          echo "Destroyed $app."
+        }
+        rc=0
+        destroy_app "$APP_NAME" || rc=1
+        destroy_app "$APP_NAME-db" || rc=1
+        exit $rc
