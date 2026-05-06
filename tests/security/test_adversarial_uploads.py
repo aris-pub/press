@@ -119,7 +119,7 @@ class TestSEOSpam:
     def test_hidden_spam_links(self):
         """Paper body packed with external links beyond the limit."""
         links = "\n".join(
-            f'<a href="https://spam-site-{i}.com/buy">reference {i}</a>' for i in range(30)
+            f'<a href="https://spam-site-{i}.com/buy">reference {i}</a>' for i in range(105)
         )
         html = make_paper(f"""
         <section>
@@ -185,7 +185,7 @@ class TestCryptoScamPages:
         """)
         is_valid, errors = self.html_validator.validate(html)
         assert not is_valid
-        assert any(e["type"] == "forbidden_tag" for e in errors)
+        assert any(e["type"] == "forbidden_iframe" for e in errors)
 
     def test_crypto_data_uri_redirect(self):
         """Scam using data:text/html URI to load malicious content."""
@@ -219,9 +219,9 @@ class TestExcessiveExternalLinks:
         assert len(link_errors) == 0
 
     def test_one_over_limit(self):
-        """26 external links should fail."""
+        """101 external links should fail."""
         links = "\n".join(
-            f'<a href="https://journal-{i}.org/paper">Ref {i}</a>' for i in range(26)
+            f'<a href="https://journal-{i}.org/paper">Ref {i}</a>' for i in range(101)
         )
         html = make_paper(f"<section>{links}</section>")
         is_valid, errors = self.content_validator.validate(html)
@@ -474,7 +474,7 @@ class TestCombinedPipeline:
     def test_seo_spam_disguised_as_paper(self):
         """SEO spam with academic window dressing should be flagged."""
         links = "\n".join(
-            f'<a href="https://buy-papers-{i}.com">Source {i}</a>' for i in range(30)
+            f'<a href="https://buy-papers-{i}.com">Source {i}</a>' for i in range(105)
         )
         html = make_paper(
             f"""

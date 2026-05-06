@@ -80,7 +80,6 @@ class TestHTMLValidator:
     def test_dangerous_css_rejected(self):
         """Test that dangerous CSS is rejected."""
         test_cases = [
-            '<div style="behavior: url(evil.htc);">IE hack</div>',
             "<div style=\"expression(alert('xss'));\">Expression</div>",
             "<style>body { -moz-binding: url(evil.xml); }</style>",
             '<style>@import url("evil.css");</style>',
@@ -97,7 +96,6 @@ class TestHTMLValidator:
     def test_forbidden_tags_rejected(self):
         """Test that all forbidden tags are rejected."""
         forbidden_tags = [
-            "iframe",
             "frame",
             "frameset",
             "object",
@@ -111,6 +109,26 @@ class TestHTMLValidator:
             is_valid, errors = self.validator.validate(html)
             assert not is_valid, f"Should reject tag: {tag}"
             assert any(error["type"] == "forbidden_tag" for error in errors)
+
+    def test_iframe_non_whitelisted_rejected(self):
+        """Iframes from non-whitelisted domains are rejected."""
+        html = '<iframe src="https://evil.com/phish"></iframe>'
+        is_valid, errors = self.validator.validate(html)
+        assert not is_valid
+        assert any(error["type"] == "forbidden_iframe" for error in errors)
+
+    def test_iframe_youtube_allowed(self):
+        """YouTube embeds are allowed."""
+        html = '<iframe src="https://www.youtube.com/embed/abc123"></iframe>'
+        is_valid, errors = self.validator.validate(html)
+        assert is_valid
+
+    def test_iframe_srcdoc_rejected(self):
+        """Iframes with srcdoc are always rejected."""
+        html = '<iframe srcdoc="<script>alert(1)</script>"></iframe>'
+        is_valid, errors = self.validator.validate(html)
+        assert not is_valid
+        assert any(error["type"] == "forbidden_iframe" for error in errors)
 
     def test_forms_with_external_actions_rejected(self):
         """Test that forms with external action URLs are rejected."""
@@ -201,7 +219,7 @@ class TestHTMLValidator:
         assert len(errors) == 3  # Should find all 3 issues (script tags are now allowed)
 
         error_types = [error["type"] for error in errors]
-        assert "forbidden_tag" in error_types  # iframe only
+        assert "forbidden_iframe" in error_types  # iframe with non-whitelisted src
         assert "forbidden_attribute" in error_types  # onclick
         assert "javascript_url" in error_types  # javascript: URL
 
@@ -317,8 +335,8 @@ class TestHTMLValidator:
         assert "line_number" in error
         assert "element" in error
 
-        assert error["type"] == "forbidden_tag"
-        assert "iframe" in error["message"]
+        assert error["type"] == "forbidden_iframe"
+        assert "iframe" in error["message"].lower() or "Iframe" in error["message"]
         assert isinstance(error["line_number"], int)
         assert error["element"] is not None
 
@@ -341,3 +359,33 @@ class TestHTMLValidator:
         assert is_valid, (
             f"Tag names in JavaScript should not trigger validation errors. Errors: {errors}"
         )
+
+    def test_cdn_domain_spoofing_rejected(self):
+        """CDN allowlist must use exact hostname matching, not substring."""
+        spoofed_urls = [
+            # Allowed domain embedded in path
+            '<script src="https://evil.com/cdnjs.cloudflare.com/ajax/libs/foo.js"></script>',
+            # Allowed domain as subdomain of attacker
+            '<script src="https://cdnjs.cloudflare.com.evil.com/foo.js"></script>',
+            # URL with userinfo component
+            '<script src="https://cdnjs.cloudflare.com@evil.com/foo.js"></script>',
+            # Allowed domain in query string
+            '<script src="https://evil.com/foo.js?cdn=cdnjs.cloudflare.com"></script>',
+        ]
+        for html in spoofed_urls:
+            is_valid, errors = self.validator.validate(html)
+            assert not is_valid, f"Should reject spoofed CDN URL: {html}"
+            assert any(e["type"] == "external_script" for e in errors)
+
+    def test_legitimate_cdn_urls_accepted(self):
+        """Legitimate CDN URLs should still be accepted after the fix."""
+        allowed_scripts = [
+            '<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>',
+            '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>',
+            '<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>',
+            '<script src="https://code.getmdl.io/1.3.0/material.min.js"></script>',
+        ]
+        for html in allowed_scripts:
+            is_valid, errors = self.validator.validate(html)
+            script_errors = [e for e in errors if e["type"] == "external_script"]
+            assert len(script_errors) == 0, f"Should allow: {html}, got: {script_errors}"

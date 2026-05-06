@@ -47,6 +47,20 @@ ALLOWED_EXTENSIONS = frozenset(
         ".tsv",
         ".txt",
         ".map",
+        ".md",
+        # ML model weights and runtime files (browser-based ML research)
+        ".bin",
+        ".onnx",
+        ".wasm",
+        ".pb",
+        ".safetensors",
+        ".npy",
+        ".npz",
+        ".tflite",
+        ".ort",
+        ".data",
+        ".parquet",
+        ".arrow",
     }
 )
 
@@ -108,6 +122,7 @@ FILE_SIZE_LIMITS: dict[str, int] = {
     "svg": 5 * 1024 * 1024,
     "font": 10 * 1024 * 1024,
     "data": 50 * 1024 * 1024,
+    "model": 50 * 1024 * 1024,
 }
 
 # Extension to category mapping
@@ -133,6 +148,19 @@ EXTENSION_CATEGORY: dict[str, str] = {
     ".csv": "data",
     ".tsv": "data",
     ".txt": "data",
+    ".md": "data",
+    ".bin": "model",
+    ".onnx": "model",
+    ".wasm": "model",
+    ".pb": "model",
+    ".safetensors": "model",
+    ".npy": "model",
+    ".npz": "model",
+    ".tflite": "model",
+    ".ort": "model",
+    ".data": "model",
+    ".parquet": "data",
+    ".arrow": "data",
 }
 
 TEXT_EXTENSIONS = frozenset(

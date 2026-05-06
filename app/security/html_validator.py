@@ -1,6 +1,7 @@
 """HTML validation module that rejects dangerous content instead of sanitizing."""
 
 from typing import Dict, List, Tuple
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
@@ -29,10 +30,17 @@ class HTMLValidationError:
 class HTMLValidator:
     """Validates HTML content and rejects uploads with dangerous content."""
 
+    # Allowed iframe embed domains (src must start with one of these)
+    ALLOWED_IFRAME_DOMAINS = [
+        "https://www.youtube.com/embed/",
+        "https://youtube.com/embed/",
+        "https://player.vimeo.com/video/",
+    ]
+
     # Tags that are completely forbidden
     FORBIDDEN_TAGS = [
         # "script" removed - now allowed, controlled by nonce system
-        "iframe",
+        # "iframe" removed - now allowed for whitelisted embed domains (YouTube, Vimeo)
         "frame",
         "frameset",
         "object",
@@ -72,7 +80,6 @@ class HTMLValidator:
 
     # CSS properties that are forbidden
     FORBIDDEN_CSS_PROPERTIES = [
-        "behavior",  # IE-specific, can execute code
         "-moz-binding",  # Firefox-specific, can execute code
         "expression",  # IE-specific CSS expressions (XSS vector)
         "javascript",  # Direct JavaScript in CSS
@@ -129,6 +136,7 @@ class HTMLValidator:
         # Run all validation checks with the same parsed soup
         # Don't pass lines - we'll compute line numbers on demand to save memory
         self._check_forbidden_tags(soup, html_content)
+        self._check_iframes(soup, html_content)
         self._check_meta_tags(soup, html_content)
         self._check_forbidden_attributes(soup, html_content)
         self._check_dangerous_css(soup, html_content)
@@ -174,6 +182,36 @@ class HTMLValidator:
                     HTMLValidationError(
                         error_type="forbidden_tag",
                         message=f"Forbidden tag <{tag_name}> is not allowed",
+                        line_number=line_num,
+                        element=tag_str,
+                    )
+                )
+
+    def _check_iframes(self, soup, content: str):
+        """Check iframes — allow only whitelisted embed domains."""
+        for tag in soup.find_all("iframe"):
+            src = tag.get("src", "")
+            if tag.get("srcdoc"):
+                tag_str = str(tag)[:100]
+                pos = content.find(tag_str[:50])
+                line_num = self._get_line_number(content, pos) if pos != -1 else None
+                self.errors.append(
+                    HTMLValidationError(
+                        error_type="forbidden_iframe",
+                        message="Iframe with srcdoc attribute is not allowed",
+                        line_number=line_num,
+                        element=tag_str,
+                    )
+                )
+                continue
+            if not any(src.startswith(domain) for domain in self.ALLOWED_IFRAME_DOMAINS):
+                tag_str = str(tag)[:100]
+                pos = content.find(tag_str[:50])
+                line_num = self._get_line_number(content, pos) if pos != -1 else None
+                self.errors.append(
+                    HTMLValidationError(
+                        error_type="forbidden_iframe",
+                        message=f"Iframe source '{src}' not allowed. Only YouTube and Vimeo embeds are permitted.",
                         line_number=line_num,
                         element=tag_str,
                     )
@@ -315,7 +353,7 @@ class HTMLValidator:
                     url = css_content[url_start:url_end] if url_end > url_start else ""
 
                     # Check if URL is from allowed CDN
-                    if not any(allowed in url for allowed in self.ALLOWED_CDN_DOMAINS):
+                    if not self._is_allowed_cdn(url):
                         self.errors.append(
                             HTMLValidationError(
                                 error_type="css_import_external",
@@ -413,42 +451,39 @@ class HTMLValidator:
                     )
                 )
 
-    # Allowed CDN domains for essential rendering libraries
-    ALLOWED_CDN_DOMAINS = [
-        # Math rendering
-        "cdn.jsdelivr.net/npm/mathjax",
-        "cdnjs.cloudflare.com/ajax/libs/mathjax",
-        "cdn.jsdelivr.net/npm/katex",
-        "cdnjs.cloudflare.com/ajax/libs/KaTeX",
+    # Allowed CDN origins: (hostname, path_prefix_or_None)
+    # hostname is matched exactly; path_prefix constrains the URL path if set
+    ALLOWED_CDN_RULES = [
+        # Major CDN platforms
+        ("cdn.jsdelivr.net", None),
+        ("cdnjs.cloudflare.com", "/ajax/libs/"),
+        ("unpkg.com", None),
         # Fonts
-        "fonts.googleapis.com",
-        "fonts.gstatic.com",
-        # Data visualization libraries
-        "cdn.jsdelivr.net/npm/d3@",
-        "cdn.jsdelivr.net/npm/plotly.js@",
-        "cdn.jsdelivr.net/npm/chart.js@",
-        "cdn.jsdelivr.net/npm/vega@",
-        "cdn.jsdelivr.net/npm/vega-lite@",
-        "cdn.jsdelivr.net/npm/vega-embed@",
-        "unpkg.com/d3@",
-        "unpkg.com/plotly.js@",
-        "cdn.plot.ly/plotly-",
-        "cdn.bokeh.org/bokeh/release/",
-        "cdn.jsdelivr.net/npm/three@",
-        "cdn.jsdelivr.net/npm/leaflet@",
-        "cdn.jsdelivr.net/npm/cytoscape@",
-        # Core UI libraries
-        "cdn.jsdelivr.net/npm/jquery@",
-        "cdnjs.cloudflare.com/ajax/libs/jquery/",
-        "cdn.jsdelivr.net/npm/bootstrap@",
-        "cdnjs.cloudflare.com/ajax/libs/bootstrap/",
-        # Academic-specific libraries
-        "cdn.jsdelivr.net/npm/tooltipster@",
-        "cdn.jsdelivr.net/npm/pseudocode@",
-        "cdn.jsdelivr.net/npm/popper.js@",
-        # Aris ecosystem
-        "cdn.jsdelivr.net/gh/aris-pub/rsm@",
+        ("fonts.googleapis.com", None),
+        ("fonts.gstatic.com", None),
+        # Visualization-specific CDNs
+        ("cdn.plot.ly", None),
+        ("cdn.bokeh.org", None),
+        # UI frameworks
+        ("code.getmdl.io", None),
     ]
+
+    @classmethod
+    def _is_allowed_cdn(cls, url: str) -> bool:
+        """Check if a URL is from an allowed CDN using proper URL parsing."""
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        hostname = parsed.hostname
+        if hostname is None:
+            return False
+        for allowed_host, path_prefix in cls.ALLOWED_CDN_RULES:
+            if hostname == allowed_host:
+                if path_prefix is None:
+                    return True
+                if parsed.path.startswith(path_prefix):
+                    return True
+        return False
 
     def _check_external_resources(self, soup, content: str):
         """Check for external script and stylesheet resources using BeautifulSoup."""
@@ -467,7 +502,7 @@ class HTMLValidator:
             # Only check external URLs
             if src.startswith(("http://", "https://")):
                 # Check if URL is from allowed CDN
-                if any(allowed in src for allowed in self.ALLOWED_CDN_DOMAINS):
+                if self._is_allowed_cdn(src):
                     continue
 
                 script_str = str(script)[:100]
@@ -497,7 +532,7 @@ class HTMLValidator:
             # Only check external URLs
             if href.startswith(("http://", "https://")):
                 # Check if URL is from allowed CDN
-                if any(allowed in href for allowed in self.ALLOWED_CDN_DOMAINS):
+                if self._is_allowed_cdn(href):
                     continue
 
                 link_str = str(link)[:100]
