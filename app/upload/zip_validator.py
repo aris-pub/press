@@ -48,6 +48,7 @@ ALLOWED_EXTENSIONS = frozenset(
         ".txt",
         ".map",
         ".md",
+        ".tex",
         # ML model weights and runtime files (browser-based ML research)
         ".bin",
         ".onnx",
@@ -149,6 +150,7 @@ EXTENSION_CATEGORY: dict[str, str] = {
     ".tsv": "data",
     ".txt": "data",
     ".md": "data",
+    ".tex": "data",
     ".bin": "model",
     ".onnx": "model",
     ".wasm": "model",
@@ -164,7 +166,7 @@ EXTENSION_CATEGORY: dict[str, str] = {
 }
 
 TEXT_EXTENSIONS = frozenset(
-    {".html", ".htm", ".css", ".js", ".mjs", ".json", ".csv", ".tsv", ".txt", ".map"}
+    {".html", ".htm", ".css", ".js", ".mjs", ".json", ".csv", ".tsv", ".txt", ".map", ".tex"}
 )
 
 # Expected MIME patterns per extension (prefix matching)
@@ -178,6 +180,7 @@ MIME_EXPECTATIONS: dict[str, list[str]] = {
     ".csv": ["text/"],
     ".tsv": ["text/"],
     ".txt": ["text/"],
+    ".tex": ["text/", "application/x-tex", "application/x-latex"],
     ".map": ["text/", "application/json"],
     ".png": ["image/png"],
     ".jpg": ["image/jpeg"],

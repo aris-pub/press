@@ -389,3 +389,40 @@ class TestHTMLValidator:
             is_valid, errors = self.validator.validate(html)
             script_errors = [e for e in errors if e["type"] == "external_script"]
             assert len(script_errors) == 0, f"Should allow: {html}, got: {script_errors}"
+
+    def test_non_stylesheet_link_tags_not_flagged_as_stylesheet(self):
+        """<link> tags that aren't stylesheets (canonical, icon, alternate, etc.)
+        must not be flagged as external stylesheets even when their href points
+        to a non-allowlisted external URL. Regression test for a bug where
+        Yuri Sulyma's archive upload was rejected because his rel="canonical"
+        link to his GitHub Pages site was misclassified as an external stylesheet.
+        """
+        non_stylesheet_links = [
+            '<link rel="canonical" href="https://ysulyma.github.io/papers/fcsk/">',
+            '<link rel="icon" type="image/svg+xml" href="https://example.com/icon.svg">',
+            '<link rel="alternate" type="application/rss+xml" href="https://blog.example.com/feed.xml">',
+            '<link rel="dns-prefetch" href="https://api.example.com">',
+            '<link rel="preconnect" href="https://cdn.example.com">',
+            '<link rel="manifest" href="https://example.com/manifest.json">',
+        ]
+        for html in non_stylesheet_links:
+            is_valid, errors = self.validator.validate(html)
+            stylesheet_errors = [e for e in errors if e["type"] == "external_stylesheet"]
+            assert len(stylesheet_errors) == 0, (
+                f"Non-stylesheet link should not trigger external_stylesheet error: "
+                f"{html}, got: {stylesheet_errors}"
+            )
+
+    def test_external_stylesheet_still_rejected(self):
+        """Actual external stylesheets from non-allowlisted hosts must still be rejected."""
+        html = '<link rel="stylesheet" href="https://evil.example.com/styles.css">'
+        is_valid, errors = self.validator.validate(html)
+        stylesheet_errors = [e for e in errors if e["type"] == "external_stylesheet"]
+        assert len(stylesheet_errors) == 1
+
+    def test_preload_as_style_treated_as_stylesheet(self):
+        """<link rel="preload" as="style"> from a non-allowlisted host should be flagged."""
+        html = '<link rel="preload" as="style" href="https://evil.example.com/styles.css">'
+        is_valid, errors = self.validator.validate(html)
+        stylesheet_errors = [e for e in errors if e["type"] == "external_stylesheet"]
+        assert len(stylesheet_errors) == 1

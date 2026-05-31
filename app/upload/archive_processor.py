@@ -234,6 +234,7 @@ def _create_deterministic_tar_from_dir(directory: str) -> bytes:
         ".txt",
         ".map",
         ".svg",
+        ".tex",
     }
 
     with tarfile.open(fileobj=buf, mode="w") as tar:

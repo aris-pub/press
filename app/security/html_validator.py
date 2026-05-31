@@ -521,8 +521,23 @@ class HTMLValidator:
         # Check for external stylesheet links (http:// or https://)
         # Allow data: URIs since those are self-contained
         # Allow MathJax/KaTeX CDNs since they're essential for math rendering
+        # Only flag <link> tags that actually load a stylesheet — skip canonical,
+        # icon, alternate, dns-prefetch, preconnect, manifest, etc.
         links = soup.find_all("link", attrs={"href": True})
         for link in links:
+            rel = link.get("rel") or []
+            if isinstance(rel, str):
+                rel_tokens = {rel.lower()}
+            else:
+                rel_tokens = {r.lower() for r in rel}
+
+            as_attr = (link.get("as") or "").lower()
+            is_stylesheet = "stylesheet" in rel_tokens or (
+                "preload" in rel_tokens and as_attr == "style"
+            )
+            if not is_stylesheet:
+                continue
+
             href = link.get("href", "")
 
             # Skip data: URIs (self-contained)
