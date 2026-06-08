@@ -569,6 +569,216 @@ async def _fetch_versions_for_series(db: AsyncSession, scroll_series_id) -> list
     ]
 
 
+# Citation helpers: lightweight BibTeX / CSL-JSON for the metadata endpoint.
+# Authors are stored as a comma-separated string; we split and apply a simple
+# "last token = family, rest = given" heuristic. Not perfect for compound surnames,
+# but good enough for typical Latin-script names and citation tool consumption.
+
+def _split_authors(authors: str) -> list[dict]:
+    parsed = []
+    for raw in (authors or "").split(","):
+        name = raw.strip()
+        if not name:
+            continue
+        parts = name.split()
+        if len(parts) == 1:
+            parsed.append({"family": parts[0], "given": ""})
+        else:
+            parsed.append({"family": parts[-1], "given": " ".join(parts[:-1])})
+    return parsed
+
+
+def _bibtex_escape(s: str) -> str:
+    return (s or "").replace("\\", "\\textbackslash{}").replace("{", "\\{").replace("}", "\\}")
+
+
+def _make_bibtex(scroll, base_url: str) -> str:
+    authors_list = _split_authors(scroll.authors)
+    bib_authors = " and ".join(
+        f"{a['family']}, {a['given']}".rstrip(", ") for a in authors_list
+    ) or _bibtex_escape(scroll.authors or "")
+    key = f"{(scroll.slug or scroll.url_hash or 'scroll')}{scroll.publication_year or ''}"
+    fields = [
+        ("author", bib_authors),
+        ("title", _bibtex_escape(scroll.title or "")),
+        ("year", str(scroll.publication_year) if scroll.publication_year else ""),
+        ("publisher", "Scroll Press"),
+        ("url", f"{base_url}{scroll.canonical_url}"),
+        ("version", str(scroll.version) if scroll.version else ""),
+    ]
+    if scroll.doi:
+        fields.append(("doi", scroll.doi))
+    body = ",\n  ".join(f"{k} = {{{v}}}" for k, v in fields if v)
+    return f"@misc{{{key},\n  {body}\n}}"
+
+
+def _make_csl_json(scroll, base_url: str) -> dict:
+    csl = {
+        "type": "article",
+        "id": scroll.url_hash or str(scroll.id),
+        "title": scroll.title,
+        "author": _split_authors(scroll.authors),
+        "publisher": "Scroll Press",
+        "URL": f"{base_url}{scroll.canonical_url}",
+        "version": str(scroll.version) if scroll.version else None,
+    }
+    if scroll.publication_year:
+        csl["issued"] = {"date-parts": [[scroll.publication_year]]}
+    if scroll.doi:
+        csl["DOI"] = scroll.doi
+    if scroll.license:
+        csl["license"] = scroll.license
+    return {k: v for k, v in csl.items() if v is not None}
+
+
+def _scroll_to_json_dict(scroll, base_url: str) -> dict:
+    paper_path = f"/{scroll.publication_year}/{scroll.slug}/paper"
+    paper_versioned = f"/{scroll.publication_year}/{scroll.slug}/v{scroll.version}/paper"
+    canonical = scroll.canonical_url
+    versioned = scroll.version_url
+    html_bytes = None
+    if scroll.storage_type != "archive" and scroll.html_content is not None:
+        html_bytes = len(scroll.html_content.encode("utf-8"))
+    return {
+        "title": scroll.title,
+        "authors": scroll.authors,
+        "abstract": scroll.abstract,
+        "keywords": scroll.keywords or [],
+        "year": scroll.publication_year,
+        "slug": scroll.slug,
+        "version": scroll.version,
+        "url_hash": scroll.url_hash,
+        "license": scroll.license,
+        "doi": scroll.doi,
+        "published_at": scroll.published_at.isoformat() if scroll.published_at else None,
+        "subject": scroll.subject.name if getattr(scroll, "subject", None) else None,
+        "storage_type": scroll.storage_type,
+        "canonical_url": f"{base_url}{canonical}",
+        "version_url": f"{base_url}{versioned}",
+        "paper_url": f"{base_url}{paper_path}",
+        "paper_version_url": f"{base_url}{paper_versioned}",
+        "html_url": f"{base_url}{paper_path}",
+        "html_sha256": scroll.content_hash,
+        "html_bytes": html_bytes,
+        "cite_as": {
+            "bibtex": _make_bibtex(scroll, base_url),
+            "csl_json": _make_csl_json(scroll, base_url),
+        },
+    }
+
+
+def _alternate_link_headers(year: int, slug: str, version: int | None = None) -> str:
+    """Build a Link: header value advertising the alternate representations.
+
+    Per RFC 8288. Emitted alongside in-document <link rel="alternate"> tags so
+    HEAD-only clients see them without parsing HTML.
+    """
+    if version is not None:
+        paper = f"/{year}/{slug}/v{version}/paper"
+        meta = f"/{year}/{slug}/v{version}.json"
+    else:
+        paper = f"/{year}/{slug}/paper"
+        meta = f"/{year}/{slug}.json"
+    return (
+        f'<{paper}>; rel="alternate"; type="text/html"; title="Manuscript only", '
+        f'<{meta}>; rel="alternate"; type="application/json"; title="Metadata"'
+    )
+
+
+def _paper_bare_response(scroll: Scroll) -> Response:
+    """Return a Response wrapping the bare manuscript HTML.
+
+    For inline scrolls: returns html_content directly with the paper CSP.
+    For archive scrolls: redirects to the trailing-slash hash URL so relative
+    asset paths resolve against the archive prefix.
+    """
+    if scroll.storage_type == "archive":
+        return RedirectResponse(url=f"/scroll/{scroll.url_hash}/paper/", status_code=302)
+    headers = {
+        "X-Frame-Options": "SAMEORIGIN",
+        "Content-Security-Policy": _PAPER_CSP,
+    }
+    if scroll.content_hash:
+        headers["ETag"] = f'"{scroll.content_hash}"'
+    return Response(
+        content=scroll.html_content,
+        media_type="text/html",
+        headers=headers,
+    )
+
+
+async def _lookup_year_slug(db: AsyncSession, year: int, slug: str, version: int | None = None):
+    """Look up a published scroll by year/slug, optionally pinned to a version."""
+    q = (
+        select(Scroll)
+        .options(selectinload(Scroll.subject), selectinload(Scroll.user))
+        .where(
+            Scroll.publication_year == year,
+            Scroll.slug == slug,
+            Scroll.status == "published",
+        )
+    )
+    if version is not None:
+        q = q.where(Scroll.version == version)
+    else:
+        q = q.order_by(Scroll.version.desc()).limit(1)
+    result = await db.execute(q)
+    return result.scalar_one_or_none()
+
+
+# Alternate representations of a canonical scroll page.
+# Declared BEFORE the canonical HTML views so the more-specific .json / /paper
+# patterns match first; FastAPI/Starlette routing is order-sensitive and the
+# slug parameter is greedy (str) so plain /{year}/{slug} would otherwise swallow
+# /{year}/{slug}.json by capturing slug="rich-are-loopy.json".
+
+
+@router.get("/{year:int}/{slug:str}/v{version:int}/paper")
+async def get_paper_bare_year_slug_version(
+    year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
+):
+    scroll = await _lookup_year_slug(db, year, slug, version)
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Scroll not found")
+    return _paper_bare_response(scroll)
+
+
+@router.get("/{year:int}/{slug:str}/v{version:int}.json")
+async def get_scroll_metadata_year_slug_version(
+    year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
+):
+    scroll = await _lookup_year_slug(db, year, slug, version)
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Scroll not found")
+    payload = _scroll_to_json_dict(scroll, get_base_url())
+    headers = {}
+    if scroll.content_hash:
+        headers["ETag"] = f'"{scroll.content_hash}"'
+    return JSONResponse(content=payload, headers=headers)
+
+
+@router.get("/{year:int}/{slug:str}/paper")
+async def get_paper_bare_year_slug(year: int, slug: str, db: AsyncSession = Depends(get_db)):
+    scroll = await _lookup_year_slug(db, year, slug)
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Scroll not found")
+    return _paper_bare_response(scroll)
+
+
+@router.get("/{year:int}/{slug:str}.json")
+async def get_scroll_metadata_year_slug(
+    year: int, slug: str, db: AsyncSession = Depends(get_db)
+):
+    scroll = await _lookup_year_slug(db, year, slug)
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Scroll not found")
+    payload = _scroll_to_json_dict(scroll, get_base_url())
+    headers = {}
+    if scroll.content_hash:
+        headers["ETag"] = f'"{scroll.content_hash}"'
+    return JSONResponse(content=payload, headers=headers)
+
+
 @router.get("/{year:int}/{slug:str}/v{version:int}", response_class=HTMLResponse)
 async def view_scroll_by_year_slug_version(
     request: Request, year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
@@ -577,6 +787,9 @@ async def view_scroll_by_year_slug_version(
     sentry_sdk.set_tag("operation", "scroll_view")
     sentry_sdk.set_context("scroll", {"year": year, "slug": slug, "version": version})
     log_request(request, extra_data={"year": year, "slug": slug, "version": version})
+
+    if "application/json" in request.headers.get("accept", "").lower():
+        return RedirectResponse(url=f"/{year}/{slug}/v{version}.json", status_code=303)
 
     result = await db.execute(
         select(Scroll)
@@ -607,7 +820,7 @@ async def view_scroll_by_year_slug_version(
         extra_data={"title": scroll.title, "url_hash": scroll.url_hash},
     )
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request,
         "scroll.html",
         {
@@ -618,6 +831,8 @@ async def view_scroll_by_year_slug_version(
             "is_latest": version == latest_version,
         },
     )
+    response.headers["Link"] = _alternate_link_headers(year, slug, version)
+    return response
 
 
 @router.get("/{year:int}/{slug:str}", response_class=HTMLResponse)
@@ -628,6 +843,9 @@ async def view_scroll_by_year_slug(
     sentry_sdk.set_tag("operation", "scroll_view")
     sentry_sdk.set_context("scroll", {"year": year, "slug": slug})
     log_request(request, extra_data={"year": year, "slug": slug})
+
+    if "application/json" in request.headers.get("accept", "").lower():
+        return RedirectResponse(url=f"/{year}/{slug}.json", status_code=303)
 
     result = await db.execute(
         select(Scroll)
@@ -662,7 +880,7 @@ async def view_scroll_by_year_slug(
     current_user = await get_current_user_from_session(request, db)
     is_owner = current_user is not None and scroll.user_id == current_user.id
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request,
         "scroll.html",
         {
@@ -674,6 +892,8 @@ async def view_scroll_by_year_slug(
             "is_latest": True,
         },
     )
+    response.headers["Link"] = _alternate_link_headers(year, slug)
+    return response
 
 
 @router.get("/scroll/{url_hash}/og-image.png")

@@ -17,6 +17,10 @@
   <meta property="og:type" content="article">
   <meta property="og:url" content="{{ base_url }}{{ scroll.canonical_url }}">
   <link rel="canonical" href="{{ base_url }}{{ scroll.canonical_url }}">
+  {% if scroll.publication_year and scroll.slug %}
+  <link rel="alternate" type="text/html" title="Manuscript only" href="{{ base_url }}/{{ scroll.publication_year }}/{{ scroll.slug }}/paper">
+  <link rel="alternate" type="application/json" title="Metadata" href="{{ base_url }}/{{ scroll.publication_year }}/{{ scroll.slug }}.json">
+  {% endif %}
   <meta property="og:site_name" content="Scroll Press">
   <meta property="og:image" content="{{ base_url }}/scroll/{{ scroll.url_hash }}/og-image.png">
   <meta property="og:image:width" content="1200">
