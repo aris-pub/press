@@ -685,12 +685,27 @@ def _alternate_link_headers(year: int, slug: str, version: int | None = None) ->
     )
 
 
-def _paper_bare_response(scroll: Scroll) -> Response:
+def _if_none_match_hit(request: Request, etag: str) -> bool:
+    """Return True if the client's If-None-Match header matches our ETag.
+
+    Per RFC 7232 §3.2 the header is a comma-separated list of entity-tags
+    (or "*"). We do a simple membership check on quoted ETags.
+    """
+    inm = request.headers.get("if-none-match")
+    if not inm:
+        return False
+    candidates = {tok.strip().lstrip("W/") for tok in inm.split(",")}
+    return "*" in candidates or etag in candidates or etag.lstrip("W/") in candidates
+
+
+def _paper_bare_response(scroll: Scroll, request: Request) -> Response:
     """Return a Response wrapping the bare manuscript HTML.
 
     For inline scrolls: returns html_content directly with the paper CSP.
     For archive scrolls: redirects to the trailing-slash hash URL so relative
     asset paths resolve against the archive prefix.
+
+    Honors If-None-Match with a 304 when the client's tag matches content_hash.
     """
     if scroll.storage_type == "archive":
         return RedirectResponse(url=f"/scroll/{scroll.url_hash}/paper/", status_code=302)
@@ -698,8 +713,12 @@ def _paper_bare_response(scroll: Scroll) -> Response:
         "X-Frame-Options": "SAMEORIGIN",
         "Content-Security-Policy": _PAPER_CSP,
     }
+    etag = None
     if scroll.content_hash:
-        headers["ETag"] = f'"{scroll.content_hash}"'
+        etag = f'"{scroll.content_hash}"'
+        headers["ETag"] = etag
+        if _if_none_match_hit(request, etag):
+            return Response(status_code=304, headers=headers)
     return Response(
         content=scroll.html_content,
         media_type="text/html",
@@ -733,50 +752,56 @@ async def _lookup_year_slug(db: AsyncSession, year: int, slug: str, version: int
 # /{year}/{slug}.json by capturing slug="rich-are-loopy.json".
 
 
+def _json_metadata_response(scroll: Scroll, request: Request) -> Response:
+    headers = {}
+    etag = None
+    if scroll.content_hash:
+        etag = f'"{scroll.content_hash}"'
+        headers["ETag"] = etag
+        if _if_none_match_hit(request, etag):
+            return Response(status_code=304, headers=headers)
+    payload = _scroll_to_json_dict(scroll, get_base_url())
+    return JSONResponse(content=payload, headers=headers)
+
+
 @router.get("/{year:int}/{slug:str}/v{version:int}/paper")
 async def get_paper_bare_year_slug_version(
-    year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
+    request: Request, year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
 ):
     scroll = await _lookup_year_slug(db, year, slug, version)
     if not scroll:
         raise HTTPException(status_code=404, detail="Scroll not found")
-    return _paper_bare_response(scroll)
+    return _paper_bare_response(scroll, request)
 
 
 @router.get("/{year:int}/{slug:str}/v{version:int}.json")
 async def get_scroll_metadata_year_slug_version(
-    year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
+    request: Request, year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
 ):
     scroll = await _lookup_year_slug(db, year, slug, version)
     if not scroll:
         raise HTTPException(status_code=404, detail="Scroll not found")
-    payload = _scroll_to_json_dict(scroll, get_base_url())
-    headers = {}
-    if scroll.content_hash:
-        headers["ETag"] = f'"{scroll.content_hash}"'
-    return JSONResponse(content=payload, headers=headers)
+    return _json_metadata_response(scroll, request)
 
 
 @router.get("/{year:int}/{slug:str}/paper")
-async def get_paper_bare_year_slug(year: int, slug: str, db: AsyncSession = Depends(get_db)):
-    scroll = await _lookup_year_slug(db, year, slug)
-    if not scroll:
-        raise HTTPException(status_code=404, detail="Scroll not found")
-    return _paper_bare_response(scroll)
-
-
-@router.get("/{year:int}/{slug:str}.json")
-async def get_scroll_metadata_year_slug(
-    year: int, slug: str, db: AsyncSession = Depends(get_db)
+async def get_paper_bare_year_slug(
+    request: Request, year: int, slug: str, db: AsyncSession = Depends(get_db)
 ):
     scroll = await _lookup_year_slug(db, year, slug)
     if not scroll:
         raise HTTPException(status_code=404, detail="Scroll not found")
-    payload = _scroll_to_json_dict(scroll, get_base_url())
-    headers = {}
-    if scroll.content_hash:
-        headers["ETag"] = f'"{scroll.content_hash}"'
-    return JSONResponse(content=payload, headers=headers)
+    return _paper_bare_response(scroll, request)
+
+
+@router.get("/{year:int}/{slug:str}.json")
+async def get_scroll_metadata_year_slug(
+    request: Request, year: int, slug: str, db: AsyncSession = Depends(get_db)
+):
+    scroll = await _lookup_year_slug(db, year, slug)
+    if not scroll:
+        raise HTTPException(status_code=404, detail="Scroll not found")
+    return _json_metadata_response(scroll, request)
 
 
 @router.get("/{year:int}/{slug:str}/v{version:int}", response_class=HTMLResponse)

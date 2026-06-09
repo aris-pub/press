@@ -282,6 +282,78 @@ class TestCanonicalPageAdvertisesAlternates:
         assert "<iframe" in response.text.lower()
 
 
+class TestConditionalRequests:
+    """ETag / If-None-Match — agents should be able to cheaply re-check
+    a known scroll without re-downloading the body."""
+
+    @pytest.mark.asyncio
+    async def test_if_none_match_on_paper_returns_304(
+        self, client, test_db, user, subject
+    ):
+        scroll = _make_scroll(user, subject)
+        test_db.add(scroll)
+        await test_db.commit()
+
+        first = await client.get("/2026/quantum-entanglement/paper")
+        etag = first.headers["etag"]
+
+        second = await client.get(
+            "/2026/quantum-entanglement/paper",
+            headers={"If-None-Match": etag},
+        )
+        assert second.status_code == 304
+        assert second.content == b""
+        # 304 must still echo the ETag so the client knows the validator.
+        assert second.headers["etag"] == etag
+
+    @pytest.mark.asyncio
+    async def test_if_none_match_on_json_returns_304(
+        self, client, test_db, user, subject
+    ):
+        scroll = _make_scroll(user, subject)
+        test_db.add(scroll)
+        await test_db.commit()
+
+        first = await client.get("/2026/quantum-entanglement.json")
+        etag = first.headers["etag"]
+
+        second = await client.get(
+            "/2026/quantum-entanglement.json",
+            headers={"If-None-Match": etag},
+        )
+        assert second.status_code == 304
+        assert second.content == b""
+
+    @pytest.mark.asyncio
+    async def test_if_none_match_star_returns_304(
+        self, client, test_db, user, subject
+    ):
+        scroll = _make_scroll(user, subject)
+        test_db.add(scroll)
+        await test_db.commit()
+
+        response = await client.get(
+            "/2026/quantum-entanglement/paper",
+            headers={"If-None-Match": "*"},
+        )
+        assert response.status_code == 304
+
+    @pytest.mark.asyncio
+    async def test_if_none_match_mismatch_returns_200(
+        self, client, test_db, user, subject
+    ):
+        scroll = _make_scroll(user, subject)
+        test_db.add(scroll)
+        await test_db.commit()
+
+        response = await client.get(
+            "/2026/quantum-entanglement/paper",
+            headers={"If-None-Match": '"some-unrelated-tag"'},
+        )
+        assert response.status_code == 200
+        assert "Bare body marker" in response.text
+
+
 class TestAlternateRoutesDoNotCollideWithCanonical:
     """Sanity check: declaring /{year}/{slug}.json and /{year}/{slug}/paper
     before /{year}/{slug} must not swallow the canonical route."""
