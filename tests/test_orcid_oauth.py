@@ -3,12 +3,16 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 from urllib.parse import parse_qs, urlparse
 
+import httpx
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
 
 from app.auth.utils import get_password_hash
+from app.database import get_db
 from app.models.user import User
+from main import app
+from tests.conftest import CSRFClient
 
 FAKE_ORCID = "0000-0002-1234-5678"
 FAKE_ORCID_2 = "0000-0002-9999-0001"
@@ -133,6 +137,39 @@ class TestOrcidRedirect:
         state1 = parse_qs(urlparse(resp1.headers["location"]).query)["state"][0]
         state2 = parse_qs(urlparse(resp2.headers["location"]).query)["state"][0]
         assert state1 != state2
+
+    async def test_redirect_uri_is_https_behind_tls_proxy(self, test_db):
+        """Behind a TLS-terminating proxy (Fly), the inbound request to the app
+        is plain HTTP with X-Forwarded-Proto: https. The redirect_uri sent to
+        ORCID must still be https://, otherwise ORCID rejects the request as
+        a registered-callback mismatch (issue #43).
+        """
+
+        def override_get_db():
+            yield test_db
+
+        app.dependency_overrides[get_db] = override_get_db
+        try:
+            async with CSRFClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://scroll.press",
+                cookies=httpx.Cookies(),
+            ) as ac:
+                resp = await ac.get(
+                    "/auth/orcid",
+                    headers={"X-Forwarded-Proto": "https"},
+                    follow_redirects=False,
+                )
+
+            assert resp.status_code == 302
+            location = resp.headers["location"]
+            params = parse_qs(urlparse(location).query)
+            redirect_uri = params["redirect_uri"][0]
+            assert redirect_uri.startswith("https://"), (
+                f"redirect_uri must be https when X-Forwarded-Proto is https, got {redirect_uri!r}"
+            )
+        finally:
+            app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio

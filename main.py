@@ -15,6 +15,7 @@ from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.exception_handlers import (
     http_exception_handler,
@@ -138,6 +139,11 @@ app.add_middleware(RateLimitMiddleware, enabled=rate_limit_enabled)
 
 # TEMPORARY: Memory profiling middleware for debugging OOM issues
 app.add_middleware(MemoryProfilingMiddleware)
+
+# Trust X-Forwarded-* headers from Fly's TLS-terminating edge so request.url.scheme
+# reflects the original https scheme. Must be the outermost middleware (added last,
+# runs first) so every downstream middleware and route sees the rewritten scope.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
