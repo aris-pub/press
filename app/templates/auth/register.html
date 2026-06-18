@@ -47,16 +47,48 @@
 {% block scripts %}
 {% if turnstile_site_key %}
 <script>
+  function setRegisterError(msg) {
+    var err = document.getElementById('turnstile-error');
+    if (!err) return;
+    if (msg) {
+      err.textContent = msg;
+      err.hidden = false;
+    } else {
+      err.textContent = '';
+      err.hidden = true;
+    }
+  }
+  function setSubmitEnabled(enabled) {
+    var btn = document.getElementById('register-submit');
+    if (btn) btn.disabled = !enabled;
+  }
   function renderTurnstile() {
     var el = document.getElementById('turnstile-container');
     if (!el || !el.dataset.turnstileSitekey) return;
-    if (el.querySelector('iframe')) return;
+    if (el.querySelector('iframe') || el.dataset.tsRendered === '1') return;
+    el.dataset.tsRendered = '1';
+    setSubmitEnabled(false);
+    setRegisterError('');
     turnstile.render(el, {
       sitekey: el.dataset.turnstileSitekey,
       theme: 'auto',
-      callback: function(token) {
-        var input = document.getElementById('turnstile-token');
-        if (input) input.value = token;
+      appearance: 'always',
+      size: 'normal',
+      callback: function() {
+        setRegisterError('');
+        setSubmitEnabled(true);
+      },
+      'error-callback': function() {
+        setSubmitEnabled(false);
+        setRegisterError('Verification widget failed to load. Refresh the page or sign up with ORCID instead.');
+      },
+      'expired-callback': function() {
+        setSubmitEnabled(false);
+        setRegisterError('Verification expired. Please complete it again.');
+      },
+      'timeout-callback': function() {
+        setSubmitEnabled(false);
+        setRegisterError('Verification timed out. Please complete it again.');
       }
     });
   }

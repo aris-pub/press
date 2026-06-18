@@ -52,11 +52,18 @@ Usage:
     {% endfor %}
 
     {% if form_type == "register" and turnstile_site_key %}
-    <input type="hidden" name="cf-turnstile-response" id="turnstile-token" value="">
     <div id="turnstile-container" data-turnstile-sitekey="{{ turnstile_site_key }}"></div>
+    <div id="turnstile-error" class="form-errors" role="alert" aria-live="polite" hidden></div>
     {% endif %}
 
-    {{ button(submit_text, type="submit", hx_indicator="#" + form_type + "-spinner", loading_text=loading_text) }}
+    {{ button(
+         submit_text,
+         type="submit",
+         id=form_type + "-submit",
+         hx_indicator="#" + form_type + "-spinner",
+         loading_text=loading_text,
+         disabled=(form_type == "register" and turnstile_site_key)
+       ) }}
   </form>
 </div>
 {% endmacro %}

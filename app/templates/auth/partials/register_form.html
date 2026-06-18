@@ -1,4 +1,4 @@
-{% from "components/auth_form.html" import auth_form %}
+{% from "components/auth_form.html" import auth_form with context %}
 
 {{ auth_form("register", "/register-form", "Create Account", "Creating...",
              fields=[

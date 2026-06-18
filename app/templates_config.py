@@ -47,6 +47,11 @@ class TemplatesWithGlobals(Jinja2Templates):
         if nonce:
             context["nonce"] = nonce
 
+        # Inject turnstile_site_key per-render so test patches and env changes
+        # are seen live; Jinja's template.globals are frozen at load time, so
+        # using env.globals alone makes the value un-overridable from tests.
+        context["turnstile_site_key"] = templates.env.globals.get("turnstile_site_key", "")
+
         return super().TemplateResponse(request, name, context, **kwargs)
 
 

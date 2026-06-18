@@ -6,10 +6,11 @@ Usage:
 {{ link_button("Login", href="/login", variant="secondary") }}
 #}
 
-{% macro button(text, variant="primary", type="button", hx_post="", hx_get="", hx_target="", hx_swap="", hx_indicator="", loading_text="", class="", name="", value="", disabled=false) %}
-<button 
+{% macro button(text, variant="primary", type="button", hx_post="", hx_get="", hx_target="", hx_swap="", hx_indicator="", loading_text="", class="", name="", value="", disabled=false, id="") %}
+<button
   class="btn btn-{{ variant }}{% if class %} {{ class }}{% endif %}"
   {{ {
+    "id": id if id else none,
     "type": type,
     "name": name if name else none,
     "value": value if value else none,
