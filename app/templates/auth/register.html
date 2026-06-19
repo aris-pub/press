@@ -47,6 +47,8 @@
 {% block scripts %}
 {% if turnstile_site_key %}
 <script>
+  var TURNSTILE_BLOCKED_MSG = 'Verification widget failed to load. Your browser may be blocking challenges.cloudflare.com. Sign up with ORCID instead, or disable shields/ad-blocker for this page.';
+
   function setRegisterError(msg) {
     var err = document.getElementById('turnstile-error');
     if (!err) return;
@@ -66,6 +68,11 @@
     var el = document.getElementById('turnstile-container');
     if (!el || !el.dataset.turnstileSitekey) return;
     if (el.querySelector('iframe') || el.dataset.tsRendered === '1') return;
+    if (typeof turnstile === 'undefined') {
+      // CF API script blocked or not yet loaded; the fallback timer below
+      // will surface the error if it never arrives.
+      return;
+    }
     el.dataset.tsRendered = '1';
     setSubmitEnabled(false);
     setRegisterError('');
@@ -80,7 +87,7 @@
       },
       'error-callback': function() {
         setSubmitEnabled(false);
-        setRegisterError('Verification widget failed to load. Refresh the page or sign up with ORCID instead.');
+        setRegisterError(TURNSTILE_BLOCKED_MSG);
       },
       'expired-callback': function() {
         setSubmitEnabled(false);
@@ -96,6 +103,17 @@
     renderTurnstile();
   }
   document.addEventListener('htmx:afterSettle', renderTurnstile);
+
+  // Fallback for cases where the CF API script is blocked at the network
+  // level (Brave shields, uBlock, restrictive corporate proxy). If turnstile
+  // is still undefined after a few seconds, surface a real error so the user
+  // is not stuck staring at a disabled submit button with no explanation.
+  setTimeout(function() {
+    if (typeof turnstile === 'undefined') {
+      setSubmitEnabled(false);
+      setRegisterError(TURNSTILE_BLOCKED_MSG);
+    }
+  }, 5000);
 </script>
 {% endif %}
 {% endblock %}

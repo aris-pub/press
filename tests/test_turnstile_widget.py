@@ -121,3 +121,29 @@ async def test_failure_messaging_div_present(client: AsyncClient):
     assert 'id="turnstile-error"' in body, (
         "page must contain a #turnstile-error element so failures are visible to the user"
     )
+
+
+async def test_render_guards_against_undefined_turnstile_api(client: AsyncClient):
+    """When Brave shields, uBlock, etc. block the Turnstile API script entirely,
+    the global `turnstile` is undefined. renderTurnstile must check for this
+    and surface a visible error instead of throwing a ReferenceError (which
+    happens silently inside the htmx:afterSettle handler and leaves the user
+    with a disabled submit button and no explanation).
+    """
+    body = await _get_register(client, site_key="0xTESTSITEKEY")
+    assert "typeof turnstile" in body, (
+        "renderTurnstile must check typeof turnstile === 'undefined' before "
+        "calling turnstile.render, so a blocked CF API surfaces a real error"
+    )
+
+
+async def test_fallback_timer_for_blocked_script(client: AsyncClient):
+    """When the CF API script is blocked at the network level, htmx:afterSettle
+    may not fire (e.g. on a non-boosted direct page load), so the typeof check
+    alone isn't enough. A fallback timer must fire after a few seconds and
+    surface the error if turnstile is still undefined.
+    """
+    body = await _get_register(client, site_key="0xTESTSITEKEY")
+    assert "setTimeout" in body, (
+        "page must set a fallback timer so blocked-script users see an error"
+    )
