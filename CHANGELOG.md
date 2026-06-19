@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Press scroll metadata is now published as `pub.aris.scroll` atproto records on a dedicated Bluesky handle. The Lexicon is at [`lexicons/pub/aris/scroll.json`](lexicons/pub/aris/scroll.json). Records include canonical URL, content hash, ARCH version, and an `interactive_html` format marker that distinguishes Press from text-preprint sources in downstream surfaces (Semble, Chive, atproto.science ecosystem). Other tools can read Press metadata via the atproto protocol without per-platform integration work.
+- `scripts/publish_atproto.py` CLI with `publish-all` and `publish <url_hash>` commands.
+- ORCID sign-in (issue #43).
+
+### Fixed
+
+- ORCID redirect URI was sent over HTTP behind Fly's TLS edge. Middleware now honors `X-Forwarded-Proto` so the URI matches ORCID's HTTPS registration.
+- Registration form had no defenses for Turnstile widget failures: submit now stays disabled until the Turnstile callback fires, the widget is forced into visible interactive mode, and a visible error appears with a recovery path (ORCID sign-up) when the Cloudflare API script is blocked by browser shields.
+
 ## [0.1.0] - 2026-03-19
 
 ### Added

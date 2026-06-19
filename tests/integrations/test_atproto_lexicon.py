@@ -210,3 +210,17 @@ def test_dollar_type_not_emitted_by_converter():
 
     record = scroll_to_lexicon_record(FakeScroll(), base_url="https://scroll.press")
     assert "$type" not in record
+
+
+def test_published_at_falls_back_to_created_at_when_null():
+    """Some prod scrolls (seed/demo data) carry status='published' but a NULL
+    published_at column. The converter must not crash on them: fall back to
+    created_at so every published scroll gets a record.
+    """
+    from app.integrations.atproto.lexicon import scroll_to_lexicon_record
+
+    scroll = FakeScroll(published_at=None)
+    scroll.created_at = datetime(2026, 5, 1, 9, 0, 0, tzinfo=timezone.utc)
+
+    record = scroll_to_lexicon_record(scroll, base_url="https://scroll.press")
+    assert record["publishedAt"] == "2026-05-01T09:00:00+00:00"

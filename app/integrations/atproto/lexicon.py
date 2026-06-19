@@ -23,11 +23,16 @@ def scroll_to_lexicon_record(scroll, base_url: str) -> dict:
     """Convert a Scroll-shaped object into a pub.aris.scroll record dict.
 
     The Scroll's `canonical_url` property returns a relative path
-    (e.g. /2026/glee); this function joins it with base_url to produce the
+    (e.g. /2026/glee). This function joins it with base_url to produce the
     public canonical URL the record points at.
     """
     base = base_url.rstrip("/")
     canonical = f"{base}{scroll.canonical_url}"
+
+    # Some seed/demo scrolls in prod carry status='published' but a NULL
+    # published_at column. Fall back to created_at so every published row
+    # gets a timestamp; the converter must not refuse a publishable scroll.
+    published_at = scroll.published_at or scroll.created_at
 
     record = PressScrollRecord(
         title=scroll.title,
@@ -36,7 +41,7 @@ def scroll_to_lexicon_record(scroll, base_url: str) -> dict:
         canonicalUrl=canonical,
         urlHash=scroll.url_hash,
         contentHash=scroll.content_hash,
-        publishedAt=scroll.published_at.isoformat(),
+        publishedAt=published_at.isoformat(),
         license=scroll.license,
         doi=scroll.doi or None,
         version=scroll.version,
