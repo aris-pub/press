@@ -180,6 +180,18 @@ class Scroll(Base):
     )
     zenodo_deposit_id: Mapped[Optional[int]] = mapped_column(nullable=True)
 
+    # atproto publishing state (mirrors the doi_* pattern)
+    atproto_uri: Mapped[Optional[str]] = mapped_column(
+        String(300), unique=True, nullable=True
+    )  # at://did:plc:.../pub.aris.scroll/<rkey>
+    atproto_cid: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    atproto_status: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True
+    )  # 'pending', 'published', 'failed'
+    atproto_published_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # Showcase flag for seed/example scrolls
     is_showcase: Mapped[Optional[bool]] = mapped_column(default=False, nullable=True)
 

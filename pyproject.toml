@@ -27,6 +27,7 @@ dependencies = [
     "pillow>=12.1.1",
     "aioboto3>=13.0.0",
     "defusedxml>=0.7.1",
+    "atproto>=0.0.68",
 ]
 
 [dependency-groups]

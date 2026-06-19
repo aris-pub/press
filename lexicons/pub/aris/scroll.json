@@ -1,0 +1,127 @@
+{
+  "lexicon": 1,
+  "id": "pub.aris.scroll",
+  "description": "Metadata record for a scroll on Aris Press. The record points at the canonical Press URL; the scroll content itself remains on Press's content-addressable storage. urlHash + contentHash anchor the record to a specific immutable artifact.",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": [
+          "title",
+          "authors",
+          "abstract",
+          "canonicalUrl",
+          "urlHash",
+          "contentHash",
+          "publishedAt",
+          "license"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Scroll title."
+          },
+          "authors": {
+            "type": "array",
+            "maxLength": 100,
+            "items": {
+              "type": "ref",
+              "ref": "#author"
+            },
+            "description": "Ordered list of authors. v1: display name only; ORCID and DID will appear once Press resolves per-author identifiers."
+          },
+          "abstract": {
+            "type": "string",
+            "maxLength": 10000,
+            "description": "Abstract as plain text. Included in the record so discovery surfaces can render decision context without a click-through."
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500,
+            "description": "Canonical Press URL. This is the artifact location; the record is a pointer, not a replacement."
+          },
+          "urlHash": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20,
+            "description": "Press's short content-addressable identifier. Used as the atproto record key (rkey) so republish is idempotent."
+          },
+          "contentHash": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "description": "SHA-256 of the canonical scroll content. Lets downstream consumers verify the record points at the artifact it claims to point at."
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the scroll was published on Press."
+          },
+          "license": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "License identifier (e.g. cc-by-4.0, arr)."
+          },
+          "doi": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "DOI assigned by Zenodo, if minted."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Version number within a scroll series. Each version is its own atproto record with its own rkey."
+          },
+          "publicationYear": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2200
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          "arch": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "ARCH spec version the scroll conforms to (https://aris.pub/arch/). Substrate-trust signal distinguishing Press scrolls from text preprints."
+          },
+          "format": {
+            "type": "string",
+            "knownValues": ["interactive_html"],
+            "maxLength": 50,
+            "description": "Artifact format. interactive_html signals that the scroll is a rich HTML document with progressive-enhancement JavaScript, not a static PDF."
+          }
+        }
+      }
+    },
+    "author": {
+      "type": "object",
+      "required": ["displayName"],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "orcid": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "ORCID iD, e.g. 0000-0002-1234-5678."
+        },
+        "did": {
+          "type": "string",
+          "format": "did",
+          "maxLength": 100,
+          "description": "Author's atproto DID if known."
+        }
+      }
+    }
+  }
+}
