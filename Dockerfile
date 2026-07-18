@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     git \
     libmagic1 \
     libmagic-dev \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv

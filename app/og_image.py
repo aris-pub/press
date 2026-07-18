@@ -1,151 +1,183 @@
 """OpenGraph image generator for scroll social previews.
 
-Generates branded 1200x630 PNG images with title, authors, subject,
-and abstract excerpt for rich link previews on social platforms.
+Poster-style 1200x630 PNG: subject pill, large auto-fitting title, author line,
+and the Scroll Press logomark + wordmark. No abstract or body text, which is
+illegible at card size. Pure PIL; the logomark is a pre-rendered static asset.
 """
 
 import io
+import os
+import re
 
 from PIL import Image, ImageDraw, ImageFont
 
 OG_WIDTH = 1200
 OG_HEIGHT = 630
 
-BG_COLOR = (255, 255, 255)
-HEADER_BG = (185, 28, 28)
-HEADER_TEXT = (255, 255, 255)
-TEXT_COLOR = (34, 34, 34)
-SUBTLE_COLOR = (100, 100, 100)
-DIVIDER_COLOR = (210, 210, 210)
-FOOTER_BG = (245, 245, 245)
+WHITE = (255, 255, 255)
+CORAL = (255, 107, 107)      # #FF6B6B, Scroll Press product color (design-system.md)
+TITLE_COLOR = (10, 10, 10)   # #0a0a0a
+AUTHOR_COLOR = (122, 122, 122)  # #7a7a7a
+SLATE = (60, 73, 82)         # #3C4952, wordmark
+MARGIN = 80
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+LOGOMARK_PATH = os.path.normpath(
+    os.path.join(_HERE, "..", "static", "images", "press-logomark.png")
+)
+
+# Minimal LaTeX -> unicode so titles do not show raw $...$ source on the card.
+_LATEX_MAP = {
+    r"\\phi": "φ", r"\\alpha": "α", r"\\beta": "β", r"\\gamma": "γ",
+    r"\\delta": "δ", r"\\epsilon": "ε", r"\\theta": "θ", r"\\lambda": "λ",
+    r"\\mu": "μ", r"\\pi": "π", r"\\sigma": "σ", r"\\omega": "ω",
+    r"\\Delta": "Δ", r"\\Sigma": "Σ", r"\\Omega": "Ω", r"\\times": "×",
+    r"\\infty": "∞", r"\\to": "→", r"\\leq": "≤", r"\\geq": "≥",
+}
 
 
-def _get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    font_paths = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-        if bold
+def _clean(text: str) -> str:
+    """Strip LaTeX math so titles do not render literal $...$ on the card."""
+    if not text:
+        return ""
+    for pat, rep in _LATEX_MAP.items():
+        text = re.sub(pat, rep, text)
+    text = text.replace("$", "")
+    text = re.sub(r"\\[a-zA-Z]+", "", text).replace("{", "").replace("}", "")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _sans(size: int, bold: bool = False):
+    paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
         else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
         "/System/Library/Fonts/SFNSText.ttf",
     ]
-    for path in font_paths:
+    for p in paths:
         try:
-            return ImageFont.truetype(path, size)
+            return ImageFont.truetype(p, size)
         except (OSError, IOError):
             continue
     return ImageFont.load_default()
 
 
-def _wrap_text(text: str, font, max_width: int) -> list[str]:
-    """Wrap text using actual font measurements."""
-    words = text.split()
-    lines = []
-    current = ""
-    for word in words:
-        test = f"{current} {word}".strip()
-        bbox = font.getbbox(test)
-        if bbox[2] > max_width and current:
-            lines.append(current)
-            current = word
+def _serif(size: int, bold: bool = False):
+    paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf" if bold
+        else "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf" if bold
+        else "/System/Library/Fonts/Supplemental/Georgia.ttf",
+        "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+        "/System/Library/Fonts/Times.ttc",
+    ]
+    for p in paths:
+        try:
+            return ImageFont.truetype(p, size)
+        except (OSError, IOError):
+            continue
+    return _sans(size, bold=True)
+
+
+def _wrap(text: str, font, max_width: int) -> list[str]:
+    lines, cur = [], ""
+    for word in text.split():
+        test = f"{cur} {word}".strip()
+        if font.getbbox(test)[2] > max_width and cur:
+            lines.append(cur)
+            cur = word
         else:
-            current = test
-    if current:
-        lines.append(current)
+            cur = test
+    if cur:
+        lines.append(cur)
     return lines
 
 
-def _draw_wrapped(
-    draw: ImageDraw.ImageDraw,
-    text: str,
-    x: int,
-    y: int,
-    max_width: int,
-    font,
-    color: tuple,
-    max_lines: int = 99,
-    line_spacing: int = 8,
-) -> int:
-    """Draw wrapped text using actual font metrics. Returns y after last line."""
-    lines = _wrap_text(text, font, max_width)
+def _format_authors(authors: str) -> str:
+    """One legible line: list up to three authors, else first author et al."""
+    parts = [a.strip() for a in _clean(authors).split(",") if a.strip()]
+    return ", ".join(parts) if len(parts) <= 3 else f"{parts[0]} et al."
+
+
+def _fit_title(text: str, box_w: int, box_h: int, max_lines: int = 4):
+    """Largest bold size whose wrapped title fits box_w x box_h in max_lines."""
+    for size in (84, 76, 68, 60, 52, 46):
+        font = _sans(size, bold=True)
+        lines = _wrap(text, font, box_w)
+        line_h = font.getbbox("Ag")[3] + 14
+        if len(lines) <= max_lines and len(lines) * line_h <= box_h:
+            return font, lines, line_h
+    font = _sans(46, bold=True)
+    lines = _wrap(text, font, box_w)
+    line_h = font.getbbox("Ag")[3] + 14
     if len(lines) > max_lines:
         lines = lines[:max_lines]
         last = lines[-1]
-        while font.getbbox(last + "...")[2] > max_width and len(last) > 10:
-            last = last.rsplit(" ", 1)[0] if " " in last else last[:-4]
-        lines[-1] = last + "..."
-
-    for line in lines:
-        draw.text((x, y), line, font=font, fill=color)
-        bbox = font.getbbox(line)
-        y += (bbox[3] - bbox[1]) + line_spacing
-    return y
+        while font.getbbox(last + "…")[2] > box_w and len(last) > 8:
+            last = last.rsplit(" ", 1)[0] if " " in last else last[:-2]
+        lines[-1] = last + "…"
+    return font, lines, line_h
 
 
-def generate_og_image(title: str, authors: str, subject: str, abstract: str = "") -> bytes:
-    """Generate a 1200x630 OG image with scroll metadata."""
-    img = Image.new("RGB", (OG_WIDTH, OG_HEIGHT), BG_COLOR)
+def _pill(draw, right: int, yc: int, text: str, filled: bool) -> int:
+    """Draw a pill with its right edge at `right`, centered on yc. Returns left x."""
+    font = _sans(22, bold=True)
+    tw = font.getbbox(text)[2]
+    pad = 20
+    pw = tw + pad * 2
+    ph = font.getbbox("Ag")[3] + 22
+    left = right - pw
+    box = [left, yc - ph // 2, right, yc + ph // 2]
+    if filled:
+        draw.rounded_rectangle(box, radius=ph // 2, fill=CORAL)
+        draw.text((left + pad, yc), text, font=font, fill=WHITE, anchor="lm")
+    else:
+        draw.rounded_rectangle(box, radius=ph // 2, outline=CORAL, width=3)
+        draw.text((left + pad, yc), text, font=font, fill=CORAL, anchor="lm")
+    return left
+
+
+def generate_og_image(
+    title: str, authors: str, subject: str, abstract: str = "", is_example: bool = False
+) -> bytes:
+    """Generate a 1200x630 OG card. `abstract` is accepted for compatibility but unused."""
+    img = Image.new("RGB", (OG_WIDTH, OG_HEIGHT), WHITE)
     draw = ImageDraw.Draw(img)
+    title = _clean(title)
+    subject = _clean(subject)
+    x = MARGIN
 
-    px = 60
-    content_w = OG_WIDTH - px * 2
+    # Title (hero), auto-fit near the top.
+    font_title, lines, line_h = _fit_title(title, OG_WIDTH - MARGIN * 2, 340)
+    y = 100
+    for line in lines:
+        draw.text((x, y), line, font=font_title, fill=TITLE_COLOR)
+        y += line_h
 
-    # Red header bar with subject
-    header_h = 56
-    draw.rectangle([0, 0, OG_WIDTH, header_h], fill=HEADER_BG)
-    font_subject = _get_font(22, bold=True)
-    draw.text((px, 16), subject.upper(), font=font_subject, fill=HEADER_TEXT)
+    # Author line.
+    y += 22
+    draw.text((x, y), _format_authors(authors), font=_sans(30), fill=AUTHOR_COLOR)
 
-    # Title
-    y = header_h + 30
-    font_title = _get_font(52, bold=True)
-    y = _draw_wrapped(
-        draw, title, px, y, content_w, font_title, TEXT_COLOR, max_lines=2, line_spacing=6
-    )
+    # Bottom band: logomark + "Scroll Press" wordmark on the left.
+    yc = OG_HEIGHT - 76
+    try:
+        mark = Image.open(LOGOMARK_PATH).convert("RGBA")
+        mark = mark.crop(mark.getbbox())
+        mh = 46
+        mw = int(mark.width * mh / mark.height)
+        mark = mark.resize((mw, mh), Image.LANCZOS)
+        img.paste(mark, (x, yc - mh // 2), mark)
+        wordmark_x = x + mw + 16
+    except (OSError, IOError):
+        wordmark_x = x
+    draw.text((wordmark_x, yc), "Scroll Press", font=_serif(34), fill=SLATE, anchor="lm")
 
-    # Authors
-    y += 10
-    font_authors = _get_font(28)
-    y = _draw_wrapped(draw, authors, px, y, content_w, font_authors, SUBTLE_COLOR, max_lines=1)
-
-    # Divider
-    y += 16
-    draw.line([(px, y), (px + content_w, y)], fill=DIVIDER_COLOR, width=2)
-    y += 16
-
-    # Abstract — fill remaining space above footer
-    if abstract:
-        footer_h = 56
-        available_h = OG_HEIGHT - footer_h - y - 20
-        clean = " ".join(abstract.replace("\r\n", " ").replace("\n", " ").split())
-        font_abs = _get_font(24)
-        line_h = font_abs.getbbox("Ag")[3] + 8
-        max_abs_lines = max(2, available_h // line_h)
-        _draw_wrapped(
-            draw,
-            clean,
-            px,
-            y,
-            content_w,
-            font_abs,
-            SUBTLE_COLOR,
-            max_lines=max_abs_lines,
-            line_spacing=8,
-        )
-
-    # Footer
-    footer_y = OG_HEIGHT - 56
-    draw.rectangle([0, footer_y, OG_WIDTH, OG_HEIGHT], fill=FOOTER_BG)
-    draw.line([(0, footer_y), (OG_WIDTH, footer_y)], fill=DIVIDER_COLOR, width=1)
-    font_brand = _get_font(24, bold=True)
-    draw.text((px, footer_y + 16), "Scroll Press", font=font_brand, fill=TEXT_COLOR)
-    font_tag = _get_font(20)
-    brand_w = font_brand.getbbox("Scroll Press")[2]
-    draw.text(
-        (px + brand_w + 20, footer_y + 18),
-        "HTML-native preprint server",
-        font=font_tag,
-        fill=SUBTLE_COLOR,
-    )
+    # Bottom band: subject (and example) pill on the right.
+    right = OG_WIDTH - MARGIN
+    if subject:
+        right = _pill(draw, right, yc, subject.upper(), filled=True) - 16
+    if is_example:
+        _pill(draw, right, yc, "EXAMPLE", filled=False)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
