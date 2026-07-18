@@ -149,8 +149,13 @@ async def delete_existing_data():
         print("Existing seed data deleted!")
 
 
-async def seed_scrolls(session=None):
-    """Create seed scrolls from real HTML papers."""
+async def seed_scrolls(session=None, max_html_bytes=None):
+    """Create seed scrolls from real HTML papers.
+
+    When max_html_bytes is set, examples whose HTML file exceeds it are skipped.
+    Preview deploys pass this to avoid seeding pathologically large scrolls (a
+    17MB inline-HTML example dropped the remote database connection).
+    """
     import json
     from pathlib import Path
 
@@ -192,6 +197,13 @@ async def seed_scrolls(session=None):
 
             if not html_file.exists() or html_file.is_dir():
                 print(f"Warning: {scroll_data['file']} not found or is a directory, skipping...")
+                continue
+
+            if max_html_bytes is not None and html_file.stat().st_size > max_html_bytes:
+                print(
+                    f"Skipping {scroll_data['file']}: {html_file.stat().st_size} bytes "
+                    f"exceeds max-html-bytes={max_html_bytes}"
+                )
                 continue
 
             with open(html_file, "r", encoding="utf-8") as f:
@@ -276,7 +288,7 @@ async def seed_scrolls(session=None):
             await session.close()
 
 
-async def main():
+async def main(max_html_bytes=None):
     """Run the seed script."""
     print("Creating database tables...")
     await create_tables()
@@ -291,10 +303,20 @@ async def main():
     await seed_users()
 
     print("Seeding scrolls...")
-    await seed_scrolls()
+    await seed_scrolls(max_html_bytes=max_html_bytes)
 
     print("Seed completed!")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Seed the database with example scrolls.")
+    parser.add_argument(
+        "--max-html-bytes",
+        type=int,
+        default=None,
+        help="Skip example scrolls whose HTML file exceeds this many bytes (used by preview deploys).",
+    )
+    args = parser.parse_args()
+    asyncio.run(main(max_html_bytes=args.max_html_bytes))
