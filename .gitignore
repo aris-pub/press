@@ -45,6 +45,8 @@ Thumbs.db
 *.png
 *.jpg
 *.jpeg
+# Brand asset used by the OG card generator (source, not a screenshot)
+!static/images/press-logomark.png
 plan.md
 # SSL certificates (auto-generated)
 certs/

@@ -944,6 +944,7 @@ async def get_og_image(
         authors=scroll.authors,
         subject=scroll.subject.name if scroll.subject else "",
         abstract=scroll.abstract or "",
+        is_example=bool(scroll.is_showcase),
     )
 
     return Response(
