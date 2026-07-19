@@ -63,9 +63,6 @@ EXAMPLE_SCROLLS = [
     },
 ]
 
-# Titles featured in the band, excluded from the recent list to avoid duplication.
-EXAMPLE_TITLES = {e["title"] for e in EXAMPLE_SCROLLS}
-
 
 def _latest_version_filter():
     """Return a SQLAlchemy filter clause that keeps only the latest version per series.
@@ -143,17 +140,14 @@ async def landing_page(
     )
     all_scrolls = scrolls_result.all()
 
-    # Featured examples render from the curated list above; keep them out of the
-    # recent grid so they do not appear twice.
-    recent_scrolls = [row for row in all_scrolls if row[0].title not in EXAMPLE_TITLES]
-
+    # The example scrolls populate both the featured band above and the recent grid.
     return templates.TemplateResponse(
         request,
         "index.html",
         {
             "current_user": current_user,
             "subjects": subjects,
-            "scrolls": recent_scrolls,
+            "scrolls": all_scrolls,
             "example_scrolls": EXAMPLE_SCROLLS,
             "show_verification_notice": verification_required == "1",
         },
