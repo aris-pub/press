@@ -22,6 +22,62 @@ from app.templates_config import templates
 
 router = APIRouter()
 
+# Curated showcase scrolls that carry a captured live-figure preview on the home
+# page. Keyed by exact title. Only these appear in the "Example scrolls" band;
+# showcase scrolls without a figure (pure math or text) fall through to the recent
+# list. Order controls display order; the first is rendered as the wide lead card.
+EXAMPLE_PREVIEWS = {
+    "Damped Harmonic Oscillators: Three Characteristic Regimes": {
+        "image": "damped.png",
+        "hint": "Drag the damping and watch both plots respond",
+        "order": 0,
+    },
+    "Interactive Analysis of the Iris Dataset": {
+        "image": "iris.png",
+        "hint": "Hover and zoom the points",
+        "order": 1,
+    },
+    "Thermal Conductivity of Binary Alloys": {
+        "image": "thermal.png",
+        "hint": "Open the scroll",
+        "order": 2,
+    },
+    "Prime Number Distribution in Arithmetic Progressions": {
+        "image": "prime.png",
+        "hint": "Open the scroll",
+        "order": 3,
+    },
+}
+
+
+def _split_example_scrolls(all_scrolls):
+    """Split query rows into (example_scrolls, recent_scrolls).
+
+    example_scrolls are the curated scrolls with a figure preview, ordered and
+    tagged with their preview image, hint, and lead flag. Everything else,
+    including showcase scrolls that have no previewable figure, becomes recent.
+    """
+    examples = []
+    recent = []
+    for row in all_scrolls:
+        meta = EXAMPLE_PREVIEWS.get(row[0].title)
+        if meta and row[0].is_showcase:
+            examples.append(
+                {
+                    "scroll": row[0],
+                    "subject": row[1],
+                    "image": meta["image"],
+                    "hint": meta["hint"],
+                    "order": meta["order"],
+                }
+            )
+        else:
+            recent.append(row)
+    examples.sort(key=lambda e: e["order"])
+    for i, e in enumerate(examples):
+        e["is_lead"] = i == 0
+    return examples, recent
+
 
 def _latest_version_filter():
     """Return a SQLAlchemy filter clause that keeps only the latest version per series.
@@ -99,8 +155,7 @@ async def landing_page(
     )
     all_scrolls = scrolls_result.all()
 
-    real_scrolls = [s for s in all_scrolls if not s[0].is_showcase]
-    showcase_scrolls = [s for s in all_scrolls if s[0].is_showcase]
+    example_scrolls, recent_scrolls = _split_example_scrolls(all_scrolls)
 
     return templates.TemplateResponse(
         request,
@@ -108,8 +163,8 @@ async def landing_page(
         {
             "current_user": current_user,
             "subjects": subjects,
-            "scrolls": real_scrolls,
-            "showcase_scrolls": showcase_scrolls,
+            "scrolls": recent_scrolls,
+            "example_scrolls": example_scrolls,
             "show_verification_notice": verification_required == "1",
         },
     )
@@ -141,15 +196,11 @@ async def get_scrolls_partial(
     scrolls_result = await db.execute(query)
     all_scrolls = scrolls_result.all()
 
-    real_scrolls = [s for s in all_scrolls if not s[0].is_showcase]
-    showcase_scrolls = [s for s in all_scrolls if s[0].is_showcase]
-
     return templates.TemplateResponse(
         request,
         "partials/scrolls_grid.html",
         {
-            "scrolls": real_scrolls,
-            "showcase_scrolls": showcase_scrolls,
+            "scrolls": all_scrolls,
             "subject_filter": subject,
         },
     )

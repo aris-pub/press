@@ -1180,6 +1180,41 @@ form.htmx-request .btn-primary {
 .showcase-heading { font-family: var(--font-serif); font-size: var(--text-xl); font-weight: 500; color: var(--black); margin-top: var(--space-3xl); }
 .showcase-subtitle { font-size: var(--text-sm); color: var(--gray); font-family: var(--font-sans); margin-bottom: var(--space-xl); }
 
+/* Example scrolls (home page featured band) */
+:root { --coral: #FF6B6B; --coral-soft: rgba(255, 107, 107, 0.10); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --coral-soft: rgba(248, 113, 113, 0.16); }
+}
+[data-theme="dark"] { --coral-soft: rgba(248, 113, 113, 0.16); }
+
+.examples { background: var(--coral-soft); border-radius: 14px; padding: var(--space-xl); margin: var(--space-xl) 0; }
+.examples-heading { font-family: var(--font-serif); font-size: var(--text-xl); font-weight: 500; color: var(--black); margin: 0; }
+.examples-subtitle { color: var(--gray); font-size: var(--text-sm); margin: var(--space-xs) 0 var(--space-lg); }
+.example-lead-wrap { margin-bottom: var(--space-lg); }
+.examples-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); }
+
+.example-card { display: block; text-decoration: none; color: inherit; background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; overflow: hidden; transition: box-shadow 0.2s ease, transform 0.2s ease; }
+.example-card:hover { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.10); transform: translateY(-2px); }
+.example-fig { position: relative; overflow: hidden; background: #fff; aspect-ratio: 16 / 10; }
+.example-fig img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+.example-tag { position: absolute; top: 0.6rem; left: 0.6rem; background: var(--coral); color: #fff; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.18rem 0.5rem; border-radius: 4px; }
+.example-body { padding: 0.85rem 1rem 1rem; }
+.example-title { font-family: var(--font-serif); font-size: var(--text-base); color: var(--black); line-height: 1.25; margin-bottom: 0.2rem; }
+.example-authors { font-family: var(--font-serif); font-size: var(--text-sm); color: var(--gray-medium); }
+.example-hint { font-size: var(--text-sm); color: var(--coral); font-weight: 600; margin-top: 0.4rem; }
+.example-card:hover .example-title { color: var(--coral); }
+
+.example-card-lead { display: grid; grid-template-columns: 1.35fr 1fr; }
+.example-card-lead .example-fig { aspect-ratio: auto; border-right: 1px solid var(--border-light); min-height: 260px; }
+.example-card-lead .example-body { display: flex; flex-direction: column; justify-content: center; padding: var(--space-lg) var(--space-xl); }
+.example-card-lead .example-title { font-size: var(--text-lg); }
+
+@media (max-width: 768px) {
+  .examples-row { grid-template-columns: 1fr; }
+  .example-card-lead { grid-template-columns: 1fr; }
+  .example-card-lead .example-fig { aspect-ratio: 16 / 10; min-height: 0; border-right: none; border-bottom: 1px solid var(--border-light); }
+}
+
 /* Scroll page styles */
 .scroll-page {
     max-width: 800px;

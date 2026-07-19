@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "components/button.html" import button %}
 {% from "components/scroll_card.html" import scroll_card %}
+{% from "components/example_card.html" import example_card %}
 {% from "components/subject_card.html" import subject_card %}
 {% from "components/search_form.html" import search_form %}
 {% from "components/verification_banner.html" import verification_banner %}
@@ -26,6 +27,23 @@
     </div>
   </div>
 </div>
+
+{% if example_scrolls %}
+<div class="examples" id="examples">
+  <h2 class="examples-heading">Example scrolls</h2>
+  <p class="examples-subtitle">Real papers, rebuilt as live web pages. Open one and use the figures yourself.</p>
+  {% for ex in example_scrolls if ex.is_lead %}
+  <div class="example-lead-wrap">
+    {{ example_card(ex.scroll, ex.image, ex.hint, is_lead=true) }}
+  </div>
+  {% endfor %}
+  <div class="examples-row">
+    {% for ex in example_scrolls if not ex.is_lead %}
+    {{ example_card(ex.scroll, ex.image, ex.hint) }}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <div class="subjects" id="browse">
   <div class="subjects-header">
@@ -69,34 +87,8 @@
                       "recently",
                       "v" + preview.version|string,
                       preview.url_hash,
-                      canonical_url=preview.canonical_url
-         ) }}
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if showcase_scrolls %}
-    {% if scrolls %}
-    <h2 class="showcase-heading">Showcase</h2>
-    <p class="showcase-subtitle">Curated scrolls demonstrating what's possible on Press.</p>
-    {% else %}
-    <p class="showcase-subtitle">Showcasing what's possible with interactive preprints.</p>
-    {% endif %}
-    <div class="scrolls-grid">
-      {% for preview_row in showcase_scrolls %}
-      {% set preview = preview_row[0] %}
-      {% set subject_name = preview_row[1] %}
-      {{ scroll_card(
-                      preview.title,
-                      preview.authors,
-                      preview.abstract,
-                      preview.keywords,
-                      subject_name,
-                      "recently",
-                      "v" + preview.version|string,
-                      preview.url_hash,
                       canonical_url=preview.canonical_url,
-                      is_showcase=true
+                      is_showcase=preview.is_showcase
          ) }}
       {% endfor %}
     </div>

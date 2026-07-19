@@ -33,33 +33,36 @@ async def test_showcase_column_can_be_set_true(test_db, test_user, test_subject)
     assert scroll.is_showcase is True
 
 
-async def test_homepage_all_showcase_single_section(client: AsyncClient, test_db, test_user):
-    """When all scrolls are showcase, show single section with showcase subtitle."""
+async def test_homepage_example_scroll_band(client: AsyncClient, test_db, test_user):
+    """A curated showcase scroll with a preview appears in the Example scrolls band."""
     subject = Subject(name="Mathematics", description="Math research")
     test_db.add(subject)
     await test_db.commit()
     await test_db.refresh(subject)
 
+    # Title must match a curated entry in EXAMPLE_PREVIEWS to earn a figure preview.
     scroll = await create_content_addressable_scroll(
         test_db,
         test_user,
         subject,
-        title="Spectral Theorem Demo",
-        html_content="<h1>Spectral</h1>",
+        title="Interactive Analysis of the Iris Dataset",
+        html_content="<h1>Iris</h1>",
     )
     scroll.is_showcase = True
     await test_db.commit()
 
     response = await client.get("/")
     assert response.status_code == 200
-    assert "Showcasing what's possible with interactive preprints." in response.text
-    assert "Spectral Theorem Demo" in response.text
-    # Should NOT show the separate "Showcase" heading when all are showcases
-    assert "Curated scrolls demonstrating" not in response.text
+    assert "Example scrolls" in response.text
+    assert 'class="example-tag"' in response.text
+    assert "/static/images/examples/iris.png" in response.text
+    assert "Interactive Analysis of the Iris Dataset" in response.text
 
 
-async def test_homepage_mixed_two_sections(client: AsyncClient, test_db, test_user):
-    """When there are both real and showcase scrolls, show two sections."""
+async def test_homepage_showcase_without_preview_goes_to_recent(
+    client: AsyncClient, test_db, test_user
+):
+    """A showcase scroll with no curated preview falls through to the recent grid."""
     subject = Subject(name="Physics", description="Physics research")
     test_db.add(subject)
     await test_db.commit()
@@ -75,7 +78,7 @@ async def test_homepage_mixed_two_sections(client: AsyncClient, test_db, test_us
     )
     assert real.is_showcase is False
 
-    # Showcase scroll
+    # Showcase scroll with a title that is NOT a curated example (no figure preview)
     showcase = await create_content_addressable_scroll(
         test_db,
         test_user,
@@ -91,7 +94,11 @@ async def test_homepage_mixed_two_sections(client: AsyncClient, test_db, test_us
     assert "Recent Scrolls" in response.text
     assert "Real Research Paper" in response.text
     assert "Demo Showcase Paper" in response.text
-    assert "Curated scrolls demonstrating what's possible on Press." in response.text
+    # Keeps its meta label in the recent grid
+    assert '<span class="showcase-label">Showcase</span>' in response.text
+    # The old separate Showcase section and its subtitles are gone
+    assert "Curated scrolls demonstrating" not in response.text
+    assert "Showcasing what's possible" not in response.text
 
 
 async def test_homepage_no_showcase_subtitle_when_only_real(

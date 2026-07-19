@@ -1,0 +1,23 @@
+{#
+Example Card Component
+Renders a featured example scroll on the home page with a captured live-figure
+preview. Two shapes: a wide lead card (is_lead=true) and a standard grid card.
+Usage:
+{% from "components/example_card.html" import example_card %}
+{{ example_card(scroll, image="damped.png", hint="Drag the damping", is_lead=true) }}
+#}
+
+{% macro example_card(scroll, image, hint="", is_lead=false) %}
+{% set href = scroll.canonical_url if scroll.canonical_url else '/scroll/' + scroll.url_hash %}
+<a href="{{ href }}" class="example-card{% if is_lead %} example-card-lead{% endif %}" hx-boost="false">
+  <div class="example-fig">
+    <span class="example-tag">Example</span>
+    <img src="/static/images/examples/{{ image }}" alt="Live figure from {{ scroll.title }}" loading="lazy">
+  </div>
+  <div class="example-body">
+    <div class="example-title">{{ scroll.title }}</div>
+    <div class="example-authors">{{ scroll.authors }}</div>
+    {% if hint %}<div class="example-hint">{{ hint }} &rarr;</div>{% endif %}
+  </div>
+</a>
+{% endmacro %}
