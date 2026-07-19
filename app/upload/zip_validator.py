@@ -49,6 +49,9 @@ ALLOWED_EXTENSIONS = frozenset(
         ".map",
         ".md",
         ".tex",
+        # Quarto / Jupyter manuscript sources shipped alongside the rendered HTML
+        ".ipynb",
+        ".qmd",
         # ML model weights and runtime files (browser-based ML research)
         ".bin",
         ".onnx",
@@ -151,6 +154,8 @@ EXTENSION_CATEGORY: dict[str, str] = {
     ".txt": "data",
     ".md": "data",
     ".tex": "data",
+    ".ipynb": "data",
+    ".qmd": "data",
     ".bin": "model",
     ".onnx": "model",
     ".wasm": "model",
@@ -166,7 +171,21 @@ EXTENSION_CATEGORY: dict[str, str] = {
 }
 
 TEXT_EXTENSIONS = frozenset(
-    {".html", ".htm", ".css", ".js", ".mjs", ".json", ".csv", ".tsv", ".txt", ".map", ".tex"}
+    {
+        ".html",
+        ".htm",
+        ".css",
+        ".js",
+        ".mjs",
+        ".json",
+        ".csv",
+        ".tsv",
+        ".txt",
+        ".map",
+        ".tex",
+        ".ipynb",
+        ".qmd",
+    }
 )
 
 # Expected MIME patterns per extension (prefix matching)
@@ -181,6 +200,8 @@ MIME_EXPECTATIONS: dict[str, list[str]] = {
     ".tsv": ["text/"],
     ".txt": ["text/"],
     ".tex": ["text/", "application/x-tex", "application/x-latex"],
+    ".ipynb": ["text/", "application/json"],
+    ".qmd": ["text/"],
     ".map": ["text/", "application/json"],
     ".png": ["image/png"],
     ".jpg": ["image/jpeg"],
