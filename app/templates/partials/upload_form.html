@@ -77,7 +77,7 @@
     {{ form_input("Keywords", "keywords", "text", form_data.keywords if form_data else "", required=false, help_text="Comma-separated keywords to help others discover your work") }}
 
     <div class="form-group">
-        <label for="html_file" class="form-label">HTML File:{% if not (form_data and form_data.original_filename) %} <span class="required">*</span>{% endif %}</label>
+        <label for="html_file" class="form-label">Upload an HTML or ZIP file:{% if not (form_data and form_data.original_filename) %} <span class="required">*</span>{% endif %}</label>
 
         <!-- Empty state: file upload zone -->
         <div class="file-upload-zone" id="file-upload-zone" tabindex="0" role="button" aria-label="Upload HTML file" {% if form_data and form_data.original_filename %}style="display: none;"{% endif %}>
