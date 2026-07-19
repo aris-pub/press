@@ -48,6 +48,64 @@ async def test_homepage_example_band_renders(client: AsyncClient):
     assert "The Spectral Theorem for Symmetric Matrices" in response.text
 
 
+async def test_recent_grid_excludes_featured_examples(client: AsyncClient, test_db, test_user):
+    """A featured example is shown in the band but not repeated in the recent grid."""
+    subject = Subject(name="Physics", description="Physics research")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
+        title="A Real Recent Submission",
+        html_content="<h1>Real</h1>",
+    )
+    example = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
+        title="Damped Harmonic Oscillators: Three Characteristic Regimes",
+        html_content="<h1>Damped</h1>",
+    )
+    example.is_showcase = True
+    await test_db.commit()
+
+    response = await client.get("/")
+    assert response.status_code == 200
+    # Real scroll appears in the recent grid
+    assert 'class="scroll-title">A Real Recent Submission' in response.text
+    # Featured example appears in the band, not as a recent scroll card
+    assert 'class="example-title">Damped Harmonic Oscillators' in response.text
+    assert 'class="scroll-title">Damped Harmonic Oscillators' not in response.text
+
+
+async def test_recent_grid_falls_back_to_examples_when_alone(
+    client: AsyncClient, test_db, test_user
+):
+    """If the only scrolls are featured examples, the recent grid still shows them."""
+    subject = Subject(name="Physics", description="Physics research")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    example = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
+        title="Damped Harmonic Oscillators: Three Characteristic Regimes",
+        html_content="<h1>Damped</h1>",
+    )
+    example.is_showcase = True
+    await test_db.commit()
+
+    response = await client.get("/")
+    assert response.status_code == 200
+    # Nothing else exists, so the example falls back into the recent grid as a card
+    assert 'class="scroll-title">Damped Harmonic Oscillators' in response.text
+
+
 async def test_homepage_showcase_without_preview_goes_to_recent(
     client: AsyncClient, test_db, test_user
 ):
