@@ -22,61 +22,49 @@ from app.templates_config import templates
 
 router = APIRouter()
 
-# Curated showcase scrolls that carry a captured live-figure preview on the home
-# page. Keyed by exact title. Only these appear in the "Example scrolls" band;
-# showcase scrolls without a figure (pure math or text) fall through to the recent
-# list. Order controls display order; the first is rendered as the wide lead card.
-EXAMPLE_PREVIEWS = {
-    "Damped Harmonic Oscillators: Three Characteristic Regimes": {
+# Curated "Example scrolls" band shown under the hero. This is an editorial list,
+# not a DB query: each entry previews the scroll's real content (a live figure,
+# its code, or its typeset math) via a captured static image. Driving it from a
+# fixed list means the band renders identically in every environment, including
+# preview deploys where the large example HTML is skipped by the seed size cap.
+# The first entry renders as the wide lead card. Links point to the live scrolls.
+EXAMPLE_SCROLLS = [
+    {
+        "title": "Damped Harmonic Oscillators: Three Characteristic Regimes",
+        "authors": "Dr. Henry Jekyll, Elizabeth Bennet",
+        "href": "/2026/example-damped-harmonic-oscillators-three-characteristic",
         "image": "damped.png",
         "hint": "Drag the damping and watch both plots respond",
-        "order": 0,
+        "is_lead": True,
     },
-    "Interactive Analysis of the Iris Dataset": {
+    {
+        "title": "Interactive Analysis of the Iris Dataset",
+        "authors": "Sherlock Holmes, Alice Liddell",
+        "href": "/2026/example-interactive-analysis-iris-dataset",
         "image": "iris.png",
         "hint": "Hover and zoom the points",
-        "order": 1,
+        "is_lead": False,
     },
-    "Thermal Conductivity of Binary Alloys": {
-        "image": "thermal.png",
-        "hint": "Open the scroll",
-        "order": 2,
+    {
+        "title": "Graph Traversal Algorithms: BFS and DFS",
+        "authors": "Dorothy Gale, Huckleberry Finn",
+        "href": "/2026/example-graph-traversal-algorithms-bfs-dfs",
+        "image": "graph_traversal.png",
+        "hint": "Read the BFS and DFS code",
+        "is_lead": False,
     },
-    "Prime Number Distribution in Arithmetic Progressions": {
-        "image": "prime.png",
-        "hint": "Open the scroll",
-        "order": 3,
+    {
+        "title": "The Spectral Theorem for Symmetric Matrices",
+        "authors": "Dr. Victor Frankenstein, Captain Nemo",
+        "href": "/2026/example-spectral-theorem-symmetric-matrices",
+        "image": "spectral.png",
+        "hint": "Read the proof",
+        "is_lead": False,
     },
-}
+]
 
-
-def _split_example_scrolls(all_scrolls):
-    """Split query rows into (example_scrolls, recent_scrolls).
-
-    example_scrolls are the curated scrolls with a figure preview, ordered and
-    tagged with their preview image, hint, and lead flag. Everything else,
-    including showcase scrolls that have no previewable figure, becomes recent.
-    """
-    examples = []
-    recent = []
-    for row in all_scrolls:
-        meta = EXAMPLE_PREVIEWS.get(row[0].title)
-        if meta and row[0].is_showcase:
-            examples.append(
-                {
-                    "scroll": row[0],
-                    "subject": row[1],
-                    "image": meta["image"],
-                    "hint": meta["hint"],
-                    "order": meta["order"],
-                }
-            )
-        else:
-            recent.append(row)
-    examples.sort(key=lambda e: e["order"])
-    for i, e in enumerate(examples):
-        e["is_lead"] = i == 0
-    return examples, recent
+# Titles featured in the band, excluded from the recent list to avoid duplication.
+EXAMPLE_TITLES = {e["title"] for e in EXAMPLE_SCROLLS}
 
 
 def _latest_version_filter():
@@ -155,7 +143,9 @@ async def landing_page(
     )
     all_scrolls = scrolls_result.all()
 
-    example_scrolls, recent_scrolls = _split_example_scrolls(all_scrolls)
+    # Featured examples render from the curated list above; keep them out of the
+    # recent grid so they do not appear twice.
+    recent_scrolls = [row for row in all_scrolls if row[0].title not in EXAMPLE_TITLES]
 
     return templates.TemplateResponse(
         request,
@@ -164,7 +154,7 @@ async def landing_page(
             "current_user": current_user,
             "subjects": subjects,
             "scrolls": recent_scrolls,
-            "example_scrolls": example_scrolls,
+            "example_scrolls": EXAMPLE_SCROLLS,
             "show_verification_notice": verification_required == "1",
         },
     )

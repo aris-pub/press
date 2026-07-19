@@ -33,30 +33,19 @@ async def test_showcase_column_can_be_set_true(test_db, test_user, test_subject)
     assert scroll.is_showcase is True
 
 
-async def test_homepage_example_scroll_band(client: AsyncClient, test_db, test_user):
-    """A curated showcase scroll with a preview appears in the Example scrolls band."""
-    subject = Subject(name="Mathematics", description="Math research")
-    test_db.add(subject)
-    await test_db.commit()
-    await test_db.refresh(subject)
+async def test_homepage_example_band_renders(client: AsyncClient):
+    """The curated Example scrolls band renders on the homepage with all four previews.
 
-    # Title must match a curated entry in EXAMPLE_PREVIEWS to earn a figure preview.
-    scroll = await create_content_addressable_scroll(
-        test_db,
-        test_user,
-        subject,
-        title="Interactive Analysis of the Iris Dataset",
-        html_content="<h1>Iris</h1>",
-    )
-    scroll.is_showcase = True
-    await test_db.commit()
-
+    The band is a fixed editorial list, so it renders regardless of what is seeded.
+    """
     response = await client.get("/")
     assert response.status_code == 200
     assert "Example scrolls" in response.text
     assert 'class="example-tag"' in response.text
-    assert "/static/images/examples/iris.png" in response.text
-    assert "Interactive Analysis of the Iris Dataset" in response.text
+    for img in ("damped.png", "iris.png", "graph_traversal.png", "spectral.png"):
+        assert f"/static/images/examples/{img}" in response.text
+    assert "Damped Harmonic Oscillators" in response.text
+    assert "The Spectral Theorem for Symmetric Matrices" in response.text
 
 
 async def test_homepage_showcase_without_preview_goes_to_recent(

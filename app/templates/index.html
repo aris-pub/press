@@ -31,15 +31,15 @@
 {% if example_scrolls %}
 <div class="examples" id="examples">
   <h2 class="examples-heading">Example scrolls</h2>
-  <p class="examples-subtitle">Real papers, rebuilt as live web pages. Open one and use the figures yourself.</p>
+  <p class="examples-subtitle">Real papers rebuilt by Scroll Press as live web pages. Open one to see the live version.</p>
   {% for ex in example_scrolls if ex.is_lead %}
   <div class="example-lead-wrap">
-    {{ example_card(ex.scroll, ex.image, ex.hint, is_lead=true) }}
+    {{ example_card(ex.title, ex.authors, ex.href, ex.image, ex.hint, is_lead=true) }}
   </div>
   {% endfor %}
   <div class="examples-row">
     {% for ex in example_scrolls if not ex.is_lead %}
-    {{ example_card(ex.scroll, ex.image, ex.hint) }}
+    {{ example_card(ex.title, ex.authors, ex.href, ex.image, ex.hint) }}
     {% endfor %}
   </div>
 </div>
