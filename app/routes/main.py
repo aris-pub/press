@@ -22,6 +22,47 @@ from app.templates_config import templates
 
 router = APIRouter()
 
+# Curated "Example scrolls" band shown under the hero. This is an editorial list,
+# not a DB query: each entry previews the scroll's real content (a live figure,
+# its code, or its typeset math) via a captured static image. Driving it from a
+# fixed list means the band renders identically in every environment, including
+# preview deploys where the large example HTML is skipped by the seed size cap.
+# The first entry renders as the wide lead card. Links point to the live scrolls.
+EXAMPLE_SCROLLS = [
+    {
+        "title": "Damped Harmonic Oscillators: Three Characteristic Regimes",
+        "authors": "Dr. Henry Jekyll, Elizabeth Bennet",
+        "href": "/2026/example-damped-harmonic-oscillators-three-characteristic",
+        "image": "damped.png",
+        "hint": "Drag the damping and watch both plots respond",
+        "is_lead": True,
+    },
+    {
+        "title": "Interactive Analysis of the Iris Dataset",
+        "authors": "Sherlock Holmes, Alice Liddell",
+        "href": "/2026/example-interactive-analysis-iris-dataset",
+        "image": "iris.png",
+        "hint": "Hover and zoom the points",
+        "is_lead": False,
+    },
+    {
+        "title": "Graph Traversal Algorithms: BFS and DFS",
+        "authors": "Dorothy Gale, Huckleberry Finn",
+        "href": "/2026/example-graph-traversal-algorithms-bfs-dfs",
+        "image": "graph_traversal.png",
+        "hint": "Read the BFS and DFS code",
+        "is_lead": False,
+    },
+    {
+        "title": "The Spectral Theorem for Symmetric Matrices",
+        "authors": "Dr. Victor Frankenstein, Captain Nemo",
+        "href": "/2026/example-spectral-theorem-symmetric-matrices",
+        "image": "spectral.png",
+        "hint": "Read the proof",
+        "is_lead": False,
+    },
+]
+
 
 def _latest_version_filter():
     """Return a SQLAlchemy filter clause that keeps only the latest version per series.
@@ -99,17 +140,15 @@ async def landing_page(
     )
     all_scrolls = scrolls_result.all()
 
-    real_scrolls = [s for s in all_scrolls if not s[0].is_showcase]
-    showcase_scrolls = [s for s in all_scrolls if s[0].is_showcase]
-
+    # The example scrolls populate both the featured band above and the recent grid.
     return templates.TemplateResponse(
         request,
         "index.html",
         {
             "current_user": current_user,
             "subjects": subjects,
-            "scrolls": real_scrolls,
-            "showcase_scrolls": showcase_scrolls,
+            "scrolls": all_scrolls,
+            "example_scrolls": EXAMPLE_SCROLLS,
             "show_verification_notice": verification_required == "1",
         },
     )
@@ -141,15 +180,11 @@ async def get_scrolls_partial(
     scrolls_result = await db.execute(query)
     all_scrolls = scrolls_result.all()
 
-    real_scrolls = [s for s in all_scrolls if not s[0].is_showcase]
-    showcase_scrolls = [s for s in all_scrolls if s[0].is_showcase]
-
     return templates.TemplateResponse(
         request,
         "partials/scrolls_grid.html",
         {
-            "scrolls": real_scrolls,
-            "showcase_scrolls": showcase_scrolls,
+            "scrolls": all_scrolls,
             "subject_filter": subject,
         },
     )
