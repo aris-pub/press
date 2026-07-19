@@ -1188,7 +1188,7 @@ form.htmx-request .btn-primary {
 [data-theme="dark"] { --coral-soft: rgba(248, 113, 113, 0.16); }
 
 .examples { background: var(--coral-soft); border-radius: 14px; padding: var(--space-xl); margin: var(--space-xl) 0; }
-.examples-heading { font-family: var(--font-serif); font-size: var(--text-xl); font-weight: 500; color: var(--black); margin: 0; }
+.examples-heading { font-family: var(--font-serif); font-size: var(--text-xl); font-weight: 500; color: var(--black); margin: 0 0 var(--space-lg); }
 .examples-subtitle { color: var(--gray); font-size: var(--text-sm); margin: var(--space-xs) 0 var(--space-lg); }
 .example-lead-wrap { margin-bottom: var(--space-lg); }
 .examples-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); }

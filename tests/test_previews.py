@@ -20,7 +20,7 @@ async def test_upload_page_shows_form(authenticated_client: AsyncClient):
     assert response.status_code == 200
     assert "Upload New Scroll" in response.text
     assert "Title" in response.text
-    assert "HTML File" in response.text
+    assert "Upload an HTML or ZIP file" in response.text
 
 
 async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, test_db, test_user):
