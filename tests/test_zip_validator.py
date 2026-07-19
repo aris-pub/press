@@ -577,3 +577,45 @@ class TestSubdirectoryStructure:
         import shutil
 
         shutil.rmtree(extract_dir)
+
+
+class TestQuartoManuscript:
+    """A Quarto manuscript bundles the rendered HTML with notebook and qmd sources."""
+
+    NOTEBOOK = (
+        '{"cells": [{"cell_type": "code", "execution_count": null, '
+        '"metadata": {}, "outputs": [], "source": ["import pandas as pd\\n", '
+        '"df = pd.read_csv(\\"data.csv\\")\\n", "df.describe()"]}], '
+        '"metadata": {"kernelspec": {"name": "python3", "display_name": "Python 3"}}, '
+        '"nbformat": 4, "nbformat_minor": 5}'
+    )
+    QMD = '---\ntitle: "Thermal Conductivity of Binary Alloys"\nformat: html\n---\n\n## Analysis\n\nSome prose describing the analysis.\n'
+
+    def test_accepts_manuscript_with_notebook_and_qmd(self, tmp_path):
+        validator = ZipValidator()
+        data = _make_zip(
+            {
+                "analysis.html": MINIMAL_HTML,
+                "analysis.ipynb": self.NOTEBOOK,
+                "analysis.qmd": self.QMD,
+                "data.csv": "a,b\n1,2\n3,4\n",
+            }
+        )
+        archive = tmp_path / "manuscript.zip"
+        archive.write_bytes(data)
+        errors = validator.validate(str(archive))
+        assert errors == []
+
+    def test_notebook_and_qmd_are_extracted(self, tmp_path):
+        validator = ZipValidator()
+        data = _make_zip(
+            {"analysis.html": MINIMAL_HTML, "notebooks/analysis.ipynb": self.NOTEBOOK}
+        )
+        archive = tmp_path / "manuscript.zip"
+        archive.write_bytes(data)
+        errors, extract_dir = validator.validate_and_extract(str(archive))
+        assert errors == []
+        assert os.path.isfile(os.path.join(extract_dir, "notebooks", "analysis.ipynb"))
+        import shutil
+
+        shutil.rmtree(extract_dir)
