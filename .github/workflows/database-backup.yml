@@ -126,7 +126,7 @@ jobs:
     steps:
       - name: Cleanup old backup artifacts
         env:
-          GH_TOKEN: ${{ secrets.BACKUP_CLEANUP_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Get list of artifacts and find backup artifacts
           echo "🔍 Fetching artifact list for cleanup..."
