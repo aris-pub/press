@@ -46,9 +46,9 @@
     <iframe
       id="paper-frame"
       src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
-      style="width: 100%; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
+      style="width: 100%; height: 100vh; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
       title="{{ scroll.title }}"
-      scrolling="no"
+      scrolling="auto"
     ></iframe>
   </div>
 
@@ -332,7 +332,7 @@
         const bodyStyle = window.getComputedStyle(body);
         const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
         const height = Math.ceil(maxBottom + paddingBottom);
-        iframe.style.height = height + 'px';
+        // height stays 100vh (CSS); paper scrolls internally so position:fixed pins to the viewport
       }
 
       setTimeout(() => {
