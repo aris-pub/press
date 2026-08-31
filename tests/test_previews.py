@@ -477,3 +477,45 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
         "/upload-form", data=valid_upload_data, files=valid_files, follow_redirects=False
     )
     assert response.status_code == 303
+
+
+async def test_scroll_view_iframe_pins_fixed_elements(
+    client: AsyncClient, test_db, test_user
+):
+    """The scroll viewer must embed the paper in a fixed viewport-height,
+    internally scrolling iframe.
+
+    An auto-height iframe with scrolling disabled makes the outer page do the
+    scrolling. position:fixed inside such an iframe then pins to the iframe's
+    content box, not the browser viewport, so an interactive paper's proof rail
+    and mobile drawer scroll off screen instead of staying put. A fixed 100vh
+    iframe that scrolls internally makes position:fixed pin to the viewport.
+    """
+    subject = Subject(name="Test Subject", description="Test description")
+    test_db.add(subject)
+    await test_db.commit()
+    await test_db.refresh(subject)
+
+    preview = await create_content_addressable_scroll(
+        test_db,
+        test_user,
+        subject,
+        title="Sticky Rail Scroll",
+        authors="Test Author",
+        abstract="Test abstract",
+        html_content="<h1>Body</h1>",
+        license="cc-by-4.0",
+    )
+    preview.publish()
+    await test_db.commit()
+
+    response = await client.get(f"/scroll/{preview.url_hash}")
+    assert response.status_code == 200
+    html = response.text
+
+    # The paper-frame iframe is a fixed viewport-height box...
+    assert "height: 100vh" in html
+    # ...that is allowed to scroll internally (scrolling="no" forces outer scroll)
+    assert 'scrolling="no"' not in html
+    # ...and the resize script must not force the iframe to full content height
+    assert "iframe.style.height = height" not in html
