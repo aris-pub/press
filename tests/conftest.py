@@ -3,6 +3,7 @@ import os
 import sys
 from unittest.mock import patch
 
+from dotenv import load_dotenv
 import httpx
 from httpx import AsyncClient
 import pytest
@@ -16,9 +17,29 @@ os.environ["TESTING"] = "1"
 # Add the project root to the path so imports work
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import Base, get_db
-from app.models.user import User
-from main import app
+# Load the committed test environment BEFORE importing the app. app/database.py and
+# app/templates_config.py call load_dotenv() at import time, which reads .env, so
+# without this the suite runs against whatever is configured on the machine: it passes
+# in CI (no .env is checked out, every value falls to its default) and fails locally.
+# override=True beats anything already exported; plain load_dotenv() in the app then
+# leaves these alone, since it does not overwrite variables that are already set.
+# DATABASE_URL is the exception: CI points it at a real postgres service, so an
+# override would break the tests that need one. .env.test supplies it only when the
+# environment has not.
+_ci_database_url = os.environ.get("DATABASE_URL") if os.getenv("CI") else None
+load_dotenv(
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env.test"),
+    override=True,
+)
+if _ci_database_url:
+    os.environ["DATABASE_URL"] = _ci_database_url
+
+# These imports must follow the environment setup above: importing the app runs
+# load_dotenv() at module level, and the values it reads decide how the app configures
+# itself. Hence the E402 exemptions.
+from app.database import Base, get_db  # noqa: E402
+from app.models.user import User  # noqa: E402
+from main import app  # noqa: E402
 
 # Test database URL - use PostgreSQL in CI, SQLite locally
 # Check if we're in CI by looking for CI environment variable
