@@ -285,7 +285,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check rate limits
         if self._is_rate_limited(client_ip, current_time):
             logger = get_logger()
-            logger.warning(f"Rate limit exceeded for IP: {client_ip}")
+            # Logged on every hit. Sentry only hears about it once a day per IP
+            # (see sentry_config.report_rate_limit_hit), so the log is the full record.
+            logger.warning(
+                f"Rate limit exceeded for IP: {client_ip} on {request.method} {request.url.path}"
+            )
 
             report_rate_limit_hit(
                 client_ip=client_ip,
