@@ -2,7 +2,15 @@
 
 from unittest.mock import patch
 
-from app.sentry_config import before_send, report_rapid_uploads, report_rate_limit_hit
+import pytest
+
+from app.sentry_config import (
+    RATE_LIMIT_REPORT_INTERVAL_SECONDS,
+    before_send,
+    report_rapid_uploads,
+    report_rate_limit_hit,
+    reset_rate_limit_reporting,
+)
 
 
 class TestBeforeSend:
@@ -58,25 +66,82 @@ class TestBeforeSend:
 
 
 class TestReportRateLimitHit:
-    """Tests for rate limit abuse reporting to Sentry."""
+    """Tests for rate limit abuse reporting to Sentry.
+
+    Every event here bills against the Sentry error quota, so the suppression is
+    the point of these tests, not an optimisation detail.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _clean_state(self):
+        reset_rate_limit_reporting()
+        yield
+        reset_rate_limit_reporting()
 
     @patch("app.sentry_config.sentry_sdk")
-    def test_reports_rate_limit_hit(self, mock_sentry):
+    def test_reports_the_first_hit_from_an_ip(self, mock_sentry):
         report_rate_limit_hit(client_ip="1.2.3.4", path="/upload-form", method="POST")
 
         mock_sentry.capture_message.assert_called_once()
         call_args = mock_sentry.capture_message.call_args
         assert "Rate limit hit" in call_args[0][0]
+        assert "1.2.3.4" in call_args[0][0]
         assert call_args[1]["level"] == "warning"
 
     @patch("app.sentry_config.sentry_sdk")
-    def test_sets_fingerprint_for_grouping(self, mock_sentry):
-        mock_sentry.push_scope.return_value.__enter__ = lambda s: s
-        mock_sentry.push_scope.return_value.__exit__ = lambda s, *a: None
-
+    def test_groups_one_issue_per_ip(self, mock_sentry):
         report_rate_limit_hit(client_ip="1.2.3.4", path="/upload", method="POST")
 
-        mock_sentry.capture_message.assert_called_once()
+        assert mock_sentry.capture_message.call_args[1]["fingerprint"] == [
+            "rate-limit-abuse",
+            "1.2.3.4",
+        ]
+
+    @patch("app.sentry_config.sentry_sdk")
+    def test_suppresses_repeat_hits_within_the_window(self, mock_sentry):
+        for i in range(500):
+            report_rate_limit_hit(client_ip="1.2.3.4", path=f"/probe{i}", method="GET", now=1000.0 + i)
+
+        assert mock_sentry.capture_message.call_count == 1
+
+    @patch("app.sentry_config.sentry_sdk")
+    def test_each_ip_gets_its_own_window(self, mock_sentry):
+        report_rate_limit_hit(client_ip="1.2.3.4", path="/a", method="GET", now=1000.0)
+        report_rate_limit_hit(client_ip="5.6.7.8", path="/a", method="GET", now=1000.0)
+        report_rate_limit_hit(client_ip="1.2.3.4", path="/b", method="GET", now=1001.0)
+
+        assert mock_sentry.capture_message.call_count == 2
+
+    @patch("app.sentry_config.sentry_sdk")
+    def test_reports_again_once_the_window_closes(self, mock_sentry):
+        report_rate_limit_hit(client_ip="1.2.3.4", path="/a", method="GET", now=1000.0)
+        report_rate_limit_hit(
+            client_ip="1.2.3.4",
+            path="/b",
+            method="GET",
+            now=1000.0 + RATE_LIMIT_REPORT_INTERVAL_SECONDS,
+        )
+
+        assert mock_sentry.capture_message.call_count == 2
+
+    @patch("app.sentry_config.sentry_sdk")
+    def test_the_next_event_carries_what_was_suppressed(self, mock_sentry):
+        report_rate_limit_hit(client_ip="1.2.3.4", path="/.env", method="GET", now=1000.0)
+        for i in range(99):
+            report_rate_limit_hit(
+                client_ip="1.2.3.4", path=f"/probe{i % 7}", method="GET", now=1001.0 + i
+            )
+        report_rate_limit_hit(
+            client_ip="1.2.3.4",
+            path="/stripe.yaml",
+            method="GET",
+            now=1000.0 + RATE_LIMIT_REPORT_INTERVAL_SECONDS,
+        )
+
+        context = mock_sentry.set_context.call_args[0][1]
+        assert context["blocked_since_last_report"] == 100
+        assert context["distinct_paths_since_last_report"] == 8
+        assert context["latest_path"] == "/stripe.yaml"
 
 
 class TestReportRapidUploads:
