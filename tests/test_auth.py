@@ -354,3 +354,34 @@ async def test_register_form_display_name_with_www_url(client: AsyncClient):
     response = await client.post("/register-form", data=register_data)
     assert response.status_code == 422
     assert "Display name cannot contain URLs" in response.text
+
+
+async def test_register_form_refuses_signup_when_turnstile_is_configured_but_no_token(
+    client: AsyncClient, monkeypatch
+):
+    """With a secret set and no token supplied, registration must be refused.
+
+    The rest of the suite runs with TURNSTILE_SECRET_KEY empty (see .env.test), which
+    makes _verify_turnstile return True at its first line, so nothing else here ever
+    reaches the check. This is the one test that does. It catches the failure that
+    matters: the check being removed or inverted, leaving signup open while the suite
+    stays green.
+
+    No Cloudflare call is involved. _verify_turnstile returns at `if not token` before
+    any network request, so this needs no mocking.
+    """
+    monkeypatch.setattr("app.routes.auth.TURNSTILE_SECRET_KEY", "test-secret-not-a-real-key")
+
+    register_data = {
+        "email": "blocked@example.com",
+        "password": "newpassword1",
+        "confirm_password": "newpassword1",
+        "display_name": "Blocked User",
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+
+    assert response.status_code == 422
+    assert "CAPTCHA verification failed" in response.text
+    assert "session_id" not in response.cookies
