@@ -226,24 +226,18 @@
         </div>
         {% endif %}
 
-        <div class="modal-platform">
-          <div class="platform-branding">
-            <a href="/" class="platform-link">Published on Scroll Press</a>
+        <div class="scroll-press-links">
+          <div class="sp-label">Scroll Press</div>
+          <div class="sp-row">
+            <a href="/">Explore more scrolls</a>
+            <a href="/upload">Publish your research</a>
+            <a href="/about">About Scroll Press</a>
           </div>
-          <div class="platform-ctas">
-            <a href="/" class="platform-cta">Explore More Scrolls</a>
-            <span class="cta-separator">•</span>
-            <a href="/about" class="platform-cta">Learn More</a>
-            <span class="cta-separator">•</span>
-            <a href="/upload" class="platform-cta">Publish Your Research</a>
-          </div>
-          <div class="platform-endorsement">
-            Part of <a href="https://aris.pub" target="_blank" rel="noopener noreferrer" class="aris-link">The Aris Program</a>
-          </div>
+          <div class="sp-aris">Part of <a href="https://aris.pub" target="_blank" rel="noopener noreferrer">The Aris Program</a></div>
         </div>
+
       </div>
       <div class="modal-actions">
-        <a href="/" class="btn btn-secondary">Back to Scroll Press</a>
         {% if is_owner %}
         <a href="/upload?revises={{ scroll.url_hash }}" class="btn btn-secondary">New Version</a>
         {% endif %}
@@ -372,73 +366,6 @@ body {
   opacity: 1;
 }
 
-.modal-platform {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-light);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  text-align: center;
-}
-
-.platform-branding {
-  font-size: 0.95rem;
-}
-
-.platform-link {
-  color: var(--black);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.platform-link:hover {
-  color: var(--red);
-}
-
-.platform-endorsement {
-  font-size: 0.85rem;
-  color: var(--gray);
-}
-
-.aris-link {
-  color: var(--red);
-  text-decoration: none;
-}
-
-.aris-link:hover {
-  color: var(--red-dark);
-  text-decoration: underline;
-}
-
-.platform-ctas {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.cta-separator {
-  color: var(--gray-light);
-  font-size: 0.875rem;
-}
-
-.platform-cta {
-  color: var(--gray-dark);
-  text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 400;
-  transition: color 0.2s;
-  line-height: 1.2;
-  padding: 0.25rem 0;
-}
-
-.platform-cta:hover {
-  color: var(--red);
-  text-decoration: underline;
-}
-
 /* Dark mode support */
 html[data-theme="dark"] body {
   background: #0f172a !important;
@@ -447,22 +374,6 @@ html[data-theme="dark"] body {
 
 html[data-theme="dark"] .license-text {
   color: #9ca3af;
-}
-
-html[data-theme="dark"] .platform-link {
-  color: #e5e7eb;
-}
-
-html[data-theme="dark"] .platform-endorsement {
-  color: #9ca3af;
-}
-
-html[data-theme="dark"] .aris-link {
-  color: var(--red);
-}
-
-html[data-theme="dark"] .modal-platform {
-  border-top-color: var(--border-dark);
 }
 
 .fab-group {
@@ -638,6 +549,67 @@ html[data-theme="dark"] .modal-platform {
   color: var(--gray);
   font-size: 0.8rem;
   font-style: italic;
+}
+
+/* Scroll Press links (a modal section, styled like the license and version boxes) */
+.scroll-press-links {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--gray-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-lightest);
+}
+
+.sp-label {
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.sp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sp-row a {
+  color: var(--gray-dark);
+  text-decoration: none;
+  font-size: 0.875rem;
+  width: fit-content;
+}
+
+.sp-row a:hover {
+  color: var(--red);
+  text-decoration: underline;
+}
+
+.sp-aris {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.sp-aris a {
+  color: var(--red);
+  text-decoration: none;
+}
+
+.sp-aris a:hover {
+  text-decoration: underline;
+}
+
+html[data-theme="dark"] .sp-label {
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .sp-row a {
+  color: #9ca3af;
+}
+
+html[data-theme="dark"] .sp-aris {
+  color: #9ca3af;
 }
 
 /* Old Version Banner */
@@ -868,25 +840,9 @@ body.modal-open {
     flex-direction: column;
   }
 
-  .platform-ctas {
-    flex-direction: column;
-    width: 100%;
-    gap: 0.25rem;
-  }
-
   .old-version-banner {
     flex-direction: column;
     gap: 0.5rem;
-  }
-
-  .cta-separator {
-    display: none;
-  }
-
-  .platform-cta {
-    width: 100%;
-    justify-content: center;
-    padding: 0.65rem 0;
   }
 }
 </style>
