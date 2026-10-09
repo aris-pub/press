@@ -42,9 +42,13 @@ async def test_details_modal_structure(test_server):
         # The scroll's own action is present
         assert await modal.locator("#download-btn").is_visible()
 
-        # No page-footer content leaked into the modal
-        assert await modal.locator(".platform-ctas").count() == 0
-        assert await modal.locator("text=Explore More Scrolls").count() == 0
+        # Press links live in the modal as a boxed section, not a page footer
+        box = modal.locator(".scroll-press-links")
+        assert await box.count() == 1
+        assert await box.locator('a[href="/"]').count() >= 1
+        assert await box.locator('a[href="/upload"]').count() >= 1
+        assert await box.locator('a[href="/about"]').count() >= 1
+        assert await box.locator('a[href*="aris.pub"]').count() >= 1
 
         await browser.close()
 

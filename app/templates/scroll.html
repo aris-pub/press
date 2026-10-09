@@ -226,9 +226,18 @@
         </div>
         {% endif %}
 
+        <div class="scroll-press-links">
+          <div class="sp-label">Scroll Press</div>
+          <div class="sp-row">
+            <a href="/">Explore more scrolls</a>
+            <a href="/upload">Publish your research</a>
+            <a href="/about">About Scroll Press</a>
+          </div>
+          <div class="sp-aris">Part of <a href="https://aris.pub" target="_blank" rel="noopener noreferrer">The Aris Program</a></div>
+        </div>
+
       </div>
       <div class="modal-actions">
-        <a href="/" class="btn btn-secondary">Back to Scroll Press</a>
         {% if is_owner %}
         <a href="/upload?revises={{ scroll.url_hash }}" class="btn btn-secondary">New Version</a>
         {% endif %}
@@ -540,6 +549,67 @@ html[data-theme="dark"] .license-text {
   color: var(--gray);
   font-size: 0.8rem;
   font-style: italic;
+}
+
+/* Scroll Press links (a modal section, styled like the license and version boxes) */
+.scroll-press-links {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--gray-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-lightest);
+}
+
+.sp-label {
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.sp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sp-row a {
+  color: var(--gray-dark);
+  text-decoration: none;
+  font-size: 0.875rem;
+  width: fit-content;
+}
+
+.sp-row a:hover {
+  color: var(--red);
+  text-decoration: underline;
+}
+
+.sp-aris {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.sp-aris a {
+  color: var(--red);
+  text-decoration: none;
+}
+
+.sp-aris a:hover {
+  text-decoration: underline;
+}
+
+html[data-theme="dark"] .sp-label {
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .sp-row a {
+  color: #9ca3af;
+}
+
+html[data-theme="dark"] .sp-aris {
+  color: #9ca3af;
 }
 
 /* Old Version Banner */
