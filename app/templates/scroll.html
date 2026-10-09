@@ -5,7 +5,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{{ scroll.title }} - Scroll Press</title>
 
   <!-- SEO Meta Tags -->
@@ -84,7 +84,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/main.css">
-  
+
   {% if scroll.license == 'cc-by-4.0' %}
   <link rel="license" href="https://creativecommons.org/licenses/by/4.0/">
   {% endif %}
@@ -98,20 +98,6 @@
   {% set version_count = versions|length if versions is defined and versions else 0 %}
   {% set show_version_ui = version_count > 1 %}
 
-  <!-- Store user HTML content as JSON data for strict-dynamic processing -->
-  <div class="scroll-container">
-    <div id="iframe-loading" class="loading-overlay">
-      <div class="spinner"></div>
-    </div>
-    <iframe
-      id="paper-frame"
-      src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
-      style="width: 100%; height: 100vh; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
-      title="{{ scroll.title }}"
-      scrolling="auto"
-    ></iframe>
-  </div>
-
   {% if show_version_ui and not is_latest|default(true) %}
   <div class="old-version-banner">
     <span>You are viewing v{{ scroll.version }} of this scroll. A newer version is available.</span>
@@ -122,74 +108,27 @@
   </div>
   {% endif %}
 
-  <!-- Article Metadata Section -->
-  <section class="scroll-metadata">
-    <h2 class="metadata-title">{{ scroll.title }}</h2>
-    <div class="metadata-authors">
-      {{ scroll.authors }}
-      {% if scroll.user and scroll.user.orcid_id %}
-      <a href="https://orcid.org/{{ scroll.user.orcid_id }}" target="_blank" rel="noopener noreferrer" class="orcid-badge" title="ORCID iD">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" class="orcid-icon"><path fill="#A6CE39" d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128 57.3 0 128 0s128 57.3 128 128z"/><path fill="#fff" d="M86.3 186.2H70.9V79.1h15.4v107.1zM108.9 79.1h41.6c39.6 0 57 28.3 57 53.6 0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7C191.7 111 176 92.8 148.7 92.8h-24.4v79.6zM88.7 56.8c0 5.5-4.5 10.1-10.1 10.1-5.6 0-10.1-4.6-10.1-10.1 0-5.6 4.5-10.1 10.1-10.1 5.6 0 10.1 4.6 10.1 10.1z"/></svg>
-      </a>
-      {% endif %}
-      <span class="metadata-separator">&middot;</span> {{ scroll.subject.name }}
-    </div>
-    <div class="metadata-info">
-      <span>{{ scroll.created_at.strftime('%B %d, %Y') }}</span>
-      <span class="metadata-separator">•</span>
-      <span class="open-access-badge">Open Access</span>
-      <span class="metadata-separator">•</span>
-      {% if scroll.license == 'cc-by-4.0' %}
-        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" class="license-link">CC BY 4.0</a>
-      {% else %}
-        <span class="license-text">All Rights Reserved</span>
-      {% endif %}
-    </div>
-    {% if show_version_ui %}
-    <div class="version-indicator">
-      <span class="version-label">
-        {% if is_latest|default(true) %}
-          v{{ scroll.version }} (latest)
-        {% else %}
-          v{{ scroll.version }} of {{ latest_version }}
-        {% endif %}
-      </span>
-      <span class="version-divider"></span>
-      <div class="version-selector">
-        {% for v in versions|sort(attribute='version') %}
-          {% if v.version == scroll.version %}
-            <span class="version-current">v{{ v.version }}</span>
-          {% else %}
-            <a href="/{{ scroll.publication_year }}/{{ scroll.slug }}/v{{ v.version }}" class="version-link">v{{ v.version }}</a>
-          {% endif %}
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-  </section>
+  <!-- Title and authors for assistive tech and crawlers. The visible title is in the paper itself and in Details. -->
+  <h1 class="sr-only">{{ scroll.title }}. {{ scroll.authors }}.</h1>
 
-  <!-- Platform Attribution Section -->
-  <footer class="scroll-platform">
-    <div class="platform-branding">
-      <a href="/" class="platform-link">Published on Scroll Press</a>
+  <div class="scroll-container">
+    <div id="iframe-loading" class="loading-overlay">
+      <div class="spinner"></div>
     </div>
-    <div class="platform-ctas">
-      <a href="/" class="platform-cta">Explore More Scrolls</a>
-      <span class="cta-separator">•</span>
-      <a href="/about" class="platform-cta">Learn More</a>
-      <span class="cta-separator">•</span>
-      <a href="/upload" class="platform-cta">Publish Your Research</a>
-    </div>
-    <div class="platform-endorsement">
-      Part of <a href="https://aris.pub" target="_blank" rel="noopener noreferrer" class="aris-link">The Aris Program</a>
-    </div>
-  </footer>
+    <iframe
+      id="paper-frame"
+      src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
+      style="width: 100%; height: 100%; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
+      title="{{ scroll.title }}"
+      scrolling="auto"
+    ></iframe>
+  </div>
 
   <div class="fab-group" id="fab-group">
     <button class="fab-group-btn" id="top-fab" aria-label="Back to top">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
     </button>
-    <button class="fab-group-btn" id="info-fab" aria-label="View preview information">
+    <button class="fab-group-btn" id="info-fab" aria-label="View scroll details">
       <img src="/brand/logos/press/press-logo-64.svg" alt="Press logo" class="fab-logo">
     </button>
   </div>
@@ -211,6 +150,37 @@
           time_ago="Published " + scroll.published_at.strftime('%B %d, %Y') if scroll.published_at else "Not published",
           version="v" + scroll.version|string
         ) }}
+
+        {% if show_version_ui %}
+        <div class="version-indicator">
+          <span class="version-label">
+            {% if is_latest|default(true) %}
+              v{{ scroll.version }} (latest)
+            {% else %}
+              v{{ scroll.version }} of {{ latest_version }}
+            {% endif %}
+          </span>
+          <span class="version-divider"></span>
+          <div class="version-selector">
+            {% for v in versions|sort(attribute='version') %}
+              {% if v.version == scroll.version %}
+                <span class="version-current">v{{ v.version }}</span>
+              {% else %}
+                <a href="/{{ scroll.publication_year }}/{{ scroll.slug }}/v{{ v.version }}" class="version-link">v{{ v.version }}</a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if scroll.user and scroll.user.orcid_id %}
+        <div class="modal-orcid">
+          <a href="https://orcid.org/{{ scroll.user.orcid_id }}" target="_blank" rel="noopener noreferrer" class="orcid-badge" title="ORCID iD">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" class="orcid-icon"><path fill="#A6CE39" d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128 57.3 0 128 0s128 57.3 128 128z"/><path fill="#fff" d="M86.3 186.2H70.9V79.1h15.4v107.1zM108.9 79.1h41.6c39.6 0 57 28.3 57 53.6 0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7C191.7 111 176 92.8 148.7 92.8h-24.4v79.6zM88.7 56.8c0 5.5-4.5 10.1-10.1 10.1-5.6 0-10.1-4.6-10.1-10.1 0-5.6 4.5-10.1 10.1-10.1 5.6 0 10.1 4.6 10.1 10.1z"/></svg>
+            <span>ORCID: {{ scroll.user.orcid_id }}</span>
+          </a>
+        </div>
+        {% endif %}
 
         {{ doi_badge(scroll.doi, scroll.doi_status) }}
 
@@ -255,6 +225,22 @@
           {% endfor %}
         </div>
         {% endif %}
+
+        <div class="modal-platform">
+          <div class="platform-branding">
+            <a href="/" class="platform-link">Published on Scroll Press</a>
+          </div>
+          <div class="platform-ctas">
+            <a href="/" class="platform-cta">Explore More Scrolls</a>
+            <span class="cta-separator">•</span>
+            <a href="/about" class="platform-cta">Learn More</a>
+            <span class="cta-separator">•</span>
+            <a href="/upload" class="platform-cta">Publish Your Research</a>
+          </div>
+          <div class="platform-endorsement">
+            Part of <a href="https://aris.pub" target="_blank" rel="noopener noreferrer" class="aris-link">The Aris Program</a>
+          </div>
+        </div>
       </div>
       <div class="modal-actions">
         <a href="/" class="btn btn-secondary">Back to Scroll Press</a>
@@ -266,18 +252,49 @@
     </div>
 
 <style>
+html, body { height: 100%; }
 body {
   margin: 0;
   padding: 0;
   font-family: 'Source Sans 3', sans-serif;
   background: var(--white);
   color: var(--black);
+  /* App shell: the page itself never scrolls, the paper iframe is the only scroller, so a
+     position:fixed proof rail or mobile drawer inside a paper pins to the viewport. */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.old-version-banner {
+  flex: 0 0 auto;
 }
 
 .scroll-container {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0;
   position: relative;
-  margin: 0 auto;
+  overflow: hidden;
+}
+
+#paper-frame {
+  width: 100%;
+  height: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .loading-overlay {
@@ -306,34 +323,10 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* Article Metadata Section */
-.scroll-metadata {
-  padding: 3rem 1.5rem;
-  background: var(--gray-bg-light);
-  border-top: 1px solid var(--border-light);
-  text-align: center;
-}
-
-.metadata-title {
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: var(--black);
-  margin: 0 0 1rem 0;
-  line-height: 1.3;
-}
-
-.metadata-authors {
-  font-size: 1rem;
-  color: var(--gray-dark);
-  margin-bottom: 0.75rem;
-}
-
 .orcid-badge {
   display: inline-flex;
   align-items: center;
   vertical-align: middle;
-  margin-left: 0.35rem;
-  margin-right: 0.35rem;
 }
 
 .orcid-badge:hover {
@@ -344,25 +337,6 @@ body {
   width: 20px;
   height: 20px;
   vertical-align: middle;
-}
-
-.metadata-info {
-  font-size: 0.9rem;
-  color: var(--gray);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.metadata-separator {
-  color: var(--gray-light);
-}
-
-.open-access-badge {
-  color: #16a34a;
-  font-weight: 500;
 }
 
 .license-link {
@@ -381,15 +355,31 @@ body {
   font-weight: 500;
 }
 
-/* Platform Attribution Section */
-.scroll-platform {
-  padding: 3rem 1.5rem 5rem;
-  background: var(--white);
-  border-top: 2px solid var(--border-light);
-  text-align: center;
+/* ORCID and platform links inside the Details modal */
+.modal-orcid {
+  margin-top: 0.75rem;
+}
+
+.modal-orcid .orcid-badge {
+  gap: 0.4rem;
+  color: var(--gray-dark);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.modal-orcid .orcid-badge:hover {
+  color: var(--black);
+  opacity: 1;
+}
+
+.modal-platform {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  text-align: center;
 }
 
 .platform-branding {
@@ -455,34 +445,8 @@ html[data-theme="dark"] body {
   color: #e5e7eb !important;
 }
 
-html[data-theme="dark"] .scroll-metadata {
-  background: var(--gray-darker);
-  border-top-color: var(--border-dark);
-}
-
-html[data-theme="dark"] .metadata-title {
-  color: #e5e7eb !important;
-}
-
-html[data-theme="dark"] .metadata-authors {
-  color: #9ca3af;
-}
-
-html[data-theme="dark"] .metadata-info {
-  color: #9ca3af;
-}
-
-html[data-theme="dark"] .open-access-badge {
-  color: #4ade80;
-}
-
 html[data-theme="dark"] .license-text {
   color: #9ca3af;
-}
-
-html[data-theme="dark"] .scroll-platform {
-  background: #1a1a1a;
-  border-top-color: var(--border-dark);
 }
 
 html[data-theme="dark"] .platform-link {
@@ -497,9 +461,13 @@ html[data-theme="dark"] .aris-link {
   color: var(--red);
 }
 
+html[data-theme="dark"] .modal-platform {
+  border-top-color: var(--border-dark);
+}
+
 .fab-group {
   position: fixed;
-  bottom: 2rem;
+  bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
   right: 2rem;
   display: flex;
   border-radius: var(--border-radius);
@@ -649,19 +617,18 @@ html[data-theme="dark"] .aris-link {
   gap: 0.25rem;
 }
 
-.license-link {
+.license-info .license-link {
   color: var(--gray-dark);
-  text-decoration: none;
   font-weight: 500;
   font-size: 0.9rem;
 }
 
-.license-link:hover {
+.license-info .license-link:hover {
   color: var(--black);
   text-decoration: underline;
 }
 
-.license-text {
+.license-info .license-text {
   color: var(--gray-dark);
   font-weight: 500;
   font-size: 0.9rem;
@@ -677,7 +644,7 @@ html[data-theme="dark"] .aris-link {
 .old-version-banner {
   background: #fef3c7;
   color: #92400e;
-  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
   padding: 1rem 1.5rem;
   text-align: center;
   font-size: var(--text-sm, 0.875rem);
@@ -704,14 +671,14 @@ html[data-theme="dark"] .aris-link {
 html[data-theme="dark"] .old-version-banner {
   background: #422006;
   color: #fbbf24;
-  border-top-color: var(--border-dark);
+  border-bottom-color: var(--border-dark);
 }
 
 html[data-theme="dark"] .old-version-banner-link {
   color: #fbbf24;
 }
 
-/* Version Indicator */
+/* Version indicator (compact summary in the modal) */
 .version-indicator {
   display: flex;
   align-items: center;
@@ -878,12 +845,8 @@ body.modal-open {
 }
 
 @media (max-width: 768px) {
-  .scroll-container {
-    padding: 0;
-  }
-
   .fab-group {
-    bottom: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     right: 1rem;
   }
 
@@ -905,29 +868,6 @@ body.modal-open {
     flex-direction: column;
   }
 
-  /* Mobile footer styles */
-  .scroll-metadata {
-    padding: 1.5rem 1rem;
-  }
-
-  .metadata-title {
-    font-size: 1.25rem;
-  }
-
-  .metadata-info {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .metadata-separator {
-    display: none;
-  }
-
-  .scroll-platform {
-    padding: 2rem 1.5rem 4rem;
-    gap: 0.5rem;
-  }
-
   .platform-ctas {
     flex-direction: column;
     width: 100%;
@@ -937,10 +877,6 @@ body.modal-open {
   .old-version-banner {
     flex-direction: column;
     gap: 0.5rem;
-  }
-
-  .version-indicator {
-    flex-wrap: wrap;
   }
 
   .cta-separator {
@@ -955,76 +891,36 @@ body.modal-open {
 }
 </style>
 
-<!-- Auto-resize iframe to match content height -->
+<!-- Paper iframe: reveal on load and drive the back-to-top button from the iframe's own scroll -->
 <script{% if nonce %} nonce="{{ nonce }}"{% endif %}>
 (function() {
   const iframe = document.getElementById('paper-frame');
   const loadingOverlay = document.getElementById('iframe-loading');
+  const topFab = document.getElementById('top-fab');
+  const SCROLL_THRESHOLD = 400;
 
   iframe.addEventListener('load', function() {
+    loadingOverlay.style.display = 'none';
+    iframe.style.opacity = '1';
+
+    // The outer page is locked, so the paper iframe is the only scroller. Read the
+    // iframe's own scroll (same origin) to show back-to-top and to scroll to the top.
     try {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-      // Function to update iframe height (width stays 100% responsive)
-      function updateDimensions() {
-        const body = iframeDoc.body;
-
-        // Find the bottom-most visible element to get true content height
-        const allElements = Array.from(body.getElementsByTagName('*'));
-        let maxBottom = 0;
-
-        for (const el of allElements) {
-          const style = window.getComputedStyle(el);
-
-          // Skip invisible, script/style, and positioned elements (fixed/absolute don't affect flow)
-          if (style.display === 'none' ||
-              el.tagName === 'SCRIPT' ||
-              el.tagName === 'STYLE' ||
-              style.position === 'fixed' ||
-              style.position === 'absolute') {
-            continue;
-          }
-
-          const rect = el.getBoundingClientRect();
-          if (rect.bottom > maxBottom) {
-            maxBottom = rect.bottom;
-          }
+      const win = iframe.contentWindow;
+      win.addEventListener('scroll', function() {
+        const y = win.scrollY < 0 ? 0 : win.scrollY; // iOS rubber-band can go negative
+        if (y > SCROLL_THRESHOLD) {
+          topFab.classList.add('visible');
+        } else {
+          topFab.classList.remove('visible');
         }
+      }, { passive: true });
 
-        // Add body padding if any
-        const bodyStyle = window.getComputedStyle(body);
-        const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
-
-        const height = Math.ceil(maxBottom + paddingBottom);
-        // height stays 100vh (CSS); paper scrolls internally so position:fixed pins to the viewport
-      }
-
-      // Set initial dimensions after layout is complete
-      // Small delay ensures content has finished laying out
-      setTimeout(() => {
-        updateDimensions();
-
-        // Hide loading overlay and show iframe
-        loadingOverlay.style.display = 'none';
-        iframe.style.opacity = '1';
-      }, 100);
-
-      // Use ResizeObserver to auto-adjust iframe dimensions on content changes
-      const resizeObserver = new ResizeObserver(() => {
-        updateDimensions();
+      topFab.addEventListener('click', function() {
+        win.scrollTo({ top: 0, behavior: 'smooth' });
       });
-
-      resizeObserver.observe(iframeDoc.documentElement);
-      resizeObserver.observe(iframeDoc.body);
-
-      // Also update dimensions when parent window resizes (affects iframe width)
-      window.addEventListener('resize', updateDimensions);
     } catch (e) {
-      console.error('Failed to observe iframe content:', e);
-      // Fallback: set reasonable default height
-      iframe.style.height = '1000px';
-      loadingOverlay.style.display = 'none';
-      iframe.style.opacity = '1';
+      // If the paper is ever served cross-origin, leave back-to-top hidden.
     }
   });
 
@@ -1046,7 +942,7 @@ body.modal-open {
     }
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
-  
+
   // Apply theme to document
   function applyTheme(theme) {
     if (theme === 'auto') {
@@ -1055,7 +951,7 @@ body.modal-open {
       document.documentElement.setAttribute('data-theme', theme);
     }
   }
-  
+
   // Set initial theme
   const initialTheme = getThemePreference();
   applyTheme(initialTheme);
@@ -1069,24 +965,6 @@ body.modal-open {
   });
 })();
 
-// Back to top FAB
-(function() {
-  var topFab = document.getElementById('top-fab');
-  var scrollThreshold = 400;
-
-  window.addEventListener('scroll', function() {
-    if (window.scrollY > scrollThreshold) {
-      topFab.classList.add('visible');
-    } else {
-      topFab.classList.remove('visible');
-    }
-  }, { passive: true });
-
-  topFab.addEventListener('click', function() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-})();
-
 // Modal and page functionality
 (function() {
   const fab = document.getElementById('info-fab');
@@ -1094,58 +972,58 @@ body.modal-open {
   const backdrop = document.getElementById('modal-backdrop');
   const closeBtn = document.getElementById('modal-close');
   const downloadBtn = document.getElementById('download-btn');
-  
+
   function openModal() {
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
-    
+
     // Focus management
     const firstFocusable = modal.querySelector('button, [href]');
     if (firstFocusable) {
       firstFocusable.focus();
     }
   }
-  
+
   function closeModal() {
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
     fab.focus();
   }
-  
+
   function downloadHTML() {
     const htmlContent = {{ scroll.html_content | tojson }};
     const filename = {{ (scroll.title | replace(' ', '_') | replace('/', '_') | replace('\\', '_') | replace(':', '_') | replace('*', '_') | replace('?', '_') | replace('"', '_') | replace('<', '_') | replace('>', '_') | replace('|', '_')) | tojson }} + '.html';
-    
+
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     a.style.display = 'none';
-    
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    
+
     URL.revokeObjectURL(url);
   }
-  
+
   // Event listeners
   fab.addEventListener('click', openModal);
   backdrop.addEventListener('click', closeModal);
   closeBtn.addEventListener('click', closeModal);
   downloadBtn.addEventListener('click', downloadHTML);
-  
+
   // Keyboard navigation
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && modal.classList.contains('show')) {
       closeModal();
     }
   });
-  
+
 })();
 </script>
 
