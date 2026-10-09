@@ -479,17 +479,15 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
     assert response.status_code == 303
 
 
-async def test_scroll_view_iframe_pins_fixed_elements(
-    client: AsyncClient, test_db, test_user
-):
-    """The scroll viewer must embed the paper in a fixed viewport-height,
-    internally scrolling iframe.
+async def test_scroll_view_iframe_pins_fixed_elements(client: AsyncClient, test_db, test_user):
+    """The scroll viewer is an app shell: the outer page does not scroll and the
+    paper iframe is the only scroll region.
 
-    An auto-height iframe with scrolling disabled makes the outer page do the
-    scrolling. position:fixed inside such an iframe then pins to the iframe's
-    content box, not the browser viewport, so an interactive paper's proof rail
-    and mobile drawer scroll off screen instead of staying put. A fixed 100vh
-    iframe that scrolls internally makes position:fixed pin to the viewport.
+    position:fixed inside the iframe pins to the iframe's box, so it stays put only
+    while the iframe box stays put. If the outer page scrolled, or the iframe were
+    grown to full content height, the paper's proof rail and mobile drawer would
+    scroll off screen. So the body locks scrolling (overflow: hidden), the iframe is
+    not forced to content height, and internal scrolling is left on.
     """
     subject = Subject(name="Test Subject", description="Test description")
     test_db.add(subject)
@@ -513,9 +511,9 @@ async def test_scroll_view_iframe_pins_fixed_elements(
     assert response.status_code == 200
     html = response.text
 
-    # The paper-frame iframe is a fixed viewport-height box...
-    assert "height: 100vh" in html
-    # ...that is allowed to scroll internally (scrolling="no" forces outer scroll)
+    # The outer page is locked so it cannot scroll (one scrollbar, the iframe's)...
+    assert "overflow: hidden" in html
+    # ...the iframe is allowed to scroll internally (scrolling="no" would force outer scroll)
     assert 'scrolling="no"' not in html
-    # ...and the resize script must not force the iframe to full content height
+    # ...and the resize script must not grow the iframe to full content height (reverted naive fix)
     assert "iframe.style.height = height" not in html
