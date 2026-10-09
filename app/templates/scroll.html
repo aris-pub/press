@@ -995,8 +995,13 @@ body.modal-open {
         const bodyStyle = window.getComputedStyle(body);
         const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
 
-        const height = Math.ceil(maxBottom + paddingBottom);
-        // height stays 100vh (CSS); paper scrolls internally so position:fixed pins to the viewport
+        // Grow the iframe to its content height so the page has one scrollbar. Left at
+        // 100vh the iframe keeps its own inner scrollbar on top of the page's (double bar).
+        // Take the larger of the flow-element walk and the document scrollHeight so a
+        // trailing bottom margin the walk misses does not leave a residual inner bar.
+        const scrollH = Math.max(iframeDoc.documentElement.scrollHeight, body.scrollHeight);
+        const height = Math.max(Math.ceil(maxBottom + paddingBottom), scrollH);
+        iframe.style.height = height + 'px';
       }
 
       // Set initial dimensions after layout is complete
