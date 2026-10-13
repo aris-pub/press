@@ -425,3 +425,69 @@ async def test_fallback_to_scroll_hash_without_year_slug(client, test_scroll):
     fulltext_tag = soup.find("meta", {"name": "citation_fulltext_html_url"})
     assert fulltext_tag is not None
     assert f"/scroll/{test_scroll.url_hash}" in fulltext_tag["content"]
+
+
+# DOI META TAG TESTS
+
+
+@pytest.mark.asyncio
+async def test_citation_doi_present_when_set(client, test_db, test_user, test_subject):
+    """Published scroll with a DOI emits a citation_doi meta tag."""
+    from app.models.scroll import Scroll
+
+    scroll = Scroll(
+        user_id=test_user.id,
+        title="DOI Paper",
+        authors="Dr. Jane Smith",
+        subject_id=test_subject.id,
+        abstract="Abstract",
+        keywords=["test"],
+        html_content="<p>Content</p>",
+        license="cc-by-4.0",
+        content_hash="doihash123",
+        url_hash="doihash789",
+        status="published",
+        doi="10.5281/zenodo.9999999",
+    )
+    scroll.publish()
+    test_db.add(scroll)
+    await test_db.commit()
+    await test_db.refresh(scroll)
+
+    response = await client.get(f"/scroll/{scroll.url_hash}")
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    doi_tag = soup.find("meta", {"name": "citation_doi"})
+    assert doi_tag is not None
+    assert doi_tag["content"] == "10.5281/zenodo.9999999"
+
+
+@pytest.mark.asyncio
+async def test_citation_doi_absent_without_doi(client, test_db, test_user, test_subject):
+    """Published scroll with no DOI emits no citation_doi meta tag."""
+    from app.models.scroll import Scroll
+
+    scroll = Scroll(
+        user_id=test_user.id,
+        title="No DOI Paper",
+        authors="Dr. Jane Smith",
+        subject_id=test_subject.id,
+        abstract="Abstract",
+        keywords=["test"],
+        html_content="<p>Content</p>",
+        license="cc-by-4.0",
+        content_hash="nodoihash123",
+        url_hash="nodoihash789",
+        status="published",
+    )
+    scroll.publish()
+    test_db.add(scroll)
+    await test_db.commit()
+    await test_db.refresh(scroll)
+
+    response = await client.get(f"/scroll/{scroll.url_hash}")
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    assert soup.find("meta", {"name": "citation_doi"}) is None

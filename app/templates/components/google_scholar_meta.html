@@ -30,6 +30,9 @@
 <meta name="citation_publication_date" content="{{ scroll.published_at.strftime('%Y/%m/%d') if scroll.published_at else scroll.created_at.strftime('%Y/%m/%d') }}">
 <meta name="citation_journal_title" content="Scroll Press">
 <meta name="citation_publisher" content="Scroll Press">
+{% if scroll.doi %}
+<meta name="citation_doi" content="{{ scroll.doi | escape }}">
+{% endif %}
 {% if scroll.abstract %}
 <meta name="citation_abstract" content="{{ scroll.abstract | escape }}">
 {% endif %}
