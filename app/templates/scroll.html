@@ -72,7 +72,13 @@
     "image": "{{ base_url }}/scroll/{{ scroll.url_hash }}/og-image.png"{% if scroll.subject and scroll.subject.name %},
     "about": {{ scroll.subject.name | tojson }}{% endif %}{% if scroll.keywords %},
     "keywords": {{ scroll.keywords | tojson }}{% endif %}{% if scroll.license == 'cc-by-4.0' %},
-    "license": "https://creativecommons.org/licenses/by/4.0/"{% endif %}
+    "license": "https://creativecommons.org/licenses/by/4.0/"{% endif %}{% if scroll.doi %},
+    "identifier": {
+      "@type": "PropertyValue",
+      "propertyID": "DOI",
+      "value": {{ scroll.doi | tojson }}
+    },
+    "sameAs": "https://doi.org/{{ scroll.doi }}"{% endif %}
   }
   </script>
 
