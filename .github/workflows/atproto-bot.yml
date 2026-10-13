@@ -1,0 +1,44 @@
+name: Aris atproto bot
+
+on:
+  schedule:
+    # Hourly. A newly minted DOI gets its records within the hour.
+    - cron: '7 * * * *'
+  workflow_dispatch:
+    inputs:
+      post:
+        description: 'Write records (true) or dry run (false)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependency
+        run: pip install httpx
+
+      - name: Run bot
+        env:
+          ARIS_BOT_HANDLE: ${{ secrets.ARIS_BOT_HANDLE }}
+          ARIS_BOT_PASSWORD: ${{ secrets.ARIS_BOT_PASSWORD }}
+        run: |
+          # Scheduled runs write. Manual runs dry-run unless post=true.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.post }}" = "true" ]; then
+            python scripts/aris_atproto_bot.py --post
+          else
+            python scripts/aris_atproto_bot.py
+          fi
