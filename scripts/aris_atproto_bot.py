@@ -48,6 +48,16 @@ import httpx
 SITE = os.getenv("ARIS_SITE", "https://scroll.press").rstrip("/")
 PDS = os.getenv("ARIS_BOT_PDS", "https://bsky.social").rstrip("/")
 
+# Fetches run from GitHub Actions (datacenter IPs). A browser-like UA avoids
+# naive bot-filtering on the sitemap and the per-scroll .json endpoints. If a
+# fetch is still blocked (for example a Cloudflare IP challenge), list_scroll_urls
+# raises with the response so the CI log shows exactly what came back, instead of
+# silently returning an empty list.
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "Accept": "application/xml,text/xml,text/html;q=0.9,*/*;q=0.8",
+}
+
 # base32-sortable alphabet used by atproto TIDs
 _S32 = "234567abcdefghijklmnopqrstuvwxyz"
 
@@ -86,14 +96,37 @@ def _norm(value):
 
 
 def list_scroll_urls() -> list[str]:
-    xml = httpx.get(f"{SITE}/sitemap.xml", timeout=30).text
-    locs = re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", xml)
+    url = f"{SITE}/sitemap.xml"
+    resp = httpx.get(url, timeout=30, headers=BROWSER_HEADERS, follow_redirects=True)
+    body = resp.text
+    snippet = body[:300].replace("\n", " ")
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"sitemap fetch failed: {resp.status_code} "
+            f"(content-type {resp.headers.get('content-type', '')!r}) from {url}; "
+            f"first 300 chars: {snippet!r}"
+        )
+    if "<loc>" not in body and "<urlset" not in body:
+        raise RuntimeError(
+            f"sitemap is not the expected XML (content-type "
+            f"{resp.headers.get('content-type', '')!r}) from {url}; "
+            f"this is usually a bot challenge page; first 300 chars: {snippet!r}"
+        )
+    locs = re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", body)
     pattern = re.compile(rf"{re.escape(SITE)}/\d{{4}}/[^/]+$")
-    return sorted({u for u in locs if pattern.fullmatch(u)})
+    urls = sorted({u for u in locs if pattern.fullmatch(u)})
+    if not urls:
+        raise RuntimeError(
+            f"sitemap had {len(locs)} <loc> entries but none matched "
+            f"{SITE}/YYYY/<slug>; first 300 chars: {snippet!r}"
+        )
+    return urls
 
 
 def fetch_meta(url: str) -> dict:
-    return httpx.get(f"{url}.json", timeout=30).json()
+    resp = httpx.get(f"{url}.json", timeout=30, headers=BROWSER_HEADERS, follow_redirects=True)
+    resp.raise_for_status()
+    return resp.json()
 
 
 # ---- Record builders (all fields deterministic) ---------------------------
