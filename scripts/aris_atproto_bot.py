@@ -58,6 +58,14 @@ BROWSER_HEADERS = {
     "Accept": "application/xml,text/xml,text/html;q=0.9,*/*;q=0.8",
 }
 
+# Cloudflare fronts scroll.press and challenges datacenter IPs (the CI runner),
+# which no non-browser client can pass. A Cloudflare WAF rule skips the challenge
+# for requests carrying this secret header, so the bot's own fetches get through.
+# Set only where the bot runs (CI); unset elsewhere, where the challenge does not fire.
+_CF_TOKEN = os.getenv("ARIS_BOT_CF_TOKEN")
+if _CF_TOKEN:
+    BROWSER_HEADERS["X-Aris-Bot"] = _CF_TOKEN
+
 # base32-sortable alphabet used by atproto TIDs
 _S32 = "234567abcdefghijklmnopqrstuvwxyz"
 

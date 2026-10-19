@@ -35,6 +35,7 @@ jobs:
         env:
           ARIS_BOT_HANDLE: ${{ secrets.ARIS_BOT_HANDLE }}
           ARIS_BOT_PASSWORD: ${{ secrets.ARIS_BOT_PASSWORD }}
+          ARIS_BOT_CF_TOKEN: ${{ secrets.ARIS_BOT_CF_TOKEN }}
         run: |
           # Scheduled runs write. Manual runs dry-run unless post=true.
           if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.post }}" = "true" ]; then
