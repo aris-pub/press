@@ -7,8 +7,8 @@ defensive UX: disabled submit until token, no duplicate hidden input, visible
 interactive widget, error callbacks wired to surface failures.
 """
 
-import pytest
 from httpx import AsyncClient
+import pytest
 
 from app.templates_config import templates
 

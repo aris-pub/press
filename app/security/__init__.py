@@ -1,6 +1,5 @@
-"""Security module for HTML sanitization and XSS prevention."""
+"""Security module for HTML validation and XSS prevention."""
 
-from .sanitizer import HTMLSanitizer
 from .validation import ContentValidator
 
-__all__ = ["HTMLSanitizer", "ContentValidator"]
+__all__ = ["ContentValidator"]
