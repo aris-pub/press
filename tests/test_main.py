@@ -186,7 +186,7 @@ async def test_contact_page(client: AsyncClient):
     assert "Get in Touch" in response.text
     assert "Community" in response.text
     assert "Development" in response.text
-    assert "SciUX Discord" in response.text
+    assert "https://aris.pub/contact/" in response.text
     assert "GitHub" in response.text
 
 
