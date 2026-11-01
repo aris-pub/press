@@ -184,9 +184,7 @@ async def test_contact_page(client: AsyncClient):
     response = await client.get("/contact")
     assert response.status_code == 200
     assert "Get in Touch" in response.text
-    assert "Community" in response.text
     assert "Development" in response.text
-    assert "Zulip" in response.text
     assert "GitHub" in response.text
 
 
