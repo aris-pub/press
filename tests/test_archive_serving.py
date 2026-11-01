@@ -104,6 +104,7 @@ class TestArchiveEntryPoint:
         assert "'unsafe-eval'" in csp
         assert "frame-ancestors 'self'" in csp
         assert response.headers["x-frame-options"] == "SAMEORIGIN"
+        assert response.headers["x-robots-tag"] == "noindex, indexifembedded"
 
     async def test_cache_control_on_entry_point(self, client, archive_scroll, storage):
         with _patch_storage(storage):
@@ -183,6 +184,7 @@ class TestArchiveAssetServing:
         with _patch_storage(storage):
             response = await client.get(f"/scroll/{archive_scroll.url_hash}/paper/styles/main.css")
         assert response.headers["x-frame-options"] == "SAMEORIGIN"
+        assert response.headers["x-robots-tag"] == "noindex, indexifembedded"
 
     async def test_404_for_missing_asset(self, client, archive_scroll, storage):
         with _patch_storage(storage):

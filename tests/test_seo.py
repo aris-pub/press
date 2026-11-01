@@ -18,7 +18,8 @@ async def test_robots_txt(client):
     assert "Allow: /" in response.text
     assert "Disallow: /api/" in response.text
     assert "Disallow: /dashboard" in response.text
-    assert "Disallow: /scroll/*/paper" in response.text
+    # Crawlers must reach the bare paper URLs to see their noindex header.
+    assert "/paper" not in response.text
     assert "Sitemap: https://scroll.press/sitemap.xml" in response.text
 
 

@@ -698,6 +698,14 @@ def _if_none_match_hit(request: Request, etag: str) -> bool:
     return "*" in candidates or etag in candidates or etag.lstrip("W/") in candidates
 
 
+# Every URL that serves the bare paper (no Press page around it) stays out of search
+# results, so a paper is listed only under its scroll page with Press's metadata.
+# indexifembedded lets Google credit the paper's full text to the scroll page that
+# embeds it. This only works if crawlers can fetch these URLs, so robots.txt must not
+# disallow them (Google ignores noindex on a blocked URL).
+_PAPER_ROBOTS = "noindex, indexifembedded"
+
+
 def _paper_bare_response(scroll: Scroll, request: Request) -> Response:
     """Return a Response wrapping the bare manuscript HTML.
 
@@ -712,6 +720,7 @@ def _paper_bare_response(scroll: Scroll, request: Request) -> Response:
     headers = {
         "X-Frame-Options": "SAMEORIGIN",
         "Content-Security-Policy": _PAPER_CSP,
+        "X-Robots-Tag": _PAPER_ROBOTS,
     }
     etag = None
     if scroll.content_hash:
@@ -1002,6 +1011,7 @@ async def get_paper_html(
     headers = {
         "X-Frame-Options": "SAMEORIGIN",
         "Content-Security-Policy": _PAPER_CSP,
+        "X-Robots-Tag": _PAPER_ROBOTS,
     }
     return Response(
         content=scroll.html_content,
@@ -1029,6 +1039,7 @@ async def get_archive_entry_point(
             headers={
                 "X-Frame-Options": "SAMEORIGIN",
                 "Content-Security-Policy": _PAPER_CSP,
+                "X-Robots-Tag": _PAPER_ROBOTS,
             },
         )
 
@@ -1048,6 +1059,7 @@ async def get_archive_entry_point(
         headers={
             "X-Frame-Options": "SAMEORIGIN",
             "Content-Security-Policy": _PAPER_CSP,
+            "X-Robots-Tag": _PAPER_ROBOTS,
             "Cache-Control": "public, max-age=3600",
         },
     )
@@ -1095,6 +1107,7 @@ async def get_archive_asset(
         media_type=content_type,
         headers={
             "X-Frame-Options": "SAMEORIGIN",
+            "X-Robots-Tag": _PAPER_ROBOTS,
             "Cache-Control": "public, max-age=31536000, immutable",
         },
     )

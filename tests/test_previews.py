@@ -239,6 +239,7 @@ async def test_paper_route_security_headers(client: AsyncClient, test_db, test_u
 
     # Check X-Frame-Options
     assert response.headers.get("x-frame-options") == "SAMEORIGIN"
+    assert response.headers.get("x-robots-tag") == "noindex, indexifembedded"
 
 
 async def test_paper_route_unpublished_404(client: AsyncClient, test_db, test_user):

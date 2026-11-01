@@ -92,6 +92,8 @@ class TestBarePaperRoute:
         assert "<iframe" not in response.text.lower()
         # ETag derived from content hash, quoted per RFC.
         assert response.headers.get("etag") == f'"{scroll.content_hash}"'
+        # Kept out of search results so the paper is listed under its scroll page.
+        assert response.headers.get("x-robots-tag") == "noindex, indexifembedded"
 
     @pytest.mark.asyncio
     async def test_versioned_paper_route(self, client, test_db, user, subject):
@@ -102,6 +104,7 @@ class TestBarePaperRoute:
         response = await client.get("/2026/quantum-entanglement/v1/paper")
         assert response.status_code == 200
         assert "Bare body marker" in response.text
+        assert response.headers.get("x-robots-tag") == "noindex, indexifembedded"
 
     @pytest.mark.asyncio
     async def test_404_for_unknown_slug(self, client, test_db, user, subject):
@@ -370,3 +373,5 @@ class TestAlternateRoutesDoNotCollideWithCanonical:
         assert response.status_code == 200
         # Chrome page renders the iframe wrapper, not the bare body.
         assert "<iframe" in response.text.lower()
+        # The scroll page is the one search engines should list.
+        assert "x-robots-tag" not in response.headers
