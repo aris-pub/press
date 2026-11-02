@@ -37,11 +37,12 @@ Environment:
     ARIS_SITE          Press base URL, default https://scroll.press
 """
 
+from datetime import datetime
 import hashlib
 import os
-import sys
 import re
-from datetime import datetime
+import sys
+import time
 
 import httpx
 
@@ -57,6 +58,28 @@ BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Accept": "application/xml,text/xml,text/html;q=0.9,*/*;q=0.8",
 }
+
+# bsky.social and the Press site sometimes return a 5xx or drop the connection
+# for a moment. Every request here is safe to repeat (reads, login, and
+# putRecord with a fixed rkey), so retry those failures a few times.
+RETRY_WAITS = (2, 5, 10)
+
+
+def _request(method: str, url: str, **kwargs) -> httpx.Response:
+    for wait in (*RETRY_WAITS, None):
+        try:
+            resp = httpx.request(method, url, **kwargs)
+        except httpx.TransportError as exc:
+            if wait is None:
+                raise
+            print(f"retrying {method} {url} in {wait}s after {exc!r}", file=sys.stderr)
+        else:
+            if resp.status_code < 500 or wait is None:
+                return resp
+            print(f"retrying {method} {url} in {wait}s after {resp.status_code}", file=sys.stderr)
+        time.sleep(wait)
+    raise AssertionError("unreachable")
+
 
 # base32-sortable alphabet used by atproto TIDs
 _S32 = "234567abcdefghijklmnopqrstuvwxyz"
@@ -97,7 +120,7 @@ def _norm(value):
 
 def list_scroll_urls() -> list[str]:
     url = f"{SITE}/sitemap.xml"
-    resp = httpx.get(url, timeout=30, headers=BROWSER_HEADERS, follow_redirects=True)
+    resp = _request("GET", url, timeout=30, headers=BROWSER_HEADERS, follow_redirects=True)
     body = resp.text
     snippet = body[:300].replace("\n", " ")
     if resp.status_code != 200:
@@ -124,7 +147,9 @@ def list_scroll_urls() -> list[str]:
 
 
 def fetch_meta(url: str) -> dict:
-    resp = httpx.get(f"{url}.json", timeout=30, headers=BROWSER_HEADERS, follow_redirects=True)
+    resp = _request(
+        "GET", f"{url}.json", timeout=30, headers=BROWSER_HEADERS, follow_redirects=True
+    )
     resp.raise_for_status()
     return resp.json()
 
@@ -202,7 +227,8 @@ def card_record(m: dict) -> dict:
 
 
 def login() -> tuple[str, str]:
-    resp = httpx.post(
+    resp = _request(
+        "POST",
         f"{PDS}/xrpc/com.atproto.server.createSession",
         json={
             "identifier": os.environ["ARIS_BOT_HANDLE"],
@@ -223,7 +249,8 @@ def load_existing(jwt: str, did: str, collection: str) -> dict:
         params = {"repo": did, "collection": collection, "limit": 100}
         if cursor:
             params["cursor"] = cursor
-        resp = httpx.get(
+        resp = _request(
+            "GET",
             f"{PDS}/xrpc/com.atproto.repo.listRecords",
             params=params,
             headers={"Authorization": f"Bearer {jwt}"},
@@ -239,7 +266,8 @@ def load_existing(jwt: str, did: str, collection: str) -> dict:
 
 
 def put_record(jwt: str, did: str, collection: str, rkey: str, record: dict) -> str:
-    resp = httpx.post(
+    resp = _request(
+        "POST",
         f"{PDS}/xrpc/com.atproto.repo.putRecord",
         headers={"Authorization": f"Bearer {jwt}"},
         json={"repo": did, "collection": collection, "rkey": rkey, "record": record},
