@@ -1,5 +1,7 @@
 """Test suite for HTML validation that rejects dangerous content."""
 
+import pytest
+
 from app.security.html_validator import HTMLValidator
 
 
@@ -426,3 +428,223 @@ class TestHTMLValidator:
         is_valid, errors = self.validator.validate(html)
         stylesheet_errors = [e for e in errors if e["type"] == "external_stylesheet"]
         assert len(stylesheet_errors) == 1
+
+
+# The exact snippets RSM produces, copied from a real build of the Bourgain digestion.
+RSM_FOLDER_IMPORT = '<style>@import url("static/tooltipster.bundle.css") layer(vendor);</style>'
+RSM_PDF_COMMENT = (
+    "<style>/* Print / PDF.\n\n   Browsers export PDF with JavaScript ON, so the JS-off "
+    "<noscript> path never\n   fires */ @media print { body { color: black; } }</style>"
+)
+GOOGLE_FONTS_IMPORT = (
+    "<style>@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,"
+    "wght@0,100..900;1,100..900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;"
+    "1,400;1,700&display=swap');</style>"
+)
+ARCHIVE = {
+    "index.html",
+    "static/tooltipster.bundle.css",
+    "static/app.js",
+    "shared/x.css",
+    "sub/page.html",
+}
+
+
+def _types(html, **kwargs):
+    is_valid, errors = HTMLValidator().validate(html, **kwargs)
+    return is_valid, {e["type"] for e in errors}
+
+
+class TestCSSCommentsEscapesAndWords:
+    """CSS is checked as tokens: words in comments, strings and names are fine, real
+    dangerous constructs are caught however they are spelled."""
+
+    def test_rsm_pdf_comment_mentioning_javascript_passes(self):
+        assert _types(RSM_PDF_COMMENT)[0]
+
+    def test_forbidden_word_in_inline_style_comment_passes(self):
+        assert _types('<p style="color:red /* javascript */">x</p>')[0]
+
+    def test_class_names_with_forbidden_words_pass(self):
+        html = "<style>.mocha-theme{} .javascript-note{} .expression-box{} .language-javascript{}</style>"
+        assert _types(html)[0]
+
+    def test_font_name_mocha_passes(self):
+        assert _types('<p style="font-family: Mocha, serif">x</p>')[0]
+
+    def test_forbidden_word_inside_css_string_passes(self):
+        assert _types('<style>p::after{content:"needs JavaScript"}</style>')[0]
+
+    @pytest.mark.parametrize(
+        "css",
+        [
+            "a{background:url(javascript:alert(1))}",
+            "a{background:url('javascript:alert(1)')}",
+            'a{background:url("javascript:alert(1)")}',
+            "a{background:url('  JavaScript:alert(1)')}",
+            "a{background:url(JAVASCRIPT:alert(1))}",
+            "a{background:url(javascript:x)}",
+            "a{background:url(JaVaScRiPt:x)}",
+            "a{background:url(\\6a avascript:x)}",
+            "a{background:url(  javascript:x  )}",
+        ],
+    )
+    def test_url_javascript_scheme_rejected_in_style_tag(self, css):
+        is_valid, types = _types(f"<style>{css}</style>")
+        assert not is_valid and "dangerous_css" in types
+
+    def test_url_javascript_scheme_rejected_inline(self):
+        assert not _types("<p style=\"background:url('javascript:alert(1)')\">x</p>")[0]
+
+    @pytest.mark.parametrize("scheme", ["vbscript:", "livescript:", "mocha:", "data:text/html,"])
+    def test_url_other_script_schemes_rejected(self, scheme):
+        assert not _types(f"<style>a{{background:url('{scheme}x')}}</style>")[0]
+
+    def test_javascript_split_by_comment_rejected(self):
+        # Inside an unquoted url() "/**/" is not a comment, so this is harmless to a
+        # browser. Rejecting it is failing closed, which is fine.
+        assert not _types("<style>a{background:url(java/**/script:alert(1))}</style>")[0]
+
+    @pytest.mark.parametrize(
+        "spelling",
+        [
+            "\\6a avascript:",
+            "\\00006a avascript:",
+            "\\6A avascript:",
+            "\\6a\navascript:",
+            "java\\script:",
+        ],
+    )
+    def test_css_escaped_javascript_rejected(self, spelling):
+        assert not _types(f"<style>a{{background:url({spelling}alert(1))}}</style>")[0]
+
+    def test_html_entity_javascript_in_style_attribute_rejected(self):
+        assert not _types('<p style="background:url(&#106;avascript:alert(1))">x</p>')[0]
+
+    def test_expression_rejected_after_harmless_mention(self):
+        html = "<style>.a{content:'expression'} .b{width:expression(alert(1))}</style>"
+        is_valid, types = _types(html)
+        assert not is_valid and "css_expression" in types
+
+    @pytest.mark.parametrize(
+        "spelling", ["EXPRESSION(1)", "expression  (1)", "expression/**/(1)", "\\65xpression(1)"]
+    )
+    def test_expression_variants_rejected(self, spelling):
+        assert not _types(f"<style>a{{width:{spelling}}}</style>")[0]
+
+    @pytest.mark.parametrize(
+        "spelling",
+        ["-MOZ-BINDING:url(x.xml)", "-moz-binding :url(x.xml)", "-moz-\\62inding:url(x.xml)"],
+    )
+    def test_moz_binding_variants_rejected(self, spelling):
+        assert not _types(f"<style>a{{{spelling}}}</style>")[0]
+
+    def test_behavior_rejected(self):
+        assert not _types('<p style="behavior:url(x.htc)">x</p>')[0]
+
+    def test_unterminated_comment_hides_rest(self):
+        assert _types("<style>p{} /* javascript</style>")[0]
+
+    def test_code_before_unterminated_comment_still_rejected(self):
+        assert not _types("<style>p{width:expression(1)} /* open</style>")[0]
+
+    def test_comment_markers_inside_strings_do_not_hide_code(self):
+        html = '<style>a{content:"/*"} b{width:expression(alert(1))} c{content:"*/"}</style>'
+        assert not _types(html)[0]
+
+    def test_escaped_quote_in_string_does_not_end_string(self):
+        html = '<style>a{content:"\\"/*"} b{width:expression(alert(1))}</style>'
+        assert not _types(html)[0]
+
+
+class TestCSSImports:
+    """Every @import is checked. Relative imports are allowed only for a .css file that
+    is inside the uploaded zip."""
+
+    def test_every_import_checked_cdn_then_local_single_file(self):
+        html = "<style>@import url('https://fonts.googleapis.com/x'); @import 'local.css';</style>"
+        is_valid, types = _types(html)
+        assert not is_valid and "css_import" in types
+
+    def test_local_import_with_url_in_comment_single_file(self):
+        html = "<style>@import 'evil.css'; /* https://fonts.googleapis.com/ */</style>"
+        assert not _types(html)[0]
+
+    def test_rsm_folder_import_with_layer_passes(self):
+        assert _types(RSM_FOLDER_IMPORT, archive_files=ARCHIVE, html_path="index.html")[0]
+
+    def test_local_import_single_file_rejected(self):
+        is_valid, types = _types(RSM_FOLDER_IMPORT)
+        assert not is_valid and types == {"css_import"}
+
+    @pytest.mark.parametrize(
+        "rule",
+        [
+            '@import "static/tooltipster.bundle.css";',
+            "@import 'static/tooltipster.bundle.css';",
+            "@import url(static/tooltipster.bundle.css);",
+            "@import url('static/tooltipster.bundle.css');",
+            '@import url("./static/tooltipster.bundle.css");',
+            '@import "static/tooltipster.bundle.css" screen and (min-width: 600px);',
+            '@import "static/tooltipster.bundle.css" layer;',
+            '@import "static/tooltipster.bundle.css" supports(display: grid);',
+            '@import "static/tooltipster.bundle.css" layer(v) supports(display: grid) print;',
+            '@IMPORT "static/tooltipster.bundle.css";',
+            '@import\n"static/tooltipster.bundle.css";',
+            "@import/**/url(static/tooltipster.bundle.css);",
+            '@import "static/tooltipster.bundle.css?v=2";',
+            '@import "static/tooltipster.bundle.css#x";',
+        ],
+    )
+    def test_local_import_forms_pass(self, rule):
+        assert _types(f"<style>{rule}</style>", archive_files=ARCHIVE, html_path="index.html")[0]
+
+    @pytest.mark.parametrize(
+        "target",
+        [
+            "/static/tooltipster.bundle.css",
+            "//evil.com/x.css",
+            "/\\evil.com/x.css",
+            "\\\\evil.com\\x.css",
+            "http://evil.com/x.css",
+            "https://evil.com/x.css",
+            "../x.css",
+            "static/../../x.css",
+            "%2e%2e/x.css",
+            "%2E%2E%2Fx.css",
+            "static%2F..%2F..%2Fx.css",
+            "\\2e\\2e/x.css",
+            "data:text/css,a{}",
+            "javascript:alert(1)",
+            "file:///x.css",
+            "missing.css",
+            "static/app.js",
+            "static/",
+            "index.html",
+            "STATIC/TOOLTIPSTER.BUNDLE.CSS",
+            "",
+        ],
+    )
+    def test_import_rejected_even_with_archive(self, target):
+        html = f'<style>@import "{target}";</style>'
+        is_valid, _ = _types(html, archive_files=ARCHIVE, html_path="index.html")
+        assert not is_valid, target
+
+    def test_parent_import_from_subdir_rejected(self):
+        html = '<style>@import "../shared/x.css";</style>'
+        assert not _types(html, archive_files=ARCHIVE, html_path="sub/page.html")[0]
+
+    def test_escaped_import_keyword_checked(self):
+        assert not _types("<style>@\\69mport url(https://evil.com/x.css);</style>")[0]
+
+    def test_allowed_cdn_import_with_semicolons_in_url_passes(self):
+        assert _types(GOOGLE_FONTS_IMPORT)[0]
+        assert _types(GOOGLE_FONTS_IMPORT, archive_files=ARCHIVE, html_path="index.html")[0]
+
+    def test_cdn_lookalike_import_rejected(self):
+        html = "<style>@import url('https://fonts.googleapis.com.evil.com/x.css');</style>"
+        is_valid, types = _types(html)
+        assert not is_valid and "css_import_external" in types
+
+    def test_import_text_inside_css_string_ignored(self):
+        assert _types("<style>p::after{content:\"@import 'x.css'\"}</style>")[0]

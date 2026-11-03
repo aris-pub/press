@@ -1,9 +1,12 @@
 """HTML validation module that rejects dangerous content instead of sanitizing."""
 
-from typing import Dict, List, Tuple
-from urllib.parse import urlparse
+import posixpath
+import re
+from typing import Dict, List, Optional, Set, Tuple
+from urllib.parse import unquote, urlparse
 
 from bs4 import BeautifulSoup
+import tinycss2
 
 
 class HTMLValidationError:
@@ -78,30 +81,47 @@ class HTMLValidator:
         "sandbox",
     ]
 
-    # CSS properties that are forbidden
-    FORBIDDEN_CSS_PROPERTIES = [
-        "-moz-binding",  # Firefox-specific, can execute code
-        "expression",  # IE-specific CSS expressions (XSS vector)
-        "javascript",  # Direct JavaScript in CSS
-        "vbscript",  # VBScript in CSS
-        "livescript",  # LiveScript in CSS
-        "mocha",  # Mocha script in CSS
-    ]
+    # CSS is checked as tokens (tinycss2), never as substrings, so words in comments,
+    # strings, class names and font names do not trip the checks, and CSS escapes
+    # (\65 xpression) and comments (expression/**/() cannot hide the real thing.
+    FORBIDDEN_CSS_FUNCTIONS = {"expression"}  # IE-specific CSS expressions (XSS vector)
+    FORBIDDEN_CSS_DECLARATIONS = {"-moz-binding", "behavior"}  # old Firefox/IE code loading
+    FORBIDDEN_CSS_URL_SCHEMES = (
+        "javascript:",
+        "vbscript:",
+        "livescript:",
+        "mocha:",
+        "data:text/html",
+    )
 
     def __init__(self):
         self.errors: List[HTMLValidationError] = []
+        self._archive_files: Optional[Set[str]] = None
+        self._html_path: str = ""
 
-    def validate(self, html_content: str) -> Tuple[bool, List[Dict]]:
+    def validate(
+        self,
+        html_content: str,
+        archive_files: Optional[Set[str]] = None,
+        html_path: str = "",
+    ) -> Tuple[bool, List[Dict]]:
         """
         Validate HTML content and return validation results.
 
         Args:
             html_content: The HTML content to validate
+            archive_files: For zip uploads, the relative paths of every file in the
+                archive. None for single-file uploads, where a local CSS @import has
+                nothing to point at and stays rejected.
+            html_path: Path of this HTML file inside the archive, used to resolve
+                relative @import URLs the way the browser will.
 
         Returns:
             Tuple of (is_valid, list_of_error_dicts)
         """
         self.errors = []
+        self._archive_files = archive_files
+        self._html_path = html_path
 
         # MEMORY OPTIMIZATION: Strip out script contents before parsing
         # We validate HTML structure and attributes, not JavaScript code
@@ -296,86 +316,194 @@ class HTMLValidator:
             self._validate_css_content(style_content, line_num, "style tag")
 
     def _validate_css_content(self, css_content: str, line_num: int, context: str):
-        """Validate CSS content for dangerous properties."""
-        css_lower = css_content.lower()
+        """Validate CSS content for dangerous constructs, using a real CSS tokenizer."""
+        # Rule and block contents are walked as raw tokens, not parsed declarations:
+        # tinycss2 turns anything that is not a valid declaration into an opaque
+        # parse error, which would hide its tokens from these checks.
+        if context == "inline style":
+            nodes = tinycss2.parse_component_value_list(css_content, skip_comments=True)
+        else:
+            nodes = tinycss2.parse_stylesheet(
+                css_content, skip_comments=True, skip_whitespace=False
+            )
+        element = css_content[:100] + "..." if len(css_content) > 100 else css_content
+        self._walk_css(nodes, line_num, context, element)
 
-        # Check for dangerous CSS properties
-        for prop in self.FORBIDDEN_CSS_PROPERTIES:
-            if prop.lower() in css_lower:
-                # Special handling for "expression" - only flag if it's expression()
-                if prop == "expression":
-                    # Check if "expression" is followed by "(" (with optional whitespace)
-                    if "expression" in css_lower:
-                        idx = css_lower.find("expression")
-                        rest = css_lower[idx + len("expression") :].lstrip()
-                        if rest.startswith("("):
-                            self.errors.append(
-                                HTMLValidationError(
-                                    error_type="css_expression",
-                                    message=f"CSS expression() function found in {context} - not allowed",
-                                    line_number=line_num,
-                                    element=css_content[:100] + "..."
-                                    if len(css_content) > 100
-                                    else css_content,
-                                )
-                            )
-                else:
-                    self.errors.append(
-                        HTMLValidationError(
-                            error_type="dangerous_css",
-                            message=f"Dangerous CSS property '{prop}' found in {context}",
-                            line_number=line_num,
-                            element=css_content[:100] + "..."
-                            if len(css_content) > 100
-                            else css_content,
-                        )
+    def _walk_css(self, nodes, line_num: int, context: str, element: str):
+        """Recursively check a list of tinycss2 nodes."""
+        meaningful = [n for n in nodes if n.type not in ("whitespace", "comment")]
+        for i, node in enumerate(meaningful):
+            following = meaningful[i + 1] if i + 1 < len(meaningful) else None
+            kind = node.type
+
+            if kind == "at-rule":
+                if node.lower_at_keyword == "import":
+                    self._check_css_import(node, line_num, context, element)
+                self._walk_css(node.prelude, line_num, context, element)
+                if node.content is not None:
+                    self._walk_css(self._raw(node.content), line_num, context, element)
+            elif kind == "qualified-rule":
+                self._walk_css(node.prelude, line_num, context, element)
+                self._walk_css(self._raw(node.content), line_num, context, element)
+            elif kind == "function":
+                if node.lower_name in self.FORBIDDEN_CSS_FUNCTIONS:
+                    self._css_expression_error(context, line_num, element)
+                elif node.lower_name in ("url", "src"):
+                    for arg in node.arguments:
+                        if arg.type == "string":
+                            self._check_css_url_value(arg.value, line_num, context, element)
+                self._walk_css(node.arguments, line_num, context, element)
+            elif kind == "url":
+                self._check_css_url_value(node.value, line_num, context, element)
+            elif kind == "ident":
+                # "expression/**/(" tokenizes as an ident then a () block, not a function.
+                if (
+                    node.lower_value in self.FORBIDDEN_CSS_FUNCTIONS
+                    and following is not None
+                    and following.type == "() block"
+                ):
+                    self._css_expression_error(context, line_num, element)
+                # Declarations are seen as raw tokens: a forbidden name followed by ":".
+                if (
+                    node.lower_value in self.FORBIDDEN_CSS_DECLARATIONS
+                    and following is not None
+                    and following.type == "literal"
+                    and following.value == ":"
+                ):
+                    self._css_error(
+                        "dangerous_css",
+                        f"Dangerous CSS property '{node.lower_value}' found in {context}",
+                        line_num,
+                        element,
+                    )
+            elif kind in ("() block", "[] block", "{} block"):
+                self._walk_css(node.content, line_num, context, element)
+            elif kind == "error":
+                # A malformed unquoted url(), e.g. url(javascript:alert(1)). Browsers do
+                # not load it, but its contents are hidden from the scheme check, so
+                # fail closed. Other parse errors are junk browsers drop.
+                if node.kind == "bad-url":
+                    self._css_error(
+                        "dangerous_css",
+                        f"Malformed CSS url() found in {context} - quote the URL",
+                        line_num,
+                        element,
                     )
 
-        # Check for @import statements
-        if "@import" in css_lower:
-            # Check for external URLs in @import
-            if "http://" in css_lower or "https://" in css_lower:
-                # Extract URL - simple string search for http(s):// after @import
-                import_idx = css_lower.find("@import")
-                rest = css_content[import_idx:]
-                http_idx = rest.lower().find("http")
-                if http_idx != -1:
-                    # Find the URL by looking for the next quote or paren
-                    url_start = import_idx + http_idx
-                    url_rest = css_content[url_start:]
-                    # Find end of URL (quote, paren, semicolon, or whitespace)
-                    url_end = url_start
-                    for char in ["'", '"', ")", ";", " ", "\n"]:
-                        idx = url_rest.find(char)
-                        if idx != -1:
-                            url_end = url_start + idx
-                            break
-                    url = css_content[url_start:url_end] if url_end > url_start else ""
+    @staticmethod
+    def _raw(tokens):
+        """Component values with comments removed, as the browser sees them."""
+        return [t for t in tokens if t.type != "comment"]
 
-                    # Check if URL is from allowed CDN
-                    if not self._is_allowed_cdn(url):
-                        self.errors.append(
-                            HTMLValidationError(
-                                error_type="css_import_external",
-                                message=f"CSS @import with external URL found in {context} - not allowed. Papers must be self-contained (MathJax/KaTeX CDNs are allowed).",
-                                line_number=line_num,
-                                element=css_content[:100] + "..."
-                                if len(css_content) > 100
-                                else css_content,
-                            )
-                        )
-            else:
-                # Local @import
-                self.errors.append(
-                    HTMLValidationError(
-                        error_type="css_import",
-                        message=f"CSS @import statement found in {context} - not allowed",
-                        line_number=line_num,
-                        element=css_content[:100] + "..."
-                        if len(css_content) > 100
-                        else css_content,
-                    )
+    def _check_css_url_value(self, value: str, line_num: int, context: str, element: str):
+        """Reject url() values that use a script scheme."""
+        # Fail closed on anything a browser might normalise into a script scheme:
+        # comment markers, whitespace and control characters are removed first.
+        normalized = re.sub(r"/\*.*?\*/", "", value, flags=re.S)
+        normalized = re.sub(r"[\s\x00-\x1f]", "", normalized).lower()
+        if normalized.startswith(self.FORBIDDEN_CSS_URL_SCHEMES):
+            self._css_error(
+                "dangerous_css",
+                f"Script URL in CSS url() found in {context} - not allowed",
+                line_num,
+                element,
+            )
+
+    def _check_css_import(self, rule, line_num: int, context: str, element: str):
+        """Check one @import rule. Every @import is checked, not just the first."""
+        target = None
+        for token in rule.prelude:
+            if token.type in ("whitespace", "comment"):
+                continue
+            if token.type == "url":
+                target = token.value
+            elif token.type == "string":
+                target = token.value
+            elif token.type == "function" and token.lower_name == "url":
+                strings = [a.value for a in token.arguments if a.type == "string"]
+                target = strings[0] if strings else None
+            break  # only the first token names the file; layer()/media follow it
+
+        if target is None:
+            self._css_error(
+                "css_import",
+                f"CSS @import without a readable URL found in {context} - not allowed",
+                line_num,
+                element,
+            )
+            return
+
+        stripped = target.strip()
+        if stripped.lower().startswith(("http://", "https://")):
+            if not self._is_allowed_cdn(stripped):
+                self._css_error(
+                    "css_import_external",
+                    f"CSS @import with external URL found in {context} - not allowed. Papers must be self-contained (MathJax/KaTeX CDNs are allowed).",
+                    line_num,
+                    element,
                 )
+            return
+
+        if self._archive_files is None:
+            self._css_error(
+                "css_import",
+                f"CSS @import of a local file found in {context} - not allowed in a single HTML file. Upload a zip that contains the imported stylesheet.",
+                line_num,
+                element,
+            )
+            return
+
+        problem = self._local_import_problem(stripped)
+        if problem:
+            self._css_error(
+                "css_import_invalid",
+                f"CSS @import of '{target}' in {context} - {problem}",
+                line_num,
+                element,
+            )
+
+    def _local_import_problem(self, target: str) -> Optional[str]:
+        """Return why a relative @import target is not allowed, or None if it is."""
+        # Cache-busting suffixes are common and do not change which file loads.
+        path = re.split(r"[?#]", target, maxsplit=1)[0]
+        decoded = unquote(path)
+        if not decoded:
+            return "empty path"
+        if any(ord(c) < 0x20 for c in decoded) or "\\" in decoded:
+            return "path contains control characters or backslashes"
+        if decoded.startswith("/"):
+            return "absolute and protocol-relative paths are not allowed"
+        if ":" in decoded.split("/", 1)[0]:
+            return "URL schemes are not allowed"
+        if ".." in decoded.split("/"):
+            return "paths containing '..' are not allowed"
+        base = posixpath.dirname(self._html_path)
+        resolved = posixpath.normpath(posixpath.join(base, decoded))
+        if resolved.startswith("..") or resolved.startswith("/"):
+            return "path points outside the archive"
+        if not resolved.lower().endswith(".css"):
+            return "only .css files can be imported"
+        if resolved not in self._archive_files:
+            return "file not found in the archive"
+        return None
+
+    def _css_expression_error(self, context: str, line_num: int, element: str):
+        self._css_error(
+            "css_expression",
+            f"CSS expression() function found in {context} - not allowed",
+            line_num,
+            element,
+        )
+
+    def _css_error(self, error_type: str, message: str, line_num: int, element: str):
+        self.errors.append(
+            HTMLValidationError(
+                error_type=error_type,
+                message=message,
+                line_number=line_num,
+                element=element,
+            )
+        )
 
     def _check_javascript_urls(self, soup, content: str):
         """Check for javascript: URLs using BeautifulSoup."""

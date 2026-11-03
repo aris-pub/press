@@ -551,3 +551,94 @@ class TestHtmlUploadStillWorks:
         # Should NOT show picker
         if response.status_code == 200:
             assert "Select Entry Point" not in response.text
+
+
+RSM_IMPORT_LINE = '<style>@import url("static/tooltipster.bundle.css") layer(vendor);</style>'
+UPLOAD_FORM = {
+    "authors": "Author",
+    "abstract": "Test abstract",
+    "license": "cc-by-4.0",
+    "confirm_rights": "true",
+    "action": "publish",
+}
+
+
+class TestCssImportUploads:
+    """RSM folder builds import a vendored stylesheet with @import. The route must accept
+    that when the stylesheet is in the zip, and serve it afterwards."""
+
+    @pytest.mark.asyncio
+    async def test_zip_with_local_css_import_uploads_and_serves(
+        self, authenticated_client, test_subject, mock_storage
+    ):
+        html = VALID_HTML.replace("</head>", RSM_IMPORT_LINE + "</head>")
+        zip_bytes = make_zip_bytes(
+            {
+                "index.html": html,
+                "static/tooltipster.bundle.css": ".tooltipster-base { z-index: 9; }",
+            }
+        )
+        response = await authenticated_client.post(
+            "/upload-form",
+            data={**UPLOAD_FORM, "title": "Import Test", "subject_id": str(test_subject.id)},
+            files={"file": ("rsm.zip", zip_bytes, "application/zip")},
+        )
+        assert response.status_code == 200
+        assert "Select Entry Point" in response.text
+
+        response = await authenticated_client.post(
+            "/upload/confirm-entry-point",
+            data={"entry_point": "index.html"},
+            follow_redirects=False,
+        )
+        assert response.status_code in (302, 303)
+        url_hash = response.headers["location"].split("/preview/")[1].rstrip("/")
+
+        response = await authenticated_client.get(
+            f"/scroll/{url_hash}/paper/static/tooltipster.bundle.css"
+        )
+        assert response.status_code == 200
+        assert b"tooltipster-base" in response.content
+
+    @pytest.mark.asyncio
+    async def test_zip_with_missing_import_target_shows_error(
+        self, authenticated_client, test_subject, mock_storage
+    ):
+        html = VALID_HTML.replace("</head>", RSM_IMPORT_LINE + "</head>")
+        response = await authenticated_client.post(
+            "/upload-form",
+            data={**UPLOAD_FORM, "title": "Missing Import", "subject_id": str(test_subject.id)},
+            files={"file": ("rsm.zip", make_zip_bytes({"index.html": html}), "application/zip")},
+        )
+        assert response.status_code == 422
+        assert "validation failed" in response.text.lower()
+        assert "static/tooltipster.bundle.css" in response.text
+
+    @pytest.mark.asyncio
+    async def test_single_html_with_rsm_pdf_comment_accepted(
+        self, authenticated_client, test_subject
+    ):
+        comment = "<style>/* Browsers export PDF with JavaScript ON */ p { color: black; }</style>"
+        html = VALID_HTML.replace("</head>", comment + "</head>")
+        response = await authenticated_client.post(
+            "/upload-form",
+            data={**UPLOAD_FORM, "title": "Comment Test", "subject_id": str(test_subject.id)},
+            files={"file": ("paper.html", html.encode(), "text/html")},
+            follow_redirects=False,
+        )
+        assert response.status_code == 303
+        assert "/preview/" in response.headers["location"]
+
+    @pytest.mark.asyncio
+    async def test_single_html_with_local_import_still_rejected(
+        self, authenticated_client, test_subject
+    ):
+        html = VALID_HTML.replace("</head>", RSM_IMPORT_LINE + "</head>")
+        response = await authenticated_client.post(
+            "/upload-form",
+            data={**UPLOAD_FORM, "title": "Single Import", "subject_id": str(test_subject.id)},
+            files={"file": ("paper.html", html.encode(), "text/html")},
+            follow_redirects=False,
+        )
+        assert response.status_code != 303
+        assert "Upload a zip that contains the imported stylesheet" in response.text

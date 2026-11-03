@@ -14,6 +14,7 @@ import magic
 
 from app.security.html_validator import HTMLValidator
 from app.security.validation import ContentValidator
+from app.upload.entry_point import detect_entry_point_with_sizes
 
 logger = logging.getLogger(__name__)
 
@@ -451,6 +452,16 @@ class ZipValidator:
             has_html = False
             html_validator = HTMLValidator()
             content_validator = ContentValidator()
+            archive_files = {rel_name for rel_name, _ in extracted_files}
+            html_sizes = {
+                rel_name: os.path.getsize(full_path)
+                for rel_name, full_path in extracted_files
+                if os.path.splitext(rel_name)[1].lower() in (".html", ".htm")
+            }
+            # Paper-like content checks (title, body text, word count) only make sense for
+            # the paper itself. Secondary HTML files are often figures (e.g. a Plotly page).
+            # Same heuristic archive_processor uses to pick the entry point.
+            entry_point = detect_entry_point_with_sizes(html_sizes) if html_sizes else None
 
             for rel_name, full_path in extracted_files:
                 ext = os.path.splitext(rel_name)[1].lower()
@@ -463,7 +474,11 @@ class ZipValidator:
                 if ext in (".html", ".htm"):
                     has_html = True
                     html_errors = self._validate_html_file(
-                        rel_name, full_path, html_validator, content_validator
+                        rel_name,
+                        full_path,
+                        html_validator,
+                        content_validator if rel_name == entry_point else None,
+                        archive_files,
                     )
                     errors.extend(html_errors)
 
@@ -558,7 +573,8 @@ class ZipValidator:
         rel_name: str,
         full_path: str,
         html_validator: HTMLValidator,
-        content_validator: ContentValidator,
+        content_validator: ContentValidator | None,
+        archive_files: set[str],
     ) -> list[str]:
         errors = []
         try:
@@ -567,11 +583,16 @@ class ZipValidator:
         except UnicodeDecodeError:
             return [f"HTML file '{rel_name}' is not valid UTF-8."]
 
-        is_valid, html_errors = html_validator.validate(content)
+        is_valid, html_errors = html_validator.validate(
+            content, archive_files=archive_files, html_path=rel_name
+        )
         if not is_valid:
             for err in html_errors:
                 msg = err.get("message", str(err))
                 errors.append(f"HTML validation error in '{rel_name}': {msg}")
+
+        if content_validator is None:
+            return errors
 
         is_valid, content_errors = content_validator.validate(content)
         if not is_valid:
