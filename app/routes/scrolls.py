@@ -574,6 +574,7 @@ async def _fetch_versions_for_series(db: AsyncSession, scroll_series_id) -> list
 # "last token = family, rest = given" heuristic. Not perfect for compound surnames,
 # but good enough for typical Latin-script names and citation tool consumption.
 
+
 def _split_authors(authors: str) -> list[dict]:
     parsed = []
     for raw in (authors or "").split(","):
@@ -1609,6 +1610,11 @@ async def upload_form(
                 error_parts.append(
                     f"Dangerous CSS properties found{line_info}. Remove CSS with JavaScript or executable code."
                 )
+
+            # CSS @import: the validator's message already says what to do
+            for import_type in ("css_import", "css_import_invalid", "css_import_external"):
+                for err in grouped_errors.get(import_type, [])[:3]:
+                    error_parts.append(err["message"])
 
             # External resources - group by type and show resource names
             external_scripts = []

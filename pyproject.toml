@@ -27,6 +27,7 @@ dependencies = [
     "aioboto3>=13.0.0",
     "defusedxml>=0.7.1",
     "atproto>=0.0.68",
+    "tinycss2>=1.5.1",
 ]
 
 [dependency-groups]

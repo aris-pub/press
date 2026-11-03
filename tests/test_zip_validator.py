@@ -619,3 +619,86 @@ class TestQuartoManuscript:
         import shutil
 
         shutil.rmtree(extract_dir)
+
+
+RSM_IMPORT_HTML = MINIMAL_HTML.replace(
+    "</head>",
+    '<style>@import url("static/tooltipster.bundle.css") layer(vendor);</style></head>',
+)
+
+
+def _import_html(target: str) -> str:
+    return MINIMAL_HTML.replace("</head>", f'<style>@import "{target}";</style></head>')
+
+
+class TestCssImportInArchive:
+    """Relative CSS @import is allowed when the stylesheet is in the same zip."""
+
+    def _validate(self, tmp_path, files):
+        archive = tmp_path / "paper.zip"
+        archive.write_bytes(_make_zip(files))
+        return ZipValidator().validate(str(archive))
+
+    def test_folder_build_with_local_import_accepted(self, tmp_path):
+        errors = self._validate(
+            tmp_path,
+            {
+                "index.html": RSM_IMPORT_HTML,
+                "static/tooltipster.bundle.css": ".tooltipster-base{}",
+            },
+        )
+        assert errors == []
+
+    def test_import_missing_target_rejected(self, tmp_path):
+        errors = self._validate(tmp_path, {"index.html": RSM_IMPORT_HTML})
+        assert any("static/tooltipster.bundle.css" in e and "not found" in e for e in errors)
+
+    def test_import_non_css_target_rejected(self, tmp_path):
+        errors = self._validate(
+            tmp_path, {"index.html": _import_html("static/app.js"), "static/app.js": "let a=1;"}
+        )
+        assert any(".css" in e for e in errors)
+
+    def test_import_of_hidden_file_rejected(self, tmp_path):
+        errors = self._validate(
+            tmp_path,
+            {"index.html": _import_html("__MACOSX/x.css"), "__MACOSX/x.css": "p{}"},
+        )
+        assert errors
+
+    def test_import_with_traversal_rejected_in_zip(self, tmp_path):
+        errors = self._validate(tmp_path, {"index.html": _import_html("../x.css")})
+        assert any("'..'" in e for e in errors)
+
+    def test_external_import_still_rejected_in_zip(self, tmp_path):
+        errors = self._validate(tmp_path, {"index.html": _import_html("https://evil.com/x.css")})
+        assert any("external" in e.lower() for e in errors)
+
+    def test_nested_root_folder_zip_import_resolves(self, tmp_path):
+        errors = self._validate(
+            tmp_path,
+            {"paper/index.html": _import_html("static/x.css"), "paper/static/x.css": "p{}"},
+        )
+        assert errors == []
+
+    def test_subdir_html_parent_import_rejected(self, tmp_path):
+        page = _import_html("../shared/x.css")
+        errors = self._validate(
+            tmp_path, {"index.html": MINIMAL_HTML, "sub/page.html": page, "shared/x.css": "p{}"}
+        )
+        assert any("sub/page.html" in e and "'..'" in e for e in errors)
+
+
+class TestContentChecksOnEntryPointOnly:
+    def test_figure_page_as_secondary_html_passes(self, tmp_path):
+        """A bare figure page (e.g. a Plotly export) is not a paper and need not look like one."""
+        figure = '<html><head></head><body><div id="plot"></div></body></html>'
+        archive = tmp_path / "paper.zip"
+        archive.write_bytes(_make_zip({"index.html": MINIMAL_HTML, "figures/fig1.html": figure}))
+        assert ZipValidator().validate(str(archive)) == []
+
+    def test_entry_point_still_gets_content_checks(self, tmp_path):
+        figure = '<html><head></head><body><div id="plot"></div></body></html>'
+        archive = tmp_path / "paper.zip"
+        archive.write_bytes(_make_zip({"index.html": figure}))
+        assert any("Content validation error" in e for e in ZipValidator().validate(str(archive)))
