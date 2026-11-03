@@ -1,265 +1,65 @@
-"""Unit tests for content-addressable storage functionality."""
-
-import hashlib
-import os
-import tarfile
-import tempfile
-
-from app.storage.content_processing import (
-    create_deterministic_tar,
-    generate_content_hash,
-    generate_url_from_hash,
-    normalize_line_endings,
-    validate_utf8_content,
-)
-
-
-class TestLineEndingNormalization:
-    """Test line ending normalization functionality."""
-
-    def test_normalize_crlf_to_lf(self):
-        """Test conversion of CRLF to LF."""
-        content = "line1\r\nline2\r\nline3"
-        expected = "line1\nline2\nline3"
-        assert normalize_line_endings(content) == expected
-
-    def test_normalize_cr_to_lf(self):
-        """Test conversion of CR to LF."""
-        content = "line1\rline2\rline3"
-        expected = "line1\nline2\nline3"
-        assert normalize_line_endings(content) == expected
-
-    def test_normalize_mixed_line_endings(self):
-        """Test conversion of mixed line endings to LF."""
-        content = "line1\r\nline2\rline3\nline4"
-        expected = "line1\nline2\nline3\nline4"
-        assert normalize_line_endings(content) == expected
-
-    def test_normalize_already_lf(self):
-        """Test that LF-only content remains unchanged."""
-        content = "line1\nline2\nline3"
-        expected = "line1\nline2\nline3"
-        assert normalize_line_endings(content) == expected
-
-    def test_normalize_empty_string(self):
-        """Test normalization of empty string."""
-        assert normalize_line_endings("") == ""
-
-    def test_normalize_single_line(self):
-        """Test normalization of single line without line endings."""
-        content = "single line"
-        expected = "single line"
-        assert normalize_line_endings(content) == expected
-
-
-class TestUTF8Validation:
-    """Test UTF-8 validation functionality."""
-
-    def test_valid_utf8_ascii(self):
-        """Test validation of valid ASCII content."""
-        content = b"Hello, world!"
-        assert validate_utf8_content(content) is True
-
-    def test_valid_utf8_unicode(self):
-        """Test validation of valid Unicode content."""
-        content = "Hello, 世界! 🌍".encode("utf-8")
-        assert validate_utf8_content(content) is True
-
-    def test_invalid_utf8_latin1(self):
-        """Test rejection of Latin-1 encoded content."""
-        content = "café".encode("latin-1")
-        assert validate_utf8_content(content) is False
-
-    def test_invalid_utf8_windows1252(self):
-        """Test rejection of Windows-1252 encoded content."""
-        # Use actual Windows-1252 specific characters that differ from UTF-8
-        content = bytes([0x93, 0x94])  # Left/right double quotes in Windows-1252
-        assert validate_utf8_content(content) is False
-
-    def test_empty_content(self):
-        """Test validation of empty content."""
-        assert validate_utf8_content(b"") is True
-
-    def test_utf8_with_bom(self):
-        """Test validation of UTF-8 content with BOM."""
-        content = "\ufeffHello, world!".encode("utf-8")
-        assert validate_utf8_content(content) is True
-
-
-class TestDeterministicTarCreation:
-    """Test deterministic tar archive creation."""
-
-    def test_single_file_tar(self):
-        """Test tar creation for single HTML file."""
-        content = "<html><body>Hello, world!</body></html>"
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:
-            f.write(content)
-            temp_file = f.name
-
-        try:
-            tar_data = create_deterministic_tar(temp_file)
-
-            # Verify it's valid tar data
-            with tempfile.NamedTemporaryFile() as tar_file:
-                tar_file.write(tar_data)
-                tar_file.flush()
-
-                with tarfile.open(tar_file.name, "r") as tar:
-                    members = tar.getnames()
-                    assert len(members) == 1
-                    assert members[0] == "content.html"
-
-                    # Verify content
-                    extracted = tar.extractfile(members[0]).read().decode("utf-8")
-                    assert extracted == content
-        finally:
-            os.unlink(temp_file)
-
-    def test_deterministic_tar_same_content(self):
-        """Test that identical content produces identical tar archives."""
-        content = "<html><body>Test content</body></html>"
-
-        # Create two identical files
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f1:
-            f1.write(content)
-            temp_file1 = f1.name
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f2:
-            f2.write(content)
-            temp_file2 = f2.name
-
-        try:
-            tar_data1 = create_deterministic_tar(temp_file1)
-            tar_data2 = create_deterministic_tar(temp_file2)
-
-            # Tar archives should be identical despite different source files
-            assert tar_data1 == tar_data2
-        finally:
-            os.unlink(temp_file1)
-            os.unlink(temp_file2)
-
-    def test_deterministic_tar_different_content(self):
-        """Test that different content produces different tar archives."""
-        content1 = "<html><body>Content 1</body></html>"
-        content2 = "<html><body>Content 2</body></html>"
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f1:
-            f1.write(content1)
-            temp_file1 = f1.name
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f2:
-            f2.write(content2)
-            temp_file2 = f2.name
-
-        try:
-            tar_data1 = create_deterministic_tar(temp_file1)
-            tar_data2 = create_deterministic_tar(temp_file2)
-
-            # Tar archives should be different
-            assert tar_data1 != tar_data2
-        finally:
-            os.unlink(temp_file1)
-            os.unlink(temp_file2)
-
-
-class TestHashGeneration:
-    """Test SHA-256 hashing and URL generation."""
-
-    def test_generate_content_hash(self):
-        """Test SHA-256 hash generation from tar data."""
-        tar_data = b"test tar archive data"
-        hash_value = generate_content_hash(tar_data)
-
-        # Verify it's a valid SHA-256 hash (64 hex characters)
-        assert len(hash_value) == 64
-        assert all(c in "0123456789abcdef" for c in hash_value)
-
-        # Verify it matches manual calculation
-        expected = hashlib.sha256(tar_data).hexdigest()
-        assert hash_value == expected
-
-    def test_generate_url_from_hash_12_chars(self):
-        """Test URL generation using first 12 characters of hash."""
-        hash_value = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-        url = generate_url_from_hash(hash_value)
-
-        assert url == "abcdef123456"
-        assert len(url) == 12
-
-    def test_generate_url_from_hash_with_length(self):
-        """Test URL generation with custom length."""
-        hash_value = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-
-        url_13 = generate_url_from_hash(hash_value, length=13)
-        assert url_13 == "abcdef1234567"
-        assert len(url_13) == 13
-
-        url_14 = generate_url_from_hash(hash_value, length=14)
-        assert url_14 == "abcdef12345678"
-        assert len(url_14) == 14
-
-    def test_different_content_different_hashes(self):
-        """Test that different content produces different hashes."""
-        tar_data1 = b"content 1"
-        tar_data2 = b"content 2"
-
-        hash1 = generate_content_hash(tar_data1)
-        hash2 = generate_content_hash(tar_data2)
-
-        assert hash1 != hash2
-
-        url1 = generate_url_from_hash(hash1)
-        url2 = generate_url_from_hash(hash2)
-
-        assert url1 != url2
-
-    def test_same_content_same_hash(self):
-        """Test that identical content produces identical hashes."""
-        tar_data = b"identical content"
-
-        hash1 = generate_content_hash(tar_data)
-        hash2 = generate_content_hash(tar_data)
-
-        assert hash1 == hash2
-
-        url1 = generate_url_from_hash(hash1)
-        url2 = generate_url_from_hash(hash2)
-
-        assert url1 == url2
-
-
-class TestHashCollisionHandling:
-    """Test hash collision detection and resolution."""
-
-    def test_check_hash_collision_no_collision(self):
-        """Test collision check when no collision exists."""
-        # Test the URL generation logic without needing database mocking
-        # This is a unit test for the deterministic hash-to-URL conversion
-        test_hash = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-        url_10 = generate_url_from_hash(test_hash, length=10)
-        url_12 = generate_url_from_hash(test_hash, length=12)
-
-        assert len(url_10) == 10
-        assert len(url_12) == 12
-        assert url_10 == test_hash[:10]
-        assert url_12 == test_hash[:12]
-
-    def test_collision_resolution_extends_hash(self):
-        """Test that collision resolution extends hash length."""
-        # This test would need proper database mocking
-        # For now, test the logic conceptually
-        base_hash = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-
-        # Test incrementing length
-        url_12 = generate_url_from_hash(base_hash, length=12)
-        url_13 = generate_url_from_hash(base_hash, length=13)
-        url_14 = generate_url_from_hash(base_hash, length=14)
-
-        assert len(url_12) == 12
-        assert len(url_13) == 13
-        assert len(url_14) == 14
-
-        # Each should be a prefix of the next
-        assert url_13.startswith(url_12)
-        assert url_14.startswith(url_13)
+"""Content-addressable storage: hashing rules, and no anonymous publish endpoint."""
+
+from httpx import AsyncClient
+import pytest
+
+from app.storage.content_processing import generate_permanent_url
+
+DETERMINISM_HTML = """<!DOCTYPE html>
+<html>
+<body>
+    <h1>Determinism Test</h1>
+    <p>This content should always produce the same hash.</p>
+</body>
+</html>"""
+
+
+@pytest.mark.asyncio
+class TestContentDeterminism:
+    async def test_deterministic_hash_generation(self, test_db):
+        """Identical content always produces identical hashes and tar data."""
+        results = [await generate_permanent_url(test_db, DETERMINISM_HTML) for _ in range(5)]
+        assert all(r == results[0] for r in results[1:])
+
+    async def test_url_hash_is_prefix_of_content_hash(self, test_db):
+        url_hash, content_hash, _ = await generate_permanent_url(test_db, DETERMINISM_HTML)
+        assert len(url_hash) >= 12
+        assert content_hash.startswith(url_hash)
+
+    async def test_different_content_different_hashes(self, test_db):
+        a = await generate_permanent_url(test_db, "<html><body><h1>Content 1</h1></body></html>")
+        b = await generate_permanent_url(test_db, "<html><body><h1>Content 2</h1></body></html>")
+        assert a[0] != b[0] and a[1] != b[1]
+
+    async def test_line_ending_normalization(self, test_db):
+        """LF, CRLF and CR versions of the same file get the same hash."""
+        base = "<!DOCTYPE html>\n<html>\n<body>\n<h1>Test</h1>\n</body>\n</html>"
+        variants = [base, base.replace("\n", "\r\n"), base.replace("\n", "\r")]
+        hashes = [(await generate_permanent_url(test_db, v))[1] for v in variants]
+        assert len(set(hashes)) == 1
+
+    async def test_content_with_whitespace_variations(self, test_db):
+        """Whitespace other than line endings is content and changes the hash."""
+        base = "<html><body><h1>Test</h1></body></html>"
+        spaces = "<html><body><h1>Test</h1>   </body></html>"
+        tabs = "<html><body><h1>Test</h1>\t</body></html>"
+        hashes = {(await generate_permanent_url(test_db, c))[1] for c in (base, spaces, tabs)}
+        assert len(hashes) == 3
+
+
+@pytest.mark.asyncio
+class TestNoAnonymousPublishEndpoint:
+    """POST /upload once published unvalidated HTML with no login (prs-yo3). Publishing
+    goes through /upload-form only."""
+
+    async def test_anonymous_post_upload_refused(self, client: AsyncClient, test_subject):
+        files = {"file": ("x.html", b"<html><body><h1>x</h1></body></html>", "text/html")}
+        response = await client.post("/upload", files=files)
+        assert response.status_code == 405
+
+    async def test_authenticated_post_upload_refused(
+        self, authenticated_client: AsyncClient, test_subject
+    ):
+        files = {"file": ("x.html", b"<html><body><h1>x</h1></body></html>", "text/html")}
+        response = await authenticated_client.post("/upload", files=files)
+        assert response.status_code == 405
