@@ -1,6 +1,7 @@
 """Tests for authentication routes."""
 
 from httpx import AsyncClient
+import pytest
 
 
 async def test_login_page_get(client: AsyncClient):
@@ -354,6 +355,59 @@ async def test_register_form_display_name_with_www_url(client: AsyncClient):
     response = await client.post("/register-form", data=register_data)
     assert response.status_code == 422
     assert "Display name cannot contain URLs" in response.text
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "BAM 79 487.00 RUB: subaruservice.com.ar/?5421ee",
+        "Confirm the transfer here: loz.pp.ua/7y75e1",
+        "free money at evil.com",
+        "Visit Example.ORG today",
+        "smore.nl/9velzk",
+    ],
+)
+async def test_register_form_display_name_with_bare_domain(client: AsyncClient, name):
+    """Bare domains with no http:// or www. are URLs too."""
+    register_data = {
+        "email": "spammer@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": name,
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 422
+    assert "Display name cannot contain URLs" in response.text
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "J.R.R. Tolkien",
+        "Dr.Who",
+        "Mary-Kate O'Neil",
+        "St. John Smith",
+        "Jean-Luc de la Tour",
+        "Leo Torres",
+        "Zhang Wei",
+        "A. B. Smith Jr.",
+    ],
+)
+async def test_register_form_real_names_with_dots_are_accepted(client: AsyncClient, name):
+    """Initials, titles and suffixes must not be mistaken for domains."""
+    register_data = {
+        "email": f"user-{abs(hash(name))}@example.com",
+        "password": "password123",
+        "confirm_password": "password123",
+        "display_name": name,
+        "agree_terms": "true",
+    }
+
+    response = await client.post("/register-form", data=register_data)
+    assert response.status_code == 200, name
+    assert "session_id" in response.cookies
 
 
 async def test_register_form_refuses_signup_when_turnstile_is_configured_but_no_token(
