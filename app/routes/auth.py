@@ -257,6 +257,18 @@ async def register_page(request: Request, db: AsyncSession = Depends(get_db)):
     )
 
 
+# Names are put into verification emails, so a URL in a name lets a bot send phishing
+# through Press (February 2026). Bare domains like "evil.com/x" count too. A known list
+# of domain endings keeps real names with initials or titles ("J.R.R. Tolkien",
+# "Dr.Who") from being caught.
+_NAME_URL_RE = re.compile(
+    r"https?://|www\.|\b[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,24}/"
+    r"|\b[a-z0-9-]+\.(com|net|org|info|biz|xyz|top|site|online|shop|click|link|io|co|me|ly|"
+    r"cc|tk|ru|ua|cn|br|ar|in|pl|it|fr|de|nl|uk|us|ch|cz|eu|jp|es|pt|tr|vn|id|ph)\b",
+    re.IGNORECASE,
+)
+
+
 # Form submission handlers
 @router.post("/register-form", response_class=HTMLResponse)
 async def register_form(
@@ -350,7 +362,7 @@ async def register_form(
             raise ValueError("Display name cannot be empty")
         if len(display_name_stripped) > 100:
             raise ValueError("Display name must be less than 100 characters")
-        if re.search(r"https?://|www\.", display_name_stripped, re.IGNORECASE):
+        if _NAME_URL_RE.search(display_name_stripped):
             raise ValueError("Display name cannot contain URLs")
         display_name = display_name_stripped
 
