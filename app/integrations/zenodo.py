@@ -73,6 +73,7 @@ class ZenodoClient:
         publication_date: str,
         keywords: List[str],
         license_id: str = "cc-by-4.0",
+        related_identifiers: Optional[List[Dict[str, str]]] = None,
     ) -> ZenodoDeposit:
         """Create a new Zenodo deposit.
 
@@ -83,6 +84,8 @@ class ZenodoClient:
             publication_date: ISO date string (YYYY-MM-DD)
             keywords: List of keyword strings
             license_id: License identifier (cc-by-4.0, cc0-1.0, etc.)
+            related_identifiers: Optional list of dicts with 'identifier', 'relation'
+                and 'resource_type', in the legacy deposit API format
 
         Returns:
             ZenodoDeposit with deposit_id, doi, and bucket_url
@@ -105,6 +108,8 @@ class ZenodoClient:
                 "prereserve_doi": True,
             }
         }
+        if related_identifiers:
+            metadata["metadata"]["related_identifiers"] = related_identifiers
 
         try:
             response = await self._request_with_retry(
@@ -190,11 +195,12 @@ class ZenodoClient:
 
             deposit_data = response.json()
 
+            # A re-published record (after a metadata edit) may not list a bucket link.
             deposit = ZenodoDeposit(
                 deposit_id=deposit_data["id"],
                 doi=deposit_data["doi"],
                 doi_url=deposit_data["doi_url"],
-                bucket_url=deposit_data["links"]["bucket"],
+                bucket_url=deposit_data.get("links", {}).get("bucket", ""),
                 status="published",
             )
 
@@ -210,6 +216,78 @@ class ZenodoClient:
             self.logger.error(f"Unexpected error publishing Zenodo deposit: {e}")
             sentry_sdk.capture_exception(e)
             raise ZenodoError(f"Failed to publish deposit: {e}", retryable=True)
+
+    async def get_deposit(self, deposit_id: int) -> dict:
+        """Fetch a deposition resource, including its current metadata.
+
+        Raises:
+            ZenodoError: If the request fails
+        """
+        try:
+            response = await self._request_with_retry(
+                "GET", f"/api/deposit/depositions/{deposit_id}"
+            )
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            self._handle_http_error(e, "get deposit")
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            raise ZenodoError(f"Failed to get deposit: {e}", retryable=True)
+
+    async def edit_deposit(self, deposit_id: int) -> dict:
+        """Unlock a published deposition so its metadata can be changed.
+
+        This keeps the same record and DOI. It is not the new-version action.
+
+        Raises:
+            ZenodoError: If the request fails
+        """
+        try:
+            response = await self._request_with_retry(
+                "POST", f"/api/deposit/depositions/{deposit_id}/actions/edit"
+            )
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            self._handle_http_error(e, "edit deposit")
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            raise ZenodoError(f"Failed to edit deposit: {e}", retryable=True)
+
+    async def update_deposit_metadata(self, deposit_id: int, metadata: dict) -> dict:
+        """Replace a deposition's metadata. The caller must send the full metadata.
+
+        Raises:
+            ZenodoError: If the request fails
+        """
+        try:
+            response = await self._request_with_retry(
+                "PUT",
+                f"/api/deposit/depositions/{deposit_id}",
+                json={"metadata": metadata},
+            )
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            self._handle_http_error(e, "update deposit metadata")
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            raise ZenodoError(f"Failed to update deposit metadata: {e}", retryable=True)
+
+    async def discard_deposit_edit(self, deposit_id: int) -> dict:
+        """Drop unsaved changes from an edit session and lock the deposition again.
+
+        Raises:
+            ZenodoError: If the request fails
+        """
+        try:
+            response = await self._request_with_retry(
+                "POST", f"/api/deposit/depositions/{deposit_id}/actions/discard"
+            )
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            self._handle_http_error(e, "discard deposit edit")
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            raise ZenodoError(f"Failed to discard deposit edit: {e}", retryable=True)
 
     async def _request_with_retry(self, method: str, url: str, **kwargs) -> httpx.Response:
         """Make HTTP request with exponential backoff retry logic.
