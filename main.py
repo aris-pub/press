@@ -35,6 +35,7 @@ from app.middleware import (
 from app.routes import api, auth, main, orcid, scrolls
 from app.security.nonce_middleware import NonceMiddleware
 from app.sentry_config import before_send
+from app.startup_guard import check_test_switches
 
 # Initialize Sentry for error tracking and performance monitoring
 sentry_dsn = os.getenv("SENTRY_DSN")
@@ -108,6 +109,8 @@ async def lifespan(app: FastAPI):
     # Shutdown (if needed)
     logger.info("Shutting down Scroll Press application")
 
+
+check_test_switches()
 
 app = FastAPI(
     title="Press - Modern Preprint Server",

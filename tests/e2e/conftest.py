@@ -27,6 +27,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from app.database import Base
 from main import app
 
+# The local test server's database engine, so tests can reach the same in-memory database.
+LOCAL_ENGINE = None
+
 
 @pytest.fixture(scope="session")
 def test_server():
@@ -52,6 +55,8 @@ def test_server():
     os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
     os.environ["TESTING"] = "1"
     os.environ["E2E_TESTING"] = "1"  # Disable HTTPS redirect for E2E tests
+    # No email key, as in CI: the server must never call Resend from a test run.
+    os.environ["RESEND_API_KEY"] = ""
 
     # Override the database connection in the app
     TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -61,6 +66,8 @@ def test_server():
         connect_args={"check_same_thread": False},
         echo=False,
     )
+    global LOCAL_ENGINE
+    LOCAL_ENGINE = engine
 
     async def setup_test_db():
         # Create tables

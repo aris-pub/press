@@ -73,6 +73,10 @@ This will create a `fly.toml` file. The one in this repo is already configured.
 
 ### 2. Set Environment Variables
 
+Never set `TESTING` or `E2E_TESTING` on Fly. They turn off rate limits and the HTTPS
+redirect and open test-only routes. The app refuses to start if either is set on a Fly
+machine or with `ENVIRONMENT=production` (`app/startup_guard.py`).
+
 ```bash
 # Set your Supabase database URL
 fly secrets set DATABASE_URL="postgresql+asyncpg://postgres:[PASSWORD]@[HOST]:5432/postgres"
