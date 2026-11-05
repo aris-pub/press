@@ -131,8 +131,8 @@ async def test_complete_login_flow(test_server):
             await page.check('input[name="agree_terms"]')
             await page.click('button[type="submit"]')
 
-            # Wait for registration to complete - user should be auto-logged in
-            await page.wait_for_timeout(2500)  # Wait longer for HTMX redirect
+            # The success page redirects to the homepage with JavaScript after a delay.
+            await page.wait_for_url(f"{test_server}/")
 
             # Check that user is successfully logged in after registration
             page_content = (await page.content()).lower()
@@ -161,25 +161,6 @@ async def test_complete_login_flow(test_server):
                 user_menu_trigger = page.locator(".user-menu-trigger")
                 if await user_menu_trigger.count() > 0:
                     await user_menu_trigger.first.click()
-                    # Wait a bit for JavaScript to run
-                    await page.wait_for_timeout(100)
-
-                    # Check if dropdown opened, if not manually open it
-                    dropdown_state = await page.evaluate("""
-                        () => {
-                            const dropdown = document.querySelector('.dropdown.user-menu');
-                            return dropdown && dropdown.classList.contains('open');
-                        }
-                    """)
-
-                    if not dropdown_state:
-                        await page.evaluate("""
-                            () => {
-                                const dropdown = document.querySelector('.dropdown.user-menu');
-                                if (dropdown) dropdown.classList.add('open');
-                            }
-                        """)
-
                     await page.wait_for_selector(".dropdown.user-menu.open", timeout=2000)
 
                 # Now click the dropdown logout button
@@ -189,7 +170,9 @@ async def test_complete_login_flow(test_server):
                 await dropdown_logout.wait_for(state="visible", timeout=2000)
                 await dropdown_logout.first.click()
 
-            await page.wait_for_load_state("networkidle")
+            # hx-boost sends logout as a background request, so there is no page load to
+            # wait for. The logout form disappears only once the session is gone.
+            await expect(page.locator('form[action="/logout"]')).to_have_count(0)
 
             # Navigate to login page
             await page.goto(f"{test_server}/login")
@@ -203,8 +186,7 @@ async def test_complete_login_flow(test_server):
             await page.fill('input[name="password"]', "loginpassword123")
             await page.click('button[type="submit"]')
 
-            # Wait for login response
-            await page.wait_for_timeout(1500)
+            await page.wait_for_url(f"{test_server}/dashboard")
 
             # Check for login success
             page_content = (await page.content()).lower()
