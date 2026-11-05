@@ -8,6 +8,8 @@ The modal holds the scroll's own information and actions, not page chrome.
 from playwright.async_api import async_playwright
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
@@ -24,7 +26,7 @@ async def _open_details(page, test_server):
 async def test_details_modal_structure(test_server):
     """The Details modal holds the scroll metadata, license, and a Download action."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         await _open_details(page, test_server)
@@ -56,7 +58,7 @@ async def test_details_modal_structure(test_server):
 async def test_details_modal_dark_mode(test_server):
     """The Details modal displays correctly in dark mode."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         await _open_details(page, test_server)
@@ -78,7 +80,7 @@ async def test_details_modal_dark_mode(test_server):
 async def test_details_modal_mobile_responsive(test_server):
     """The Details modal and its Download action are usable on a mobile viewport."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page(viewport={"width": 375, "height": 667})
 
         await _open_details(page, test_server)
@@ -93,7 +95,7 @@ async def test_details_modal_mobile_responsive(test_server):
 async def test_details_modal_license_display(test_server):
     """The Details modal shows the license, with a Creative Commons link for CC BY."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         await _open_details(page, test_server)

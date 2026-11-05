@@ -5,6 +5,8 @@ import time
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
@@ -12,7 +14,7 @@ pytestmark = pytest.mark.e2e
 async def test_registration_shows_verification_message(test_server):
     """Test that registration shows email verification message."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -46,7 +48,7 @@ async def test_registration_shows_verification_message(test_server):
 async def test_unverified_user_blocked_from_dashboard(test_server):
     """Test that unverified users cannot access protected routes."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -89,7 +91,7 @@ async def test_email_verification_with_valid_token(test_server):
     import httpx
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -129,7 +131,7 @@ async def test_email_verification_with_valid_token(test_server):
 async def test_forgot_password_page_loads(test_server):
     """Test that forgot password page loads correctly."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -151,7 +153,7 @@ async def test_forgot_password_page_loads(test_server):
 async def test_forgot_password_submission(test_server):
     """Test submitting forgot password form."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -193,7 +195,7 @@ async def test_forgot_password_submission(test_server):
 async def test_reset_password_with_invalid_token(test_server):
     """Test that invalid reset tokens show error."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -217,7 +219,7 @@ async def test_reset_password_with_invalid_token(test_server):
 async def test_verify_email_with_invalid_token(test_server):
     """Test that invalid verification tokens show error."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

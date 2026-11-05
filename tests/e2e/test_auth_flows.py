@@ -5,13 +5,15 @@ import time
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
 async def test_complete_registration_flow(test_server):
     """Test complete user registration flow with form validation."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -58,7 +60,7 @@ async def test_complete_registration_flow(test_server):
 async def test_registration_password_mismatch_validation(test_server):
     """Test registration form validates password confirmation."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -85,7 +87,7 @@ async def test_registration_password_mismatch_validation(test_server):
 async def test_registration_display_name_validation(test_server):
     """Test registration form validates display name."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -115,7 +117,7 @@ async def test_registration_display_name_validation(test_server):
 async def test_complete_login_flow(test_server):
     """Test complete user login flow using desktop dropdown UI."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -208,7 +210,7 @@ async def test_complete_login_flow(test_server):
 async def test_login_invalid_credentials(test_server):
     """Test login form with invalid credentials."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -232,7 +234,7 @@ async def test_login_invalid_credentials(test_server):
 async def test_login_empty_fields(test_server):
     """Test login form validation with empty fields."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -253,7 +255,7 @@ async def test_login_empty_fields(test_server):
 async def test_registration_duplicate_email(test_server):
     """Test registration with already registered email using desktop logout."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

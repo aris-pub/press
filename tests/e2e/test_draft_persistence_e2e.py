@@ -6,13 +6,15 @@ import time
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
 async def test_drafts_persist_indefinitely(test_server):
     """Test that drafts persist without time-based deletion."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -68,7 +70,7 @@ async def test_drafts_persist_indefinitely(test_server):
 async def test_drafts_show_in_dashboard(test_server):
     """Test that drafts appear in My Drafts section of dashboard."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -135,7 +137,7 @@ async def test_drafts_show_in_dashboard(test_server):
 async def test_continue_editing_from_dashboard(test_server):
     """Test that Continue Editing button from dashboard loads the form."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -195,7 +197,7 @@ async def test_continue_editing_from_dashboard(test_server):
 async def test_delete_draft_from_dashboard(test_server):
     """Test that Delete button removes draft from dashboard."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -260,7 +262,7 @@ async def test_delete_draft_from_dashboard(test_server):
 async def test_banner_appears_on_upload_with_drafts(test_server):
     """Test that banner appears on upload page when drafts exist."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -322,7 +324,7 @@ async def test_banner_appears_on_upload_with_drafts(test_server):
 async def test_continue_button_loads_draft(test_server):
     """Test that Continue button from banner loads the draft."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -385,7 +387,7 @@ async def test_continue_button_loads_draft(test_server):
 async def test_start_fresh_shows_empty_form(test_server):
     """Test that Start Fresh button shows empty form."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -450,7 +452,7 @@ async def test_start_fresh_shows_empty_form(test_server):
 async def test_start_fresh_dismisses_banner_for_session(test_server):
     """Test that Start Fresh dismisses banner for the current session."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -516,7 +518,7 @@ async def test_start_fresh_dismisses_banner_for_session(test_server):
 async def test_banner_reappears_on_new_session(test_server):
     """Test that banner reappears after logout/login (new session)."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

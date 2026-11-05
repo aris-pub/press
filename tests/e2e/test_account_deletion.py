@@ -16,6 +16,8 @@ import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
@@ -90,7 +92,7 @@ async def _request_and_confirm_deletion(page, test_server, server_db, email):
 async def test_account_deletion_flow(test_server, server_db):
     """Test complete account deletion: register, request link, confirm, verify logged out."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -143,7 +145,7 @@ async def test_account_deletion_preserves_published_scrolls(test_server, server_
     verifies the scrolls are still publicly accessible.
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -190,7 +192,7 @@ async def test_account_deletion_preserves_published_scrolls(test_server, server_
 async def test_account_deletion_cancel(test_server):
     """Test that cancelling account deletion does not delete the account."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -237,7 +239,7 @@ async def test_account_deletion_cancel(test_server):
 async def test_account_deletion_requires_confirmation(test_server):
     """Test that the delete button stays disabled without typing DELETE."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

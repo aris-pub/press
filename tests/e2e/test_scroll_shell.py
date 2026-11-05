@@ -10,12 +10,14 @@ real rendered behavior.
 from playwright.async_api import async_playwright
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
 async def test_app_shell_locks_outer_page_and_pins_fixed(test_server):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page(viewport={"width": 1200, "height": 800})
 
         # Open the first scroll from the homepage

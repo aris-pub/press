@@ -3,13 +3,15 @@
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
 async def test_upload_page_loads_and_requires_auth(test_server):
     """Test that upload page redirects to login when not authenticated."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -30,7 +32,7 @@ async def test_upload_page_loads_and_requires_auth(test_server):
 async def test_register_page_has_form_elements(test_server):
     """Test that register page loads and has required form elements."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

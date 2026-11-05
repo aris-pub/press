@@ -5,7 +5,7 @@ Playwright fixtures (browser, browser_context, page) in e2e tests. They cause de
 
 Instead, use async with async_playwright() directly in test functions:
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
         # ... test code ...
         await browser.close()
@@ -26,6 +26,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from app.database import Base
 from main import app
+
+# The browser given with `--browser` (pytest-playwright's option). Set at configure time
+# so plain helper calls can read it without a fixture.
+_BROWSER_NAME = "chromium"
+
+
+def pytest_configure(config):
+    global _BROWSER_NAME
+    browsers = config.getoption("browser", default=None) or []
+    _BROWSER_NAME = browsers[0] if browsers else "chromium"
+
+
+async def launch_browser(p, **kwargs):
+    """Launch the browser chosen with `--browser` (chromium, firefox or webkit)."""
+    kwargs.setdefault("headless", True)
+    return await getattr(p, _BROWSER_NAME).launch(**kwargs)
+
 
 # The local test server's database engine, so tests can reach the same in-memory database.
 LOCAL_ENGINE = None

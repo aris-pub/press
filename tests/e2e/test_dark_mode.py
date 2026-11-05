@@ -3,13 +3,15 @@
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
 async def test_system_preference_and_manual_override(test_server):
     """Test system preference detection and manual override functionality."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
 
         # Test with dark system preference
         dark_context = await browser.new_context(color_scheme="dark")
@@ -94,7 +96,7 @@ async def test_system_preference_and_manual_override(test_server):
 async def test_theme_persistence_across_navigation(test_server):
     """Test that theme setting persists across page navigation."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -151,7 +153,7 @@ async def test_theme_toggle_after_htmx_navigation(test_server):
     swapped content because DOMContentLoaded had already fired.
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -212,7 +214,7 @@ async def test_no_script_redeclaration_errors_after_htmx_navigation(test_server)
     "identifier already declared" errors when HTMX swapped content.
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         # Collect console errors
@@ -256,7 +258,7 @@ async def test_logo_loads_on_homepage(test_server):
     This ensures the navbar logo is visible on the homepage on initial page load.
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -288,7 +290,7 @@ async def test_logo_loads_after_login_and_homepage_navigation(test_server):
     This tests the scenario where a user logs in, then navigates back to homepage.
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         # Collect network requests
@@ -362,7 +364,7 @@ async def test_no_duplicate_navbar_after_htmx_navigation(test_server):
     navbar if the swapped content incorrectly included navbar elements.
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -401,7 +403,7 @@ async def test_no_duplicate_navbar_after_htmx_navigation(test_server):
 async def test_toggle_functionality_and_css_changes(test_server):
     """Test that dark mode toggle works and CSS variables actually change on desktop."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -481,7 +483,7 @@ async def test_homepage_identical_for_all_user_states(test_server):
     Both should see identical homepage structure and assets (logo, navbar, etc).
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
 
         try:
             # Helper to get homepage content and check structure

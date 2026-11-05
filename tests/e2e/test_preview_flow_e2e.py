@@ -8,13 +8,15 @@ import tempfile
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
 async def test_preview_edit_button_prefills_form(test_server):
     """Test that clicking Edit Details on preview prefills the upload form."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -103,7 +105,7 @@ async def test_preview_edit_button_prefills_form(test_server):
 async def test_complete_edit_and_resubmit_cycle(test_server):
     """Test that editing and resubmitting creates a new preview with updated data."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -195,7 +197,7 @@ async def test_complete_edit_and_resubmit_cycle(test_server):
 async def test_cancel_preview_flow(test_server):
     """Test that canceling a preview deletes scroll and redirects to upload."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -271,7 +273,7 @@ async def test_cancel_preview_flow(test_server):
 async def test_file_upload_keyboard_accessibility(test_server):
     """Test that file upload component is keyboard accessible."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -316,7 +318,7 @@ async def test_file_upload_keyboard_accessibility(test_server):
 async def test_edit_shows_uploaded_state_with_filename(test_server):
     """Test that editing preview shows uploaded state with existing filename."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -394,7 +396,7 @@ async def test_edit_shows_uploaded_state_with_filename(test_server):
 async def test_publish_preview_flow(test_server):
     """Test that publishing a preview makes it publicly accessible."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

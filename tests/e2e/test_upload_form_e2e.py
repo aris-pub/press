@@ -6,6 +6,8 @@ import tempfile
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
@@ -17,7 +19,7 @@ async def test_upload_form_submission_with_file(test_server):
     - CSRF token not sent in X-CSRF-Token header for multipart requests
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -98,7 +100,7 @@ async def test_upload_form_submission_with_file(test_server):
 async def test_upload_form_validation_without_file(test_server):
     """Test upload form shows validation error when no file is selected."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -140,7 +142,7 @@ async def test_upload_form_validation_without_file(test_server):
 async def test_upload_form_file_size_validation(test_server):
     """Test upload form rejects files larger than 50MB."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
