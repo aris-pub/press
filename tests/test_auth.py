@@ -155,55 +155,39 @@ async def test_login_success_uses_full_page_redirect_not_htmx(client: AsyncClien
     assert "window.location.href" in response.text
 
 
-async def test_delete_account_unauthenticated(client: AsyncClient):
-    """Test DELETE /account requires authentication."""
-    response = await client.delete("/account")
-    assert response.status_code == 401
-
-
-async def test_delete_account_authenticated(authenticated_client: AsyncClient, test_user, test_db):
-    """Test DELETE /account deletes user account successfully."""
-
-    # Delete the account
+async def test_delete_account_route_removed(authenticated_client: AsyncClient, test_user, test_db):
+    """DELETE /account no longer exists. Deletion goes through an emailed link."""
     response = await authenticated_client.delete("/account")
-    assert response.status_code == 200
-    assert response.json()["success"] is True
-    assert "Account deleted successfully" in response.json()["message"]
+    assert response.status_code in (404, 405)
 
 
-async def test_delete_account_with_tokens(authenticated_client: AsyncClient, test_user, test_db):
-    """Test DELETE /account deletes user and their tokens successfully.
+async def test_delete_account_with_tokens(client: AsyncClient, test_user, test_db):
+    """Deleting through the emailed link also removes the user's other tokens.
 
     Regression test for bug where account deletion failed with ForeignKeyViolationError
     when user had verification or password reset tokens.
     """
     from sqlalchemy import select
 
-    from app.auth.tokens import create_password_reset_token, create_verification_token
+    from app.auth.tokens import (
+        create_account_deletion_token,
+        create_password_reset_token,
+        create_verification_token,
+    )
     from app.models.token import Token
 
-    # Create both types of tokens for the user
-    await create_verification_token(test_db, test_user.id)
-    await create_password_reset_token(test_db, test_user.id)
-    await test_db.commit()
+    user_id = test_user.id
+    await create_verification_token(test_db, user_id)
+    await create_password_reset_token(test_db, user_id)
+    plain = await create_account_deletion_token(test_db, user_id)
 
-    # Verify tokens exist
-    result = await test_db.execute(select(Token).where(Token.user_id == test_user.id))
-    tokens = result.scalars().all()
-    assert len(tokens) == 2, "User should have 2 tokens before deletion"
-
-    # Delete the account
-    response = await authenticated_client.delete("/account")
-    assert response.status_code == 200, (
-        f"Expected 200, got {response.status_code}: {response.text}"
+    response = await client.post(
+        "/account/delete-confirm", data={"token": plain}, follow_redirects=False
     )
-    assert response.json()["success"] is True
-    assert "Account deleted successfully" in response.json()["message"]
+    assert response.status_code == 303, response.text
 
-    # Verify tokens were deleted
-    result = await test_db.execute(select(Token).where(Token.user_id == test_user.id))
-    tokens_after = result.scalars().all()
-    assert len(tokens_after) == 0, "All user tokens should be deleted with account"
+    result = await test_db.execute(select(Token).where(Token.user_id == user_id))
+    assert result.scalars().all() == [], "All user tokens should be deleted with account"
 
 
 async def test_register_form_passwords_dont_match(client: AsyncClient):

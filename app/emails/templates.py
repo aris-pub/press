@@ -150,6 +150,63 @@ Scroll Press - HTML-native preprint server for modern research
     return html_content, text_content
 
 
+def get_account_deletion_email(name: str, token: str, base_url: str) -> tuple[str, str]:
+    """Generate the email that confirms an account deletion request.
+
+    Returns:
+        Tuple of (html_content, text_content)
+    """
+    from html import escape
+
+    link = f"{base_url}/account/delete-confirm?token={token}"
+    safe_name = escape(name)
+    safe_link = escape(link, quote=True)
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Confirm deleting your Scroll Press account</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 30px; border-left: 4px solid #ef4444;">
+            <h2 style="margin-top: 0; color: #1f2937;">Hi {safe_name},</h2>
+            <p style="font-size: 16px; margin: 0 0 20px 0;">Someone asked to delete your Scroll Press account. If it was you, open this link within one hour to confirm:</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{safe_link}" style="background: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Confirm deletion</a>
+            </div>
+
+            <p style="font-size: 16px; margin: 0 0 20px 0;">Scrolls you have posted stay online at their URLs and keep their DOIs. They will no longer be linked to an account.</p>
+
+            <p style="font-size: 16px; margin: 0 0 20px 0;">If you did not ask for this, ignore this email. Your account stays as it is.</p>
+
+            <p style="font-size: 14px; color: #6b7280; margin: 20px 0 0 0;">
+                Or copy and paste this link into your browser:<br>
+                <a href="{safe_link}" style="color: #ef4444; word-break: break-all;">{safe_link}</a>
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+
+    text_content = f"""
+Hi {name},
+
+Someone asked to delete your Scroll Press account. If it was you, open this link within one hour to confirm:
+
+{link}
+
+Scrolls you have posted stay online at their URLs and keep their DOIs. They will no longer be linked to an account.
+
+If you did not ask for this, ignore this email. Your account stays as it is.
+    """
+
+    return html_content, text_content
+
+
 def get_admin_signup_notification(
     user_email: str, display_name: str, user_id: str
 ) -> tuple[str, str]:

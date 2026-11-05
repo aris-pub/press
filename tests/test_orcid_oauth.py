@@ -353,10 +353,10 @@ class TestOrcidCallback:
 
 @pytest.mark.asyncio
 class TestOrcidUnlink:
-    """GET /auth/orcid/unlink tests."""
+    """POST /auth/orcid/unlink tests."""
 
     async def test_unlink_requires_auth(self, client):
-        resp = await client.get("/auth/orcid/unlink", follow_redirects=False)
+        resp = await client.post("/auth/orcid/unlink", follow_redirects=False)
         assert resp.status_code == 302
         assert "/login" in resp.headers["location"]
 
@@ -365,7 +365,7 @@ class TestOrcidUnlink:
         test_user.orcid_id = FAKE_ORCID
         await test_db.commit()
 
-        resp = await authenticated_client.get("/auth/orcid/unlink", follow_redirects=False)
+        resp = await authenticated_client.post("/auth/orcid/unlink", follow_redirects=False)
         assert resp.status_code == 302
 
         await test_db.refresh(test_user)
@@ -378,7 +378,7 @@ class TestOrcidUnlink:
         session_id = await create_session(test_db, passwordless_orcid_user.id)
         client.cookies.set("session_id", session_id)
 
-        resp = await client.get("/auth/orcid/unlink", follow_redirects=False)
+        resp = await client.post("/auth/orcid/unlink", follow_redirects=False)
         assert resp.status_code == 302
         # ORCID should still be linked
         await test_db.refresh(passwordless_orcid_user)

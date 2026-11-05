@@ -70,7 +70,9 @@ async def test_export_data_returns_user_data(
     # Check sessions data is present
     assert "sessions" in data
     assert len(data["sessions"]) >= 1
-    assert any(s["session_id"] == session_id for s in data["sessions"])
+    # Session IDs are login cookies, so the export lists sessions by date only.
+    assert all("session_id" not in s for s in data["sessions"])
+    assert session_id not in response.text
 
 
 @pytest.mark.asyncio

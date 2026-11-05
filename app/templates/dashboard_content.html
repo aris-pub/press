@@ -139,10 +139,11 @@
           autocomplete="off"
         >
       </div>
+      <p id="delete-request-status" class="form-help" role="status" hidden></p>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-      <button type="button" id="confirm-delete-btn" class="btn-delete-account" onclick="deleteAccount()" disabled>DELETE MY ACCOUNT</button>
+      <button type="button" id="confirm-delete-btn" class="btn-delete-account" onclick="deleteAccount()" disabled>EMAIL ME A DELETION LINK</button>
     </div>
   </div>
 </div>
@@ -481,7 +482,8 @@
     document.body.style.overflow = 'auto';
     document.getElementById('confirm-delete').value = '';
     const submitBtn = document.getElementById('confirm-delete-btn');
-    submitBtn.textContent = 'DELETE MY ACCOUNT';
+    submitBtn.textContent = 'EMAIL ME A DELETION LINK';
+    document.getElementById('delete-request-status').hidden = true;
     validateDeleteForm();
   };
 
@@ -495,7 +497,7 @@
     const submitBtn = document.getElementById('confirm-delete-btn');
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'DELETING...';
+    submitBtn.textContent = 'SENDING...';
 
     try {
       const csrfResponse = await fetch('/csrf-token');
@@ -508,25 +510,27 @@
       }
       const { csrf_token } = await csrfResponse.json();
 
-      const response = await fetch('/account', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrf_token,
-        }
+      const response = await fetch('/account/delete-request', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': csrf_token }
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Account deletion failed');
+        let detail = 'Could not send the deletion link';
+        try { detail = (await response.json()).detail || detail; } catch (e) {}
+        throw new Error(detail);
       }
 
-      window.location.href = '/?message=account_deleted';
+      const { email } = await response.json();
+      const status = document.getElementById('delete-request-status');
+      status.textContent = 'We sent a link to ' + email + '. Open it within one hour to delete your account.';
+      status.hidden = false;
+      submitBtn.textContent = 'LINK SENT';
 
     } catch (error) {
       alert('Account deletion failed: ' + error.message);
       submitBtn.disabled = false;
-      submitBtn.textContent = 'DELETE MY ACCOUNT';
+      submitBtn.textContent = 'EMAIL ME A DELETION LINK';
     }
   };
 

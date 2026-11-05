@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Delete your account - Scroll Press{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        {% if token %}
+            <div class="form-container">
+                <h1>Delete your account</h1>
+                <p>This permanently deletes the Scroll Press account for <strong>{{ email }}</strong>. It cannot be undone.</p>
+                <p>Scrolls you have posted stay online at their URLs and keep their DOIs. They will no longer be linked to an account.</p>
+                <form method="POST" action="/account/delete-confirm" hx-boost="false">
+                    <input type="hidden" name="token" value="{{ token }}">
+                    <div class="action-buttons">
+                        <button type="submit" class="btn btn-danger" id="confirm-account-deletion">Delete my account</button>
+                        <a href="/" class="btn btn-secondary">Keep my account</a>
+                    </div>
+                </form>
+            </div>
+        {% else %}
+            <div class="error-container">
+                <h1>Deletion link invalid or expired</h1>
+                <p>This link has expired or was already used. To delete your account, log in and request a new link from your dashboard.</p>
+                <div class="action-buttons">
+                    <a href="/login" class="btn btn-primary">Log in</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

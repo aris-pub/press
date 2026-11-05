@@ -32,9 +32,9 @@ async def test_complete_login_flow_mobile(test_server):
             await page.check('input[name="agree_terms"]')
             await page.click('button[type="submit"]')
 
-            # Wait for HTMX form submission to complete
-            await page.wait_for_load_state("networkidle")
-            await page.wait_for_timeout(1000)
+            # The success page redirects to the homepage with JavaScript after a delay.
+            # Navigating before that lands would be aborted by the redirect.
+            await page.wait_for_url(f"{test_server}/")
 
             # Registration should succeed - user is now logged in but unverified
             # Check that we're logged in by checking for session (cookies should be set)
@@ -71,7 +71,9 @@ async def test_complete_login_flow_mobile(test_server):
             mobile_logout = page.locator('.mobile-nav.open form[action="/logout"] button')
             await mobile_logout.click()
 
-            await page.wait_for_load_state("networkidle")
+            # Logout is a background request (hx-boost), so there is no page load to wait
+            # for. The logout form disappears only once the session is gone.
+            await expect(page.locator('form[action="/logout"]')).to_have_count(0)
 
             # Navigate to login page
             await page.goto(f"{test_server}/login")
