@@ -3,6 +3,8 @@
 from playwright.async_api import async_playwright
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 
 @pytest.mark.e2e
 async def test_subject_filtering_works_in_browser(test_server):
@@ -10,7 +12,7 @@ async def test_subject_filtering_works_in_browser(test_server):
 
     # Use Playwright to test filtering
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -59,7 +61,7 @@ async def test_subject_filtering_works_in_browser(test_server):
 async def test_show_all_button_works(test_server):
     """Test that the Show All button works correctly."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

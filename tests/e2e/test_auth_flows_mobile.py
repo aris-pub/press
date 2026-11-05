@@ -5,6 +5,8 @@ import time
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = [pytest.mark.e2e, pytest.mark.mobile]
 
 # Mobile device viewport
@@ -15,7 +17,7 @@ MOBILE_VIEWPORT = {"width": 375, "height": 667}  # iPhone SE
 async def test_complete_login_flow_mobile(test_server):
     """Test complete user login flow using mobile navigation UI."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context(has_touch=True, viewport=MOBILE_VIEWPORT)
         page = await context.new_page()
 
@@ -112,7 +114,7 @@ async def test_complete_login_flow_mobile(test_server):
 async def test_registration_duplicate_email_mobile(test_server):
     """Test registration with already registered email using mobile logout."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context(has_touch=True, viewport=MOBILE_VIEWPORT)
         page = await context.new_page()
 
@@ -185,7 +187,7 @@ async def test_registration_duplicate_email_mobile(test_server):
 async def test_mobile_menu_navigation(test_server):
     """Test mobile navigation menu functionality."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context(has_touch=True, viewport=MOBILE_VIEWPORT)
         page = await context.new_page()
 
@@ -221,7 +223,7 @@ async def test_mobile_menu_navigation(test_server):
 async def test_mobile_dark_mode_toggle_visibility(test_server):
     """Test that dark mode toggle is accessible in mobile view."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context(has_touch=True, viewport=MOBILE_VIEWPORT)
         page = await context.new_page()
 

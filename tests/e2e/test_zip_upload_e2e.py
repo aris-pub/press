@@ -7,6 +7,8 @@ import zipfile
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 VALID_HTML = """<!DOCTYPE html>
@@ -44,7 +46,7 @@ def _make_test_zip(files: dict[str, str]) -> str:
 async def test_zip_upload_shows_entry_point_picker(test_server):
     """Uploading a zip file should show the entry point picker before creating the scroll."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -109,7 +111,7 @@ async def test_zip_upload_shows_entry_point_picker(test_server):
 async def test_zip_upload_assets_load_in_iframe(test_server):
     """After zip upload, assets referenced in the HTML should load within the iframe."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

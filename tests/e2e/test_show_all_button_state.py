@@ -3,13 +3,15 @@
 from playwright.async_api import async_playwright
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
 async def test_show_all_button_disabled_when_no_filter(test_server):
     """Show All button should be disabled when showing all scrolls."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         await page.goto(f"{test_server}/")
@@ -29,7 +31,7 @@ async def test_show_all_button_disabled_when_no_filter(test_server):
 async def test_show_all_button_enabled_when_filter_active(test_server):
     """REGRESSION: Show All button should be enabled when subject filter is active."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         await page.goto(f"{test_server}/")
@@ -54,7 +56,7 @@ async def test_show_all_button_enabled_when_filter_active(test_server):
 async def test_show_all_button_becomes_disabled_after_clicking(test_server):
     """Show All button should become disabled after clicking it."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         await page.goto(f"{test_server}/")

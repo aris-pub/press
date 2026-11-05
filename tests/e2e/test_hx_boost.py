@@ -7,12 +7,14 @@ loads, while maintaining browser history and progressive enhancement.
 from playwright.async_api import async_playwright
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 
 @pytest.mark.e2e
 async def test_hx_boost_navigation_prevents_full_page_reload(test_server):
     """Test that hx-boost makes navigation use AJAX instead of full page reload."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -52,7 +54,7 @@ async def test_hx_boost_navigation_prevents_full_page_reload(test_server):
 async def test_hx_boost_maintains_browser_history(test_server):
     """Test that hx-boost maintains browser history for back/forward buttons."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -109,7 +111,7 @@ async def test_hx_boost_maintains_browser_history(test_server):
 async def test_hx_boost_updates_url_in_address_bar(test_server):
     """Test that hx-boost updates the browser URL correctly."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -138,7 +140,7 @@ async def test_hx_boost_updates_url_in_address_bar(test_server):
 async def test_hx_boost_preserves_page_content_on_navigation(test_server):
     """Test that hx-boost properly swaps content on navigation."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -173,7 +175,7 @@ async def test_hx_boost_preserves_page_content_on_navigation(test_server):
 async def test_hx_boost_does_not_affect_external_links(test_server):
     """Test that hx-boost does not interfere with external links."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -207,7 +209,7 @@ async def test_hx_boost_does_not_affect_external_links(test_server):
 async def test_hx_boost_works_with_htmx_attributes(test_server):
     """Test that hx-boost coexists with explicit HTMX attributes."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -236,7 +238,7 @@ async def test_hx_boost_works_with_htmx_attributes(test_server):
 async def test_hx_boost_indicator_shows_during_navigation(test_server):
     """Test that HTMX loading indicator appears during boosted navigation."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -268,7 +270,7 @@ async def test_hx_boost_indicator_shows_during_navigation(test_server):
 async def test_hx_boost_disabled_on_specific_links(test_server):
     """Test that hx-boost can be disabled on specific links with hx-boost='false'."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context()
         page = await context.new_page()
 

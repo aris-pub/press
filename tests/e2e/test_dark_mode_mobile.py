@@ -3,6 +3,8 @@
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = [pytest.mark.e2e, pytest.mark.mobile]
 
 # Mobile device viewport
@@ -13,7 +15,7 @@ MOBILE_VIEWPORT = {"width": 375, "height": 667}  # iPhone SE
 async def test_mobile_dark_mode_toggle_functionality(test_server):
     """Test mobile dark mode toggle works with touch interactions."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context(has_touch=True, viewport=MOBILE_VIEWPORT)
         page = await context.new_page()
 
@@ -63,7 +65,7 @@ async def test_mobile_dark_mode_toggle_functionality(test_server):
 async def test_mobile_theme_persistence_across_navigation(test_server):
     """Test that theme setting persists across mobile navigation."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context(has_touch=True, viewport=MOBILE_VIEWPORT)
         page = await context.new_page()
 
@@ -147,7 +149,7 @@ async def test_mobile_theme_persistence_across_navigation(test_server):
 async def test_mobile_viewport_responsive_behavior(test_server):
     """Test dark mode behavior at different mobile viewport sizes."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
 
         # Test different mobile viewport sizes
         mobile_viewports = [
@@ -202,7 +204,7 @@ async def test_mobile_viewport_responsive_behavior(test_server):
 async def test_mobile_scroll_page_dark_mode_sync(test_server):
     """Test scroll page dark mode toggle syncs with mobile theme."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context(has_touch=True, viewport=MOBILE_VIEWPORT)
         page = await context.new_page()
 
@@ -282,7 +284,7 @@ async def test_mobile_scroll_page_dark_mode_sync(test_server):
 async def test_mobile_touch_interactions_with_theme(test_server):
     """Test theme toggle responds properly to mobile touch events."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         context = await browser.new_context(has_touch=True, viewport=MOBILE_VIEWPORT)
         page = await context.new_page()
 

@@ -6,13 +6,15 @@ Minimal tests to verify basic functionality without timeouts.
 from playwright.async_api import async_playwright, expect
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
 async def test_basic_upload_flow(test_server):
     """Test basic upload page redirects to login (auth required)."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -30,7 +32,7 @@ async def test_basic_upload_flow(test_server):
 async def test_homepage_loads(test_server):
     """Test homepage loads correctly."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:
@@ -48,7 +50,7 @@ async def test_homepage_loads(test_server):
 async def test_register_page_loads(test_server):
     """Test registration page loads correctly."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         try:

@@ -7,6 +7,8 @@ causes the entire page to nest inside itself.
 from playwright.async_api import async_playwright
 import pytest
 
+from tests.e2e.conftest import launch_browser
+
 pytestmark = pytest.mark.e2e
 
 
@@ -26,7 +28,7 @@ async def test_subject_filtering_does_not_duplicate_page(test_server):
     - HTMX swap configuration is correct
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         # Track network requests
@@ -134,7 +136,7 @@ async def test_subject_filtering_does_not_duplicate_page(test_server):
 async def test_show_all_button_does_not_duplicate_page(test_server):
     """Ensure Show All button also doesn't cause nesting."""
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await launch_browser(p)
         page = await browser.new_page()
 
         await page.goto(f"{test_server}/")
