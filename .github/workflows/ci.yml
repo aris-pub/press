@@ -60,6 +60,16 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: lint-and-unit
+    timeout-minutes: 30
+    # Playwright's image already has the browsers and every system library they need.
+    # Installing them on the runner meant downloading about 181 packages from Ubuntu's
+    # mirror in every job, which stalled for up to an hour when the mirror was slow.
+    # Keep the tag in step with the playwright version in uv.lock (tests/test_ci_workflow.py).
+    container:
+      image: mcr.microsoft.com/playwright:v1.54.0-noble
+    env:
+      # Firefox refuses to start as root unless HOME belongs to root.
+      HOME: /root
 
     strategy:
       fail-fast: false
@@ -104,11 +114,6 @@ jobs:
       with:
         submodules: true
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.11
-
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
@@ -116,40 +121,28 @@ jobs:
         prune-cache: false
         cache-suffix: v1
 
+    - name: Install Python 3.11
+      run: uv python install 3.11
+
     - name: Install dependencies
-      run: uv sync
-
-    - name: Cache Playwright browsers
-      uses: actions/cache@v4
-      id: playwright-cache
-      with:
-        path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-${{ hashFiles('uv.lock') }}
-
-    - name: Install Playwright browsers
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: uv run playwright install --with-deps
-
-    - name: Install Playwright system deps
-      if: steps.playwright-cache.outputs.cache-hit == 'true'
-      run: uv run playwright install-deps
+      run: uv sync --python 3.11
 
     - name: Run database migrations
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/press
         TESTING: 1
       run: uv run alembic upgrade head
 
     - name: Seed database
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/press
         TESTING: 1
         PYTHONPATH: .
       run: uv run python scripts/seed.py
 
     - name: Start server
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/press
         TESTING: 1
         E2E_TESTING: 1
         PYTHONPATH: .
@@ -161,7 +154,7 @@ jobs:
 
     - name: Run e2e tests (${{ matrix.name }})
       env:
-        DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
+        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/press
         TESTING: 1
       run: |
         timeout ${{ matrix.timeout }} uv run pytest -m "${{ matrix.marker }}" --tb=short -v ${{ matrix.browser }}
