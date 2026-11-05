@@ -29,7 +29,7 @@ def get_verification_email(name: str, token: str, base_url: str) -> tuple[str, s
             <h2 style="margin-top: 0; color: #1f2937;">Hi {name} 👋</h2>
             <p style="font-size: 16px; margin: 0 0 20px 0;">Thanks for joining Scroll Press! Please verify your email address to get started.</p>
 
-            <p style="font-size: 16px; margin: 0 0 20px 0;">Scroll Press is a modern preprint server for HTML-native research papers with interactive visualizations, live figures, and permanent DOIs. No more static PDFs—your research comes alive on the web.</p>
+            <p style="font-size: 16px; margin: 0 0 20px 0;">Scroll Press is a preprint archive for research manuscripts written in HTML. Each "scroll" you post gets a permanent URL and a DOI.</p>
 
             <div style="text-align: center; margin: 30px 0;">
                 <a href="{verification_link}" style="background: #ef4444; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Verify Email Address</a>
@@ -44,7 +44,7 @@ def get_verification_email(name: str, token: str, base_url: str) -> tuple[str, s
         <div style="text-align: center; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
             <p>If you didn't create an account with Scroll Press, you can safely ignore this email.</p>
             <p style="margin-top: 15px; font-size: 12px;">
-                Scroll Press - HTML-native preprint server for modern research
+                Scroll Press, a preprint archive for research written in HTML
             </p>
         </div>
     </body>
@@ -58,7 +58,7 @@ Hi {name} 👋
 
 Thanks for joining Scroll Press! Please verify your email address to get started.
 
-Scroll Press is a modern preprint server for HTML-native research papers with interactive visualizations, live figures, and permanent DOIs. No more static PDFs—your research comes alive on the web.
+Scroll Press is a preprint archive for research manuscripts written in HTML. Each "scroll" you post gets a permanent URL and a DOI.
 
 Verify your email by clicking this link:
 {verification_link}
@@ -66,7 +66,7 @@ Verify your email by clicking this link:
 If you didn't create an account with Scroll Press, you can safely ignore this email.
 
 ---
-Scroll Press - HTML-native preprint server for modern research
+Scroll Press, a preprint archive for research written in HTML
     """
 
     return html_content, text_content
@@ -122,7 +122,7 @@ def get_password_reset_email(name: str, token: str, base_url: str) -> tuple[str,
         <div style="text-align: center; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
             <p>If you're having trouble, reply to this email for support.</p>
             <p style="margin-top: 15px; font-size: 12px;">
-                Scroll Press - HTML-native preprint server for modern research
+                Scroll Press, a preprint archive for research written in HTML
             </p>
         </div>
     </body>
@@ -144,7 +144,7 @@ We received a request to reset your password. Click the link below to create a n
 If you're having trouble, reply to this email for support.
 
 ---
-Scroll Press - HTML-native preprint server for modern research
+Scroll Press, a preprint archive for research written in HTML
     """
 
     return html_content, text_content

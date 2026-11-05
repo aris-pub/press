@@ -575,3 +575,18 @@ def test_send_email_helper_error_message_format(mock_logger, mock_send):
         "Failed to send admin publish notification email to admin@example.com: Connection timeout"
     )
     mock_log.error.assert_called_once_with(expected_message)
+
+
+def test_author_emails_use_press_wording():
+    """Emails authors receive say "scroll" and "preprint archive", never "paper", and use no dashes."""
+    from app.emails.templates import get_password_reset_email, get_verification_email
+
+    for html, text in (
+        get_verification_email("Ada", "tok", "https://scroll.press"),
+        get_password_reset_email("Ada", "tok", "https://scroll.press"),
+    ):
+        for content in (html, text):
+            assert "paper" not in content.lower()
+            assert "preprint server" not in content.lower()
+            assert "—" not in content and "–" not in content
+            assert "a preprint archive for research written in HTML" in content
