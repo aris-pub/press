@@ -95,7 +95,7 @@ Your research on Press is discoverable through both traditional search (Google S
 
 ## Can I delete a scroll?
 
-Yes. Contact us at hello@aris.pub to request removal. We'll take down the public-facing content, though we may retain archival copies for legal/administrative purposes.
+No, but you can withdraw it. Email hello@aris.pub. A withdrawn scroll stays at its URL, marked as withdrawn, so citations and its DOI keep working. We remove a scroll entirely only for legal reasons, such as a copyright claim or personal data.
 
 ## What if I find a bug or have feedback?
 
