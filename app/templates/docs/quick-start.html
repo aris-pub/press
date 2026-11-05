@@ -6,11 +6,11 @@
 <div class="page">
   <div class="page-content docs-content">
     <h1 id="quick-start-guide">Quick Start Guide</h1>
-<p>Get from signup to published paper in 5 minutes.</p>
+<p>Get from signup to a permanent URL and DOI in 5 minutes.</p>
 <h2 id="create-account">1. Create Account</h2>
 <p><a href="/register">Sign up</a> with your email address. Check your inbox for a verification email and click the link to activate your account.</p>
-<h2 id="upload-your-paper">2. Upload Your Paper</h2>
-<p>Once logged in, go to your <a href="/dashboard">dashboard</a> and click “Upload New Scroll.”</p>
+<h2 id="upload-your-work">2. Upload Your Work</h2>
+<p>Once logged in, go to your <a href="/dashboard">dashboard</a> and click “Upload New Scroll.” Each document on Press is called a scroll.</p>
 <p><strong>What to upload:</strong></p>
 <ul>
 <li>A single <code>.html</code> file with everything inlined, OR</li>
@@ -19,10 +19,11 @@
 <p><strong>Size limit:</strong> 50MB maximum.</p>
 <p><strong>How to create HTML files:</strong></p>
 <ul>
-<li><strong>Quarto:</strong> <code>quarto render document.qmd --to html</code> (single file or zip the output folder)</li>
-<li><strong>Typst:</strong> Export to HTML when available</li>
-<li><strong>Jupyter:</strong> <code>jupyter nbconvert --to html notebook.ipynb</code></li>
-<li><strong>MyST:</strong> Use MyST-Parser HTML export</li>
+<li><strong><a href="https://rsm-lang.readthedocs.io/en/latest/">RSM</a>:</strong> <code>rsm build paper.rsm --standalone</code> (single file), or zip the output folder</li>
+<li><strong><a href="https://quarto.org/docs/output-formats/html-basics.html">Quarto</a>:</strong> <code>quarto render document.qmd --to html</code> (single file or zip the output folder)</li>
+<li><strong><a href="https://typst.app/docs/reference/html/">Typst</a>:</strong> HTML export (experimental)</li>
+<li><strong><a href="https://nbconvert.readthedocs.io/en/latest/">Jupyter</a>:</strong> <code>jupyter nbconvert --to html notebook.ipynb</code></li>
+<li><strong><a href="https://myst-parser.readthedocs.io/en/latest/">MyST</a>:</strong> Use MyST-Parser HTML export</li>
 <li><strong>Hand-coded:</strong> Write HTML directly</li>
 </ul>
 <p>If your tool produces an HTML file plus a <code>_files/</code> or assets directory, zip the whole output folder and upload the zip. Press will auto-detect the entry point.</p>
@@ -30,7 +31,7 @@
 <h2 id="add-metadata">3. Add Metadata</h2>
 <p>Fill in the required fields:</p>
 <ul>
-<li><strong>Title</strong> - Your paper’s title</li>
+<li><strong>Title</strong> - The title of your work</li>
 <li><strong>Authors</strong> - Author names (one per line or comma-separated)</li>
 <li><strong>Abstract</strong> - Brief summary of your work</li>
 <li><strong>Subject</strong> - Primary research area</li>
@@ -42,19 +43,19 @@
 <li><strong>All Rights Reserved</strong></li>
 </ul>
 <h2 id="preview">4. Preview</h2>
-<p>Review how your paper will look on the platform. Check that:</p>
+<p>Review how your scroll will look on the platform. Check that:</p>
 <ul>
 <li>Images and media load correctly</li>
 <li>Formatting looks right</li>
 <li>Interactive elements work (if applicable)</li>
 </ul>
-<h2 id="publish">5. Publish</h2>
-<p>Click “Publish” to make your work live. You’ll receive:</p>
+<h2 id="post">5. Post</h2>
+<p>Click “Post scroll” to make your scroll public. You’ll receive:</p>
 <ul>
 <li>A permanent URL</li>
 <li>A DOI</li>
 </ul>
-<p>Your paper is now publicly accessible and permanently archived.</p>
+<p>Your scroll is now public and archived.</p>
 <hr />
 <p><strong>Need help?</strong> Contact hello@aris.pub or check the <a href="/docs/faq">FAQ</a>.</p>
   </div>

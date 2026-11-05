@@ -126,7 +126,7 @@ async def test_upload_form_missing_checkbox(authenticated_client: AsyncClient, t
     files = {"file": ("test.html", "<h1>Test Content</h1>", "text/html")}
     response = await authenticated_client.post("/upload-form", data=upload_data, files=files)
     assert response.status_code == 422
-    assert "You must confirm that you have the right to publish this content" in response.text
+    assert "You must confirm that you have the right to make this content public" in response.text
 
 
 async def test_view_published_preview(client: AsyncClient, test_db, test_user):

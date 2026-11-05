@@ -1,5 +1,6 @@
 """E2E test for preview edit flow."""
 
+import asyncio
 import os
 import re
 import tempfile
@@ -442,8 +443,9 @@ async def test_publish_preview_flow(test_server):
                 await expect(page.locator("body")).to_contain_text("PREVIEW MODE", timeout=10000)
                 await expect(page.locator("body")).to_contain_text("Test Publish Flow")
 
-                # Click Publish/Confirm button
-                await page.click('button:has-text("Publish")')
+                # Posting asks for confirmation (it mints a permanent DOI), so accept the dialog
+                page.once("dialog", lambda dialog: asyncio.ensure_future(dialog.accept()))
+                await page.click('button:has-text("Post scroll")')
 
                 # Should redirect to published scroll page (/{year}/{slug})
                 await page.wait_for_url(re.compile(r"/\d{4}/[\w-]+$"), timeout=5000)

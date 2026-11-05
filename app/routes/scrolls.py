@@ -1524,7 +1524,7 @@ async def upload_form(
         if not license or license not in ["cc-by-4.0", "arr"]:
             raise ValueError("License must be selected (CC BY 4.0 or All Rights Reserved)")
         if not confirm_rights or confirm_rights.lower() != "true":
-            raise ValueError("You must confirm that you have the right to publish this content")
+            raise ValueError("You must confirm that you have the right to make this content public")
 
         # Find the subject - handle UUID conversion
         try:

@@ -153,7 +153,7 @@
           abstract=scroll.abstract,
           tags=scroll.keywords,
           subject=scroll.subject.name,
-          time_ago="Published " + scroll.published_at.strftime('%B %d, %Y') if scroll.published_at else "Not published",
+          time_ago="Posted " + scroll.published_at.strftime('%B %d, %Y') if scroll.published_at else "Not posted",
           version="v" + scroll.version|string
         ) }}
 
@@ -236,7 +236,7 @@
           <div class="sp-label">Scroll Press</div>
           <div class="sp-row">
             <a href="/">Explore more scrolls</a>
-            <a href="/upload">Publish your research</a>
+            <a href="/upload">Post your research</a>
             <a href="/about">About Scroll Press</a>
           </div>
           <div class="sp-aris">Part of <a href="https://aris.pub" target="_blank" rel="noopener noreferrer">The Aris Program</a></div>

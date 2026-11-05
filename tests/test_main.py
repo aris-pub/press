@@ -11,7 +11,7 @@ async def test_homepage_anonymous_user(client: AsyncClient):
     response = await client.get("/")
     assert response.status_code == 200
     assert "Scroll Press" in response.text
-    assert "A preprint server for interactive research papers" in response.text
+    assert "A preprint archive for interactive research" in response.text
 
 
 async def test_homepage_authenticated_user(authenticated_client: AsyncClient):
@@ -282,7 +282,7 @@ async def test_search_no_results(client: AsyncClient):
     assert "Search Results" in response.text
     assert "No results found" in response.text
     assert "Browse All Subjects" in response.text
-    assert "Recent Papers" in response.text
+    assert "Recent Scrolls" in response.text
 
 
 async def test_search_only_published_previews(client: AsyncClient, test_db, test_user):
@@ -544,7 +544,7 @@ async def test_dashboard_shows_empty_state_when_no_published_papers(
     response = await authenticated_client.get("/dashboard")
     assert response.status_code == 200
     assert "Your Scrolls" in response.text
-    assert "No published papers yet" in response.text
+    assert "No scrolls posted yet" in response.text
     assert "Upload Your First Scroll" in response.text
 
 
@@ -707,7 +707,7 @@ async def test_dashboard_empty_state_count(authenticated_client):
     response = await authenticated_client.get("/dashboard")
     assert response.status_code == 200
     assert "Your Scrolls (0)" in response.text
-    assert "No published papers yet" in response.text
+    assert "No scrolls posted yet" in response.text
 
 
 async def test_navbar_shows_user_menu_when_authenticated(authenticated_client, test_user):
