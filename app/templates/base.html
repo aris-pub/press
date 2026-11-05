@@ -103,6 +103,35 @@
       })();
     </script>
 
+    <!-- Logout needs the CSRF token. It is fetched on click rather than written into the
+         page, because cached pages are shared between readers. -->
+    <script{% if nonce %} nonce="{{ nonce }}"{% endif %}>
+      document.addEventListener('submit', async function (event) {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement) || form.getAttribute('action') !== '/logout') return;
+        if (form.dataset.csrfReady === '1') return;
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          const response = await fetch('/csrf-token', { credentials: 'same-origin' });
+          if (response.status === 401) { window.location.href = '/'; return; }
+          const { csrf_token } = await response.json();
+          let input = form.querySelector('input[name="csrf_token"]');
+          if (!input) {
+            input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            form.appendChild(input);
+          }
+          input.value = csrf_token;
+          form.dataset.csrfReady = '1';
+          form.submit();
+        } catch (e) {
+          window.location.href = '/';
+        }
+      }, true);
+    </script>
+
     <!-- Dynamic component initialization -->
     <script>
       (function initBaseComponents() {

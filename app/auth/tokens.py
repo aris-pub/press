@@ -77,6 +77,24 @@ async def create_password_reset_token(db: AsyncSession, user_id: str) -> str:
     return plain_token
 
 
+async def create_account_deletion_token(db: AsyncSession, user_id: str) -> str:
+    """Create a one-time account deletion token with 1-hour expiry.
+
+    Returns:
+        Plain (unhashed) token string to be sent in email
+    """
+    plain_token = generate_token()
+    token = Token(
+        user_id=user_id,
+        token=hash_token(plain_token),
+        token_type="account_deletion",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    )
+    db.add(token)
+    await db.commit()
+    return plain_token
+
+
 async def validate_token(db: AsyncSession, plain_token: str, token_type: str) -> Optional[User]:
     """Validate a token and return the associated user if valid.
 

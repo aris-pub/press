@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.csrf import get_csrf_token
 from app.auth.session import create_session, delete_session, get_current_user_from_session
 from app.auth.tokens import (
+    create_account_deletion_token,
     create_password_reset_token,
     create_verification_token,
     invalidate_user_tokens,
@@ -141,85 +142,97 @@ async def get_csrf_token_endpoint(request: Request, db: AsyncSession = Depends(g
     return JSONResponse({"csrf_token": token})
 
 
-@router.delete("/account")
-async def delete_account(request: Request, db: AsyncSession = Depends(get_db)):
-    """Delete the current user's account with proper auth guards.
+@router.post("/account/delete-request")
+async def request_account_deletion(request: Request, db: AsyncSession = Depends(get_db)):
+    """Email the user a one-time link that deletes their account.
 
-    This endpoint safely deletes a user's account while preserving their published
-    scrolls for the scholarly record. Only authenticated users can delete their own
-    accounts. The deletion removes:
-    - User profile and login credentials
-    - All user sessions
-    - Personal account data
-
-    Published scrolls remain in the database to maintain citation integrity and
-    scholarly record, but are no longer associated with the user account.
-
-    Returns:
-        JSONResponse: Success message confirming account deletion
-
-    Raises:
-        HTTPException: 401 if user is not authenticated
-        HTTPException: 500 for database errors
+    Deletion needs proof that the person has the account's inbox. The session alone is not
+    enough, because a script running with the reader's session (for example in an uploaded
+    paper) could otherwise delete the account. A password check would not cover accounts
+    created through ORCID, which have no password.
     """
     log_request(request)
     current_user = await get_current_user_from_session(request, db)
-
-    # Authentication guard - only logged in users can delete accounts
     if not current_user:
-        log_auth_event(
-            "delete_account",
-            "anonymous",
-            False,
-            request,
-            error_message="Unauthenticated deletion attempt",
-        )
         raise HTTPException(status_code=401, detail="Authentication required")
 
-    user_id = current_user.id
-    user_email = current_user.email
+    email_service = get_email_service()
+    if not email_service:
+        get_logger().error("Account deletion requested but email service is not configured")
+        return JSONResponse(
+            {"detail": "Email is not available. Please try later."}, status_code=503
+        )
 
+    await invalidate_user_tokens(db, current_user.id, "account_deletion")
+    plain_token = await create_account_deletion_token(db, current_user.id)
+
+    sent = await email_service.send_account_deletion_email(
+        to_email=current_user.email, name=current_user.display_name, token=plain_token
+    )
+    if not sent:
+        return JSONResponse(
+            {"detail": "Could not send the email. Please try again."}, status_code=502
+        )
+
+    log_auth_event(
+        "delete_account_requested", current_user.email, True, request, user_id=str(current_user.id)
+    )
+    return JSONResponse({"success": True, "email": current_user.email})
+
+
+@router.get("/account/delete-confirm", response_class=HTMLResponse)
+async def account_deletion_page(
+    request: Request, token: str = "", db: AsyncSession = Depends(get_db)
+):
+    """Show the final confirmation for a deletion link.
+
+    Opening the link must not delete anything, because mail scanners and link previews
+    open links on their own. Deletion happens only on the POST from this page.
+    """
+    user = await validate_token(db, token, "account_deletion") if token else None
+    return templates.TemplateResponse(
+        request,
+        "auth/delete_account_confirm.html",
+        {"token": token if user else None, "email": user.email if user else None},
+    )
+
+
+@router.post("/account/delete-confirm", response_class=HTMLResponse)
+async def confirm_account_deletion(
+    request: Request, token: str = Form(""), db: AsyncSession = Depends(get_db)
+):
+    """Delete the account that the emailed token belongs to.
+
+    The token is the proof of intent here, so this route is exempt from the session CSRF
+    check (the person may open the link on a device where they are not logged in).
+    """
+    log_request(request)
+    user = await validate_token(db, token, "account_deletion") if token else None
+    if not user:
+        return templates.TemplateResponse(
+            request,
+            "auth/delete_account_confirm.html",
+            {"token": None, "email": None},
+            status_code=400,
+        )
+
+    user_id = user.id
+    user_email = user.email
     try:
         sentry_sdk.set_tag("operation", "account_deletion")
-        sentry_sdk.set_user({"id": str(user_id), "email": user_email})
-        log_auth_event("delete_account", user_email, True, request, user_id=str(user_id))
-
-        # Delete all user sessions first (including current session)
         await db.execute(delete(Session).where(Session.user_id == user_id))
-
-        # Delete all user tokens (verification and password reset)
-        from app.models.token import Token
-
         await db.execute(delete(Token).where(Token.user_id == user_id))
 
-        # Delete the user account (scrolls will remain due to ON DELETE SET NULL or similar)
-        # Note: The scrolls table should have a foreign key constraint that either:
-        # 1. Sets user_id to NULL when user is deleted (preserves scrolls)
-        # 2. Or we handle this manually by updating scrolls first
-
-        # Update scrolls to remove user association (preserve for scholarly record)
         from app.models.scroll import Scroll
 
+        # Posted scrolls stay public for the scholarly record, unlinked from the account.
         await db.execute(
             Scroll.__table__.update().where(Scroll.user_id == user_id).values(user_id=None)
         )
-
-        # Now delete the user
         await db.execute(delete(User).where(User.id == user_id))
-
-        # Commit all changes
         await db.commit()
-
-        log_auth_event("delete_account", user_email, True, request, user_id=str(user_id))
-
-        get_logger().info(f"Account deleted successfully for user {user_id} ({user_email})")
-
-        return JSONResponse(content={"success": True, "message": "Account deleted successfully"})
-
     except Exception as e:
-        # Rollback transaction on error
         await db.rollback()
-
         log_auth_event(
             "delete_account",
             user_email,
@@ -229,9 +242,13 @@ async def delete_account(request: Request, db: AsyncSession = Depends(get_db)):
             error_message=str(e),
         )
         log_error(e, request, user_id=str(user_id), context="account_deletion")
-
-        get_logger().error(f"Account deletion failed for user {user_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Account deletion failed")
+
+    log_auth_event("delete_account", user_email, True, request, user_id=str(user_id))
+    get_logger().info(f"Account deleted for user {user_id}")
+    response = RedirectResponse(url="/?message=account_deleted", status_code=303)
+    response.delete_cookie("session_id")
+    return response
 
 
 @router.get("/register", response_class=HTMLResponse)
@@ -1193,7 +1210,6 @@ async def export_user_data(
     for session in sessions:
         sessions_data.append(
             {
-                "session_id": session.session_id,
                 "created_at": session.created_at.isoformat() if session.created_at else None,
                 "expires_at": session.expires_at.isoformat() if session.expires_at else None,
             }

@@ -1,25 +1,99 @@
 """E2E tests for account deletion flow.
 
-Tests the critical path: login -> dashboard -> delete account -> verify logged out
--> verify published scrolls remain accessible.
+Tests the critical path: login -> dashboard -> request deletion link -> open the emailed
+link -> confirm -> verify logged out -> verify published scrolls remain accessible.
+
+The e2e server cannot send email, so the test issues the deletion link itself in the
+server's database.
 """
 
+import os
 import time
 
 from playwright.async_api import async_playwright, expect
 import pytest
+import pytest_asyncio
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 pytestmark = pytest.mark.e2e
 
 
-async def test_account_deletion_flow(test_server):
-    """Test complete account deletion: register, delete, verify logged out."""
+@pytest_asyncio.fixture
+async def server_db(test_server):
+    """Sessions on the database the e2e server uses.
+
+    The deletion link is normally emailed, and the e2e server cannot send email (in CI it
+    is a separate process with no email key). So the test issues the link itself, with the
+    same code the server uses, straight into the server's database.
+    """
+    if os.getenv("CI"):
+        engine = create_async_engine(os.environ["DATABASE_URL"])
+        yield async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        await engine.dispose()
+    else:
+        from tests.e2e import conftest
+
+        yield async_sessionmaker(
+            conftest.LOCAL_ENGINE, class_=AsyncSession, expire_on_commit=False
+        )
+
+
+async def _issue_deletion_link(server_db, test_server, email):
+    from app.auth.tokens import create_account_deletion_token, invalidate_user_tokens
+    from app.models.user import User
+
+    async with server_db() as db:
+        user = (await db.execute(select(User).where(User.email == email))).scalar_one()
+        await invalidate_user_tokens(db, user.id, "account_deletion")
+        token = await create_account_deletion_token(db, user.id)
+    return f"{test_server}/account/delete-confirm?token={token}"
+
+
+async def _request_and_confirm_deletion(page, test_server, server_db, email):
+    """Press the dashboard button, then delete through the confirmation page."""
+    await page.click("#delete-account-btn")
+    await expect(page.locator("#delete-modal")).to_be_visible()
+    await page.fill("#confirm-delete", "DELETE")
+    await page.dispatch_event("#confirm-delete", "input")
+    confirm_btn = page.locator("#confirm-delete-btn")
+    await expect(confirm_btn).to_be_enabled()
+
+    # The request reaches the server with a valid CSRF token and stops only because the
+    # e2e server has no email service. A CSRF failure would give a different message.
+    async with page.expect_event("dialog") as dialog_info:
+        await confirm_btn.click()
+    dialog = await dialog_info.value
+    message = dialog.message
+    await dialog.accept()
+    assert message.startswith("Account deletion failed: "), message
+    assert "Email is not available" in message, message
+
+    # Pressing the button deletes nothing.
+    await page.goto(f"{test_server}/dashboard")
+    await expect(page.locator("h2:has-text('Account Management')")).to_be_visible()
+
+    link = await _issue_deletion_link(server_db, test_server, email)
+
+    # Opening the link shows the confirmation page and still deletes nothing.
+    await page.goto(link)
+    await expect(page.locator("body")).to_contain_text(email)
+    await page.goto(f"{test_server}/dashboard")
+    await expect(page.locator("h2:has-text('Account Management')")).to_be_visible()
+
+    await page.goto(link)
+    await page.click("#confirm-account-deletion")
+    await page.wait_for_url("**/?message=account_deleted", timeout=10000)
+    return link
+
+
+async def test_account_deletion_flow(test_server, server_db):
+    """Test complete account deletion: register, request link, confirm, verify logged out."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
         try:
-            # Register a fresh user
             await page.goto(f"{test_server}/register")
 
             timestamp = int(time.time())
@@ -30,37 +104,12 @@ async def test_account_deletion_flow(test_server):
             await page.fill('input[name="confirm_password"]', "deletepassword123")
             await page.check('input[name="agree_terms"]')
             await page.click('button[type="submit"]')
+            await page.wait_for_url(f"{test_server}/")
 
-            # Wait for registration + auto-login redirect
-            await page.wait_for_timeout(2500)
-
-            # Navigate to dashboard
             await page.goto(f"{test_server}/dashboard")
-            await page.wait_for_load_state("networkidle")
-
-            # Verify we're on the dashboard
             await expect(page.locator("h2:has-text('Account Management')")).to_be_visible()
 
-            # Click "Delete Account" button to open the modal
-            await page.click("#delete-account-btn")
-            await expect(page.locator("#delete-modal")).to_be_visible()
-
-            # The confirm button should be disabled initially
-            confirm_btn = page.locator("#confirm-delete-btn")
-            await expect(confirm_btn).to_be_disabled()
-
-            # Type "DELETE" in the confirmation input
-            await page.fill("#confirm-delete", "DELETE")
-            await page.dispatch_event("#confirm-delete", "input")
-
-            # The confirm button should now be enabled
-            await expect(confirm_btn).to_be_enabled()
-
-            # Click "DELETE MY ACCOUNT"
-            await confirm_btn.click()
-
-            # Should redirect to homepage with account_deleted message
-            await page.wait_for_url("**/?message=account_deleted", timeout=10000)
+            link = await _request_and_confirm_deletion(page, test_server, server_db, test_email)
 
             # Verify we're logged out: navigating to dashboard should redirect
             await page.goto(f"{test_server}/dashboard")
@@ -68,6 +117,10 @@ async def test_account_deletion_flow(test_server):
             assert (
                 "/login" in current_url or "/register" in current_url or current_url.endswith("/")
             ), f"Expected redirect away from dashboard after deletion, but URL is {current_url}"
+
+            # The link works only once
+            await page.goto(link)
+            await expect(page.locator("body")).to_contain_text("invalid or expired")
 
             # Verify login with deleted credentials fails
             await page.goto(f"{test_server}/login")
@@ -83,7 +136,7 @@ async def test_account_deletion_flow(test_server):
             await browser.close()
 
 
-async def test_account_deletion_preserves_published_scrolls(test_server):
+async def test_account_deletion_preserves_published_scrolls(test_server, server_db):
     """Test that published scrolls remain accessible after account deletion.
 
     Uses a seeded user who owns published scrolls. After deleting the account,
@@ -117,18 +170,9 @@ async def test_account_deletion_preserves_published_scrolls(test_server):
                 href = await scroll_links.nth(i).get_attribute("href")
                 scroll_urls.append(f"{test_server}{href}")
 
-            # Delete the account
-            await page.click("#delete-account-btn")
-            await expect(page.locator("#delete-modal")).to_be_visible()
-
-            await page.fill("#confirm-delete", "DELETE")
-            await page.dispatch_event("#confirm-delete", "input")
-
-            confirm_btn = page.locator("#confirm-delete-btn")
-            await expect(confirm_btn).to_be_enabled()
-            await confirm_btn.click()
-
-            await page.wait_for_url("**/?message=account_deleted", timeout=10000)
+            await _request_and_confirm_deletion(
+                page, test_server, server_db, "john.smith@university.edu"
+            )
 
             # Verify each scroll is still publicly accessible
             for url in scroll_urls:

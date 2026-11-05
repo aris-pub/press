@@ -496,7 +496,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         "/register-form",
         "/forgot-password-form",
         "/reset-password-form",
-        "/logout",  # Low-risk action, session-protected
+        # The emailed one-time token is the proof of intent, and the person may not be logged in.
+        "/account/delete-confirm",
         "/resend-verification",  # Low-risk action, session-protected
     }
 

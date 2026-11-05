@@ -212,7 +212,7 @@ async def test_upload_form_requires_csrf_token(test_user, test_db):
 
 @pytest.mark.asyncio
 async def test_delete_account_requires_csrf_token(test_user, test_db):
-    """Test that account deletion requires CSRF token."""
+    """Test that requesting an account deletion link requires CSRF token."""
     from httpx import ASGITransport, AsyncClient
 
     from app.auth.session import create_session
@@ -224,8 +224,8 @@ async def test_delete_account_requires_csrf_token(test_user, test_db):
         session_id = await create_session(test_db, test_user.id)
         client.cookies.set("session_id", session_id)
 
-        # DELETE request without X-CSRF-Token header should fail
-        response = await client.delete("/account")
+        # Requesting the deletion link without an X-CSRF-Token header should fail
+        response = await client.post("/account/delete-request")
 
         assert response.status_code == 403
 

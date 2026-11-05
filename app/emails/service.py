@@ -8,6 +8,7 @@ import sentry_sdk
 from app.logging_config import get_logger
 
 from .templates import (
+    get_account_deletion_email,
     get_admin_publish_notification,
     get_admin_signup_notification,
     get_password_reset_email,
@@ -96,6 +97,20 @@ class EmailService:
         }
 
         return self._send_email(params, "password reset", to_email)
+
+    async def send_account_deletion_email(self, to_email: str, name: str, token: str) -> bool:
+        """Send the link that confirms an account deletion request."""
+        html_content, text_content = get_account_deletion_email(
+            name=name, token=token, base_url=self.config.base_url
+        )
+        params = {
+            "from": f"Scroll Press <{self.config.from_email}>",
+            "to": [to_email],
+            "subject": "Confirm deleting your Scroll Press account",
+            "html": html_content,
+            "text": text_content,
+        }
+        return self._send_email(params, "account deletion", to_email)
 
     async def send_admin_signup_notification(
         self, user_email: str, display_name: str, user_id: str

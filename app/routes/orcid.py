@@ -205,7 +205,7 @@ async def _login_or_register(
     return response
 
 
-@router.get("/unlink", name="orcid_unlink")
+@router.post("/unlink", name="orcid_unlink")
 async def orcid_unlink(request: Request, db: AsyncSession = Depends(get_db)):
     """Remove ORCID from the current user's account."""
     current_user = await get_current_user_from_session(request, db)
