@@ -29,6 +29,7 @@ from app.middleware import (
     HTTPSRedirectMiddleware,
     LoggingMiddleware,
     RateLimitMiddleware,
+    SecFetchSiteMiddleware,
     SecurityHeadersMiddleware,
     StaticFilesCacheMiddleware,
 )
@@ -124,6 +125,8 @@ app.add_middleware(StaticFilesCacheMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(CSRFMiddleware)
+# Added after CSRF so it runs before it (the last middleware added runs first).
+app.add_middleware(SecFetchSiteMiddleware)
 app.add_middleware(EmailVerificationMiddleware)
 # Nonce middleware must run before SecurityHeadersMiddleware to generate nonces
 app.add_middleware(NonceMiddleware)
