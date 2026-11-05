@@ -18,7 +18,7 @@
     <div class="preview-banner-content">
       <div class="preview-banner-left">
         <span class="preview-banner-icon">⚠️</span>
-        <span class="preview-banner-text">PREVIEW MODE{% if upcoming_version %} - This will be published as v{{ upcoming_version }}{% else %} - Review your scroll below{% endif %}</span>
+        <span class="preview-banner-text">PREVIEW MODE{% if upcoming_version %} - This will be posted as v{{ upcoming_version }}{% else %} - Review your scroll below{% endif %}</span>
       </div>
       <div class="preview-banner-actions">
         <form method="POST" action="/preview/{{ scroll.url_hash }}/edit">
@@ -29,9 +29,9 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button type="submit" class="btn btn-cancel btn-sm">Discard</button>
         </form>
-        <form method="POST" action="/preview/{{ scroll.url_hash }}/confirm" hx-boost="false">
+        <form method="POST" action="/preview/{{ scroll.url_hash }}/confirm" hx-boost="false" onsubmit="return confirm('Posting makes this scroll public and gives it a permanent DOI. This cannot be undone. You can post a new version later.')">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button type="submit" class="btn btn-publish btn-sm">Publish</button>
+          <button type="submit" class="btn btn-publish btn-sm">Post scroll</button>
         </form>
       </div>
     </div>

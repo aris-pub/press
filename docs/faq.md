@@ -16,35 +16,36 @@ Maximum file size is 50MB.
 
 ## How do I prepare my upload?
 
-**Single HTML file** -- If your paper is one self-contained `.html` file (all CSS/JS inlined), just upload it directly.
+**Single HTML file:** if your work is one self-contained `.html` file (all CSS/JS inlined), just upload it directly.
 
-**Paper with local assets** -- If your paper references external files (images, stylesheets, scripts, data), put everything in a folder and zip it. The zip should contain your HTML file alongside its assets with relative paths preserved. Press will auto-detect the main HTML file.
+**HTML with local assets:** if your HTML references external files (images, stylesheets, scripts, data), put everything in a folder and zip it. The zip should contain your HTML file alongside its assets with relative paths preserved. Press will auto-detect the main HTML file.
 
 **Tool-specific tips:**
-- **Quarto**: `quarto render` with `self-contained: false` produces an HTML file plus a `_files/` directory -- zip the whole output folder
-- **Observable**: Export produces `index.html` plus asset directories -- zip as-is
-- **R Markdown**: `rmarkdown::render()` with `self_contained: FALSE` -- zip the HTML and its `_files/` folder
+
+- **Quarto**: `quarto render` with `self-contained: false` produces an HTML file plus a `_files/` directory, so zip the whole output folder
+- **Observable**: Export produces `index.html` plus asset directories, so zip as-is
+- **R Markdown**: `rmarkdown::render()` with `self_contained: FALSE`, then zip the HTML and its `_files/` folder
 - **Jupyter**: `nbconvert --to html` usually produces a single file, but if you have local images, zip them together
 
 **Allowed file types in zip archives:** HTML, CSS, JavaScript, images (PNG, JPG, GIF, WebP, SVG), fonts (WOFF, WOFF2, TTF, OTF), and data files (JSON, CSV, TSV, TXT).
 
 ## What is a "Scroll"?
 
-A scroll is what we call a preprint on Press. The name reflects how HTML research is meant to be experienced: you scroll through it on your screen, rather than flipping through static pages like a PDF.
+A scroll is what we call each document on Press. The name reflects how HTML research is meant to be experienced: you scroll through it on your screen, rather than flipping through static pages like a PDF.
 
-It's also a nod to ancient scrolls—the original format for sharing knowledge before bound books existed. Just as scrolls were designed to be unrolled and read continuously, web-native research is designed to flow naturally on screens of any size.
+It's also a nod to ancient scrolls, the original format for sharing knowledge before bound books existed. Just as scrolls were designed to be unrolled and read continuously, web-native research is designed to flow naturally on screens of any size.
 
 ## Is Press free?
 
-Yes, forever. Publishing and hosting on Press is completely free with no paywalls or subscriptions.
+Yes, forever. Posting and hosting on Press is completely free with no paywalls or subscriptions.
 
-We may introduce optional premium features in the future (custom domains, advanced analytics), but core publishing will always remain free.
+There are no paid tiers and no premium features.
 
-## Does Press review submissions before publishing?
+## Does Press review scrolls before they are posted?
 
-No. Press does not do pre-publication review for quality, novelty, or correctness. We are infrastructure for research, not a gatekeeper of it.
+No. Press does not review scrolls before posting for quality, novelty, or correctness. We are infrastructure for research, not a gatekeeper of it.
 
-We do run automated checks at upload time (spam detection, content structure validation, security scanning), and we will remove content that violates our [Content Policy](/content-policy) -- things like spam, plagiarism, or malicious code. But we do not judge whether your research is good enough to publish. That is for the research community to decide.
+We do run automated checks at upload time (spam detection, content structure validation, security scanning), and we will remove content that violates our [Content Policy](/content-policy): things like spam, plagiarism, or malicious code. But we do not judge whether your research is good enough to publish. That is for the research community to decide.
 
 For full details, see our [Content Policy](/content-policy).
 
@@ -52,7 +53,7 @@ For full details, see our [Content Policy](/content-policy).
 
 You do, 100%. You retain full ownership and copyright of your work.
 
-When you publish, you choose a license:
+When you post a scroll, you choose a license:
 
 - **CC BY 4.0** - Open access with attribution (recommended for research)
 - **All Rights Reserved** - Traditional copyright
@@ -61,27 +62,23 @@ Press simply hosts and archives your work. You can request deletion at any time.
 
 ## How long do links last?
 
-Permanently. Once published, your paper receives a permanent URL that will never break. Content is immutable - what you publish is what stays archived.
+Permanently. Once posted, your scroll receives a permanent URL and a DOI. Content is immutable: what you post is what stays archived.
 
 We're integrating with DataCite to issue DOIs (Digital Object Identifiers) for long-term citability and discoverability.
 
-## Can I update a paper after publishing?
+## Can I update a scroll after posting?
 
-Not yet. Currently, published papers are immutable to ensure archival integrity.
+Yes, by posting a new version. On your dashboard, click "Upload New Version" on the scroll. Each version gets its own URL and its own DOI, and earlier versions stay readable, as on arXiv (v1, v2, v3...).
 
-We're building a versioning system that will allow you to publish new versions while preserving the original. This will work similar to arXiv's versioning (v1, v2, v3...).
+## Is my scroll private before I post it?
 
-## Is my content private before publishing?
+Yes. Uploaded drafts are only visible to you until you click "Post scroll." After that, anyone can read them.
 
-Yes. Uploaded drafts are only visible to you until you click "Publish." Once published, papers become publicly accessible.
+## How do I cite a scroll from Press?
 
-## How do I cite a paper from Press?
+Use the DOI shown on the scroll page, with the authors and title. Example:
 
-Use the permanent URL and author/title information. Example:
-
-> Torres, L. (2026). *Title of Paper*. Scroll Press. https://press.aris.pub/scroll/abc123
-
-DOI-based citations will be available once DataCite integration is complete.
+> Torres, L. (2026). *Title of Scroll*. Scroll Press. https://doi.org/10.5281/zenodo.XXXXXXXX
 
 ## How does Press work with AI research tools?
 
@@ -90,19 +87,19 @@ Your research on Press is discoverable through both traditional search (Google S
 **Why this matters:** Researchers increasingly discover papers by asking AI tools "What's the latest research on X?" rather than browsing publisher websites. Press's semantic HTML structure makes your work easy for AI tools to understand, cite, and synthesize accurately.
 
 **What you get:**
-- Your paper reaches readers through direct browsing AND AI-assisted discovery
+- Your work reaches readers through direct browsing AND AI-assisted discovery
 - AI tools can properly cite your work with correct attribution
 - Semantic structure means accurate extraction (not heuristic PDF parsing)
 
 **No AI slop:** Press doesn't use AI to generate, summarize, or alter your content. Your words are your words. We just make sure AI tools can find and cite them properly.
 
-## Can I delete my paper?
+## Can I delete a scroll?
 
 Yes. Contact us at hello@aris.pub to request removal. We'll take down the public-facing content, though we may retain archival copies for legal/administrative purposes.
 
 ## What if I find a bug or have feedback?
 
-We're in closed beta and actively improving the platform. Please report issues or share feedback:
+Press is under active development. Please report issues or share feedback:
 
 - Email: hello@aris.pub
 - GitHub: [github.com/aris-pub/press](https://github.com/aris-pub/press)
@@ -121,8 +118,6 @@ Anyone can contribute code, report issues, or fork the project. Press will never
 
 Check our [roadmap](/roadmap) to see upcoming features including:
 
-- DOI integration via DataCite
-- Versioning system
 - Advanced search and filtering
 - Custom themes
 - And more...

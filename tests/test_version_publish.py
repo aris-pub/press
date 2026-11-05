@@ -215,7 +215,7 @@ class TestPreviewVersionIndicator:
             f"/preview/{preview.url_hash}", follow_redirects=False
         )
         assert resp.status_code == 200
-        assert "will be published as v" not in resp.text
+        assert "will be posted as v" not in resp.text
 
 
 @pytest.mark.asyncio

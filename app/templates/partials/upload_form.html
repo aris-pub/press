@@ -15,7 +15,7 @@
 <div class="revision-context">
     <div class="revision-context-label">Updating:</div>
     <div class="revision-context-title">{{ revising_scroll.title }}</div>
-    <div class="revision-context-meta">Currently at v{{ revising_scroll.version }}{% if revising_scroll.published_at %} &middot; Published {{ revising_scroll.published_at.strftime('%B %-d, %Y') }}{% endif %}</div>
+    <div class="revision-context-meta">Currently at v{{ revising_scroll.version }}{% if revising_scroll.published_at %} &middot; Posted {{ revising_scroll.published_at.strftime('%B %-d, %Y') }}{% endif %}</div>
     <div class="revision-context-next">This will become v{{ revising_scroll.version + 1 }}.</div>
 </div>
 {% endif %}
@@ -113,7 +113,7 @@
 
         <div id="file-error" class="file-error" style="display: none;"></div>
         <div id="file-success" class="file-success" style="display: none;"></div>
-        <div class="help-text">Upload your HTML paper, or a zip archive containing your HTML paper and its assets (images, CSS, JavaScript, data files). Works with output from Quarto, R Markdown, Observable, Jupyter, or any HTML. <a href="https://github.com/aris-pub/examples-press" target="_blank" rel="noopener noreferrer">View example scrolls</a>.</div>
+        <div class="help-text">Upload your HTML file, or a zip archive containing your HTML file and its assets (images, CSS, JavaScript, data files). Works with output from Quarto, R Markdown, Observable, Jupyter, or any HTML. <a href="https://github.com/aris-pub/examples-press" target="_blank" rel="noopener noreferrer">View example scrolls</a>.</div>
     </div>
 
     <div class="form-group">
@@ -140,7 +140,7 @@
         </fieldset>
     </div>
 
-    {{ form_checkbox("confirm_rights", "I confirm that I have the right to publish this content and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
+    {{ form_checkbox("confirm_rights", "I confirm that I have the right to make this content public under the license I chose, and that it does not violate any policies or third-party rights", required=true, checked=form_data.confirm_rights if form_data else false) }}
 
     <div class="form-actions">
         {{ button("Preview New Version" if revising_scroll else "Preview Scroll", type="submit", variant="primary", name="action", value="publish", loading_text="Uploading...") }}

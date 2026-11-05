@@ -102,7 +102,7 @@ async def test_preview_banner_contains_action_buttons(
     assert f"/preview/{scroll.url_hash}/confirm" in html
     assert f"/preview/{scroll.url_hash}/cancel" in html
     assert f"/preview/{scroll.url_hash}/edit" in html
-    assert "Publish" in html
+    assert "Post scroll" in html
     assert "Discard" in html
     assert "Edit Details" in html
 
