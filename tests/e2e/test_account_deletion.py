@@ -7,38 +7,15 @@ The e2e server cannot send email, so the test issues the deletion link itself in
 server's database.
 """
 
-import os
 import time
 
 from playwright.async_api import async_playwright, expect
 import pytest
-import pytest_asyncio
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from tests.e2e.conftest import launch_browser
 
 pytestmark = pytest.mark.e2e
-
-
-@pytest_asyncio.fixture
-async def server_db(test_server):
-    """Sessions on the database the e2e server uses.
-
-    The deletion link is normally emailed, and the e2e server cannot send email (in CI it
-    is a separate process with no email key). So the test issues the link itself, with the
-    same code the server uses, straight into the server's database.
-    """
-    if os.getenv("CI"):
-        engine = create_async_engine(os.environ["DATABASE_URL"])
-        yield async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-        await engine.dispose()
-    else:
-        from tests.e2e import conftest
-
-        yield async_sessionmaker(
-            conftest.LOCAL_ENGINE, class_=AsyncSession, expire_on_commit=False
-        )
 
 
 async def _issue_deletion_link(server_db, test_server, email):

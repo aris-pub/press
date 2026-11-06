@@ -21,6 +21,7 @@ import pytest_asyncio
 from app.auth.utils import get_password_hash
 from app.models.scroll import Scroll, Subject
 from app.models.user import User
+from app.paper_bridge import paper_etag
 
 
 @pytest_asyncio.fixture
@@ -90,8 +91,8 @@ class TestBarePaperRoute:
         assert "Bare body marker" in response.text
         # No chrome: the canonical page wraps an iframe; the bare URL must not.
         assert "<iframe" not in response.text.lower()
-        # ETag derived from content hash, quoted per RFC.
-        assert response.headers.get("etag") == f'"{scroll.content_hash}"'
+        # ETag from the content hash and the bridge version, quoted per RFC.
+        assert response.headers.get("etag") == paper_etag(scroll.content_hash)
         # Kept out of search results so the paper is listed under its scroll page.
         assert response.headers.get("x-robots-tag") == "noindex, indexifembedded"
 

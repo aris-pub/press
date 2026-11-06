@@ -123,7 +123,8 @@
     </div>
     <iframe
       id="paper-frame"
-      src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
+      data-src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
+      data-settings-key="{{ scroll.scroll_series_id or scroll.url_hash }}"
       style="width: 100%; height: 100%; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
       title="{{ scroll.title }}"
       scrolling="auto"
@@ -853,45 +854,8 @@ body.modal-open {
 }
 </style>
 
-<!-- Paper iframe: reveal on load and drive the back-to-top button from the iframe's own scroll -->
-<script{% if nonce %} nonce="{{ nonce }}"{% endif %}>
-(function() {
-  const iframe = document.getElementById('paper-frame');
-  const loadingOverlay = document.getElementById('iframe-loading');
-  const topFab = document.getElementById('top-fab');
-  const SCROLL_THRESHOLD = 400;
-
-  iframe.addEventListener('load', function() {
-    loadingOverlay.style.display = 'none';
-    iframe.style.opacity = '1';
-
-    // The outer page is locked, so the paper iframe is the only scroller. Read the
-    // iframe's own scroll (same origin) to show back-to-top and to scroll to the top.
-    try {
-      const win = iframe.contentWindow;
-      win.addEventListener('scroll', function() {
-        const y = win.scrollY < 0 ? 0 : win.scrollY; // iOS rubber-band can go negative
-        if (y > SCROLL_THRESHOLD) {
-          topFab.classList.add('visible');
-        } else {
-          topFab.classList.remove('visible');
-        }
-      }, { passive: true });
-
-      topFab.addEventListener('click', function() {
-        win.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    } catch (e) {
-      // If the paper is ever served cross-origin, leave back-to-top hidden.
-    }
-  });
-
-  iframe.addEventListener('error', function() {
-    loadingOverlay.innerHTML =
-      '<p style="color: var(--gray);">Failed to load paper. <a href="/scroll/{{ scroll.url_hash }}/paper" style="color: var(--red);">Open directly</a></p>';
-  });
-})();
-</script>
+<!-- Paper frame: loads the paper and talks to it only through messages -->
+<script src="/static/js/paper-frame.js"{% if nonce %} nonce="{{ nonce }}"{% endif %}></script>
 
 <script{% if nonce %} nonce="{{ nonce }}"{% endif %}>
 // Theme management for preview page

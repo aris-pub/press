@@ -18,6 +18,7 @@ import time
 
 import httpx
 import pytest
+import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -142,3 +143,19 @@ def test_server():
 
     # Cleanup
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def server_db(test_server):
+    """Sessions on the database the e2e server uses.
+
+    In CI the server is a separate process, so a test that needs data the browser cannot
+    create (an emailed link, a paper with exact bytes) writes it straight into the
+    server's database.
+    """
+    if os.getenv("CI"):
+        engine = create_async_engine(os.environ["DATABASE_URL"])
+        yield async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        await engine.dispose()
+    else:
+        yield async_sessionmaker(LOCAL_ENGINE, class_=AsyncSession, expire_on_commit=False)
