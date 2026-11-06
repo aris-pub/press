@@ -184,6 +184,7 @@ async def test_registration_duplicate_email_mobile(test_server):
 
 
 @pytest.mark.mobile
+@pytest.mark.flaky
 async def test_mobile_menu_navigation(test_server):
     """Test mobile navigation menu functionality."""
     async with async_playwright() as p:

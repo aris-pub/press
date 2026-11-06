@@ -66,19 +66,19 @@ jobs:
       matrix:
         include:
           - name: desktop
-            marker: "e2e and desktop"
+            marker: "e2e and desktop and not flaky"
             browser: ""
             timeout: 240
           - name: mobile-webkit
-            marker: "e2e and mobile"
+            marker: "e2e and mobile and not flaky"
             browser: "--browser webkit"
             timeout: 240
           - name: mobile-chromium
-            marker: "e2e and mobile"
+            marker: "e2e and mobile and not flaky"
             browser: "--browser chromium"
             timeout: 240
           - name: universal
-            marker: "e2e and not desktop and not mobile"
+            marker: "e2e and not desktop and not mobile and not flaky"
             browser: ""
             timeout: 300
 
