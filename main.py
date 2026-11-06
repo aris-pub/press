@@ -22,7 +22,6 @@ from app.exception_handlers import (
     internal_server_error_handler,
 )
 from app.logging_config import get_logger
-from app.memory_profiling_middleware import MemoryProfilingMiddleware
 from app.middleware import (
     CSRFMiddleware,
     EmailVerificationMiddleware,
@@ -142,9 +141,6 @@ if is_production:
 is_testing = os.getenv("TESTING", "").lower() in ("true", "1", "yes")
 rate_limit_enabled = not is_testing
 app.add_middleware(RateLimitMiddleware, enabled=rate_limit_enabled)
-
-# TEMPORARY: Memory profiling middleware for debugging OOM issues
-app.add_middleware(MemoryProfilingMiddleware)
 
 # Trust X-Forwarded-* headers from Fly's TLS-terminating edge so request.url.scheme
 # reflects the original https scheme. Must be the outermost middleware (added last,
