@@ -152,7 +152,7 @@ jobs:
         PYTHONPATH: .
         PORT: 8000
       run: |
-        uv run uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info &
+        uv run uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info > server.log 2>&1 &
         sleep 8
         curl -f http://localhost:8000 || exit 1
 
@@ -162,3 +162,7 @@ jobs:
         TESTING: 1
       run: |
         timeout ${{ matrix.timeout }} uv run pytest -m "${{ matrix.marker }}" --tb=short -v ${{ matrix.browser }}
+
+    - name: Show server log
+      if: failure()
+      run: cat server.log

@@ -81,3 +81,21 @@ def test_universal_suite_has_room_to_finish():
     jobs = {job["name"]: job for job in E2E["strategy"]["matrix"]["include"]}
     assert jobs["universal"]["timeout"] >= 600
     assert jobs["universal"]["timeout"] < E2E["timeout-minutes"] * 60
+
+
+def _step(name: str) -> dict:
+    return next(step for step in E2E["steps"] if step.get("name") == name)
+
+
+def test_server_output_goes_to_a_log_file():
+    """A server started with a bare `&` loses its output, so a 500 in CI shows no cause."""
+    assert "> server.log 2>&1 &" in _step("Start server")["run"]
+
+
+def test_server_log_is_printed_when_the_job_fails():
+    printers = [
+        step
+        for step in E2E["steps"]
+        if step.get("if") == "failure()" and "cat server.log" in step.get("run", "")
+    ]
+    assert len(printers) == 1
