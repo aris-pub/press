@@ -90,7 +90,7 @@ jobs:
           - name: universal
             marker: "e2e and not desktop and not mobile"
             browser: ""
-            timeout: 300
+            timeout: 600
 
     name: e2e (${{ matrix.name }})
 

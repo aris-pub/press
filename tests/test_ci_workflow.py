@@ -72,3 +72,12 @@ def test_e2e_reaches_postgres_by_service_name():
     assert urls
     for url in urls:
         assert "@postgres:5432/" in url, url
+
+
+def test_universal_suite_has_room_to_finish():
+    """On main the universal set takes about 232 s. At a 300 s limit, a few slow
+    failures kill the job before pytest prints why they failed (run 42168341582).
+    """
+    jobs = {job["name"]: job for job in E2E["strategy"]["matrix"]["include"]}
+    assert jobs["universal"]["timeout"] >= 600
+    assert jobs["universal"]["timeout"] < E2E["timeout-minutes"] * 60
