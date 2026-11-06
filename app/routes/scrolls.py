@@ -976,6 +976,65 @@ _PAPER_CSP = (
 )
 
 
+# Archive files are served with a fixed type per extension, so an author cannot get a
+# file interpreted as something else. Anything not listed downloads instead of opening.
+ARCHIVE_FILE_TYPES = {
+    ".html": "text/html",
+    ".htm": "text/html",
+    ".css": "text/css",
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
+    ".json": "application/json",
+    ".map": "application/json",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".avif": "image/avif",
+    ".svg": "image/svg+xml",
+    ".ico": "image/x-icon",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+    ".ttf": "font/ttf",
+    ".otf": "font/otf",
+    ".eot": "application/vnd.ms-fontobject",
+    ".wasm": "application/wasm",
+    ".csv": "text/csv",
+    ".tsv": "text/tab-separated-values",
+    ".txt": "text/plain",
+}
+
+
+def _cache_control(scroll: Scroll, published: str) -> str:
+    """Previews belong to their owner and must never land in a shared cache."""
+    return "private, no-store" if scroll.status == "preview" else published
+
+
+def _archive_file_response(scroll: Scroll, path: str, data: bytes) -> Response:
+    """Response for one file inside an archive scroll.
+
+    Access-Control-Allow-Origin is * so a sandboxed paper (opaque origin) can still load
+    its own module scripts, fonts and data. Credentials are never allowed, so no other
+    site can read anything a cookie would unlock.
+    """
+    from pathlib import PurePosixPath
+
+    extension = PurePosixPath(path).suffix.lower()
+    headers = {
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Robots-Tag": _PAPER_ROBOTS,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": _cache_control(scroll, "public, max-age=31536000, immutable"),
+    }
+    media_type = ARCHIVE_FILE_TYPES.get(extension)
+    if media_type is None:
+        media_type = "application/octet-stream"
+        filename = PurePosixPath(path).name.replace('"', "")
+        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return Response(content=data, media_type=media_type, headers=headers)
+
+
 async def _verify_scroll_access(request: Request, url_hash: str, db: AsyncSession) -> Scroll:
     """Look up a scroll by url_hash and verify access. Raises HTTPException on failure."""
     result = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
@@ -1061,7 +1120,8 @@ async def get_archive_entry_point(
             "X-Frame-Options": "SAMEORIGIN",
             "Content-Security-Policy": _PAPER_CSP,
             "X-Robots-Tag": _PAPER_ROBOTS,
-            "Cache-Control": "public, max-age=3600",
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": _cache_control(scroll, "public, max-age=3600"),
         },
     )
 
@@ -1074,7 +1134,6 @@ async def get_archive_asset(
     db: AsyncSession = Depends(get_db),
 ):
     """Serve an asset file from an archive scroll stored in Tigris."""
-    import mimetypes
 
     sentry_sdk.set_tag("operation", "archive_asset")
     sentry_sdk.set_context("paper", {"url_hash": url_hash, "path": path})
@@ -1101,17 +1160,7 @@ async def get_archive_asset(
     except KeyError:
         raise HTTPException(status_code=404, detail="Asset not found")
 
-    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
-
-    return Response(
-        content=data,
-        media_type=content_type,
-        headers={
-            "X-Frame-Options": "SAMEORIGIN",
-            "X-Robots-Tag": _PAPER_ROBOTS,
-            "Cache-Control": "public, max-age=31536000, immutable",
-        },
-    )
+    return _archive_file_response(scroll, path, data)
 
 
 @router.get("/upload", response_class=HTMLResponse)
@@ -2399,7 +2448,6 @@ async def get_archive_asset_parent(
 
     Must be registered AFTER all other /scroll/{url_hash}/ routes.
     """
-    import mimetypes
     from pathlib import PurePosixPath
 
     resolved = PurePosixPath(path)
@@ -2421,13 +2469,4 @@ async def get_archive_asset_parent(
     except KeyError:
         raise HTTPException(status_code=404, detail="Asset not found")
 
-    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
-
-    return Response(
-        content=data,
-        media_type=content_type,
-        headers={
-            "X-Frame-Options": "SAMEORIGIN",
-            "Cache-Control": "public, max-age=31536000, immutable",
-        },
-    )
+    return _archive_file_response(scroll, path, data)

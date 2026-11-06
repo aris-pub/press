@@ -2,6 +2,7 @@
 
 import asyncio
 from collections import defaultdict
+import re
 import time
 from typing import Callable
 
@@ -150,6 +151,26 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+# URLs that serve bytes an author uploaded (paper HTML and every archive file).
+# The scroll page wraps them, and Press pages never come from these paths.
+_AUTHOR_CONTENT_PATHS = [
+    re.compile(r"^/scroll/[^/]+/paper(/.*)?$"),
+    re.compile(r"^/\d+/[^/]+(/v\d+)?/paper$"),
+    re.compile(r"^/scroll/[^/]+/(?!raw$|og-image\.png$).+$"),
+]
+# Scroll pages carry a per-request nonce and show owner-only controls, so they must
+# not be stored in a cache shared between readers.
+_SCROLL_PAGE_PATHS = [
+    re.compile(r"^/scroll/[^/]+$"),
+    re.compile(r"^/\d+/[^/.]+(/v\d+)?$"),
+]
+_PREVIEW_PAGE_PATH = re.compile(r"^/preview/[^/]+$")
+
+
+def is_author_content_path(path: str) -> bool:
+    return any(pattern.match(path) for pattern in _AUTHOR_CONTENT_PATHS)
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
@@ -164,9 +185,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             The HTTP response with security headers
         """
         response = await call_next(request)
+        path = request.url.path
 
         # Add security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
+
+        if not is_author_content_path(path):
+            # A popup opened from a paper must not be able to navigate this page.
+            response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+            if _PREVIEW_PAGE_PATH.match(path):
+                response.headers["Cache-Control"] = "private, no-store"
+            elif any(pattern.match(path) for pattern in _SCROLL_PAGE_PATHS):
+                response.headers["Cache-Control"] = "private, max-age=0"
         # Only set X-Frame-Options if not already set (e.g., by /paper endpoint)
         if "X-Frame-Options" not in response.headers:
             response.headers["X-Frame-Options"] = "DENY"
@@ -479,6 +509,43 @@ class EmailVerificationMiddleware(BaseHTTPMiddleware):
             except (StopAsyncIteration, StopIteration):
                 pass
 
+        return await call_next(request)
+
+
+class SecFetchSiteMiddleware(BaseHTTPMiddleware):
+    """Refuse sensitive requests that the browser marks as coming from another site.
+
+    Browsers send Sec-Fetch-Site on every request. A sandboxed author paper has an
+    opaque origin, so its requests to Press arrive as cross-site. Refusing those here
+    means its scripts cannot act as the reader even if a browser still sends the
+    session cookie. "same-site" is refused too: a future content domain could share a
+    registrable domain with Press. Requests without the header (old browsers, curl,
+    server-to-server) are let through, and the CSRF check still applies to them.
+    """
+
+    WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+    SECRET_READS = {"/csrf-token", "/user/export-data"}
+    EXEMPT_PATHS = {"/health"}
+    ALLOWED = {"same-origin", "none"}
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        path = request.url.path
+        guarded = request.method in self.WRITE_METHODS or (
+            request.method == "GET" and path in self.SECRET_READS
+        )
+        site = request.headers.get("sec-fetch-site")
+        if (
+            guarded
+            and site is not None
+            and site not in self.ALLOWED
+            and path not in self.EXEMPT_PATHS
+        ):
+            get_logger().warning(f"Refused {site} {request.method} {path}")
+            return Response(
+                content="Cross-site request refused.",
+                status_code=403,
+                media_type="text/plain",
+            )
         return await call_next(request)
 
 
