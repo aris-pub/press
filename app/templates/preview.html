@@ -45,7 +45,8 @@
     </div>
     <iframe
       id="paper-frame"
-      src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
+      data-src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
+      data-settings-key="{{ scroll.scroll_series_id or scroll.url_hash }}"
       style="width: 100%; height: 100vh; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
       title="{{ scroll.title }}"
       scrolling="auto"
@@ -297,81 +298,8 @@
 }
 </style>
 
-<!-- Auto-resize iframe script (from scroll.html) -->
-<script>
-(function() {
-  const iframe = document.getElementById('paper-frame');
-  const loadingOverlay = document.getElementById('iframe-loading');
-
-  iframe.addEventListener('load', function() {
-    try {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-      function updateDimensions() {
-        const body = iframeDoc.body;
-        const allElements = Array.from(body.getElementsByTagName('*'));
-        let maxBottom = 0;
-
-        for (const el of allElements) {
-          const style = window.getComputedStyle(el);
-
-          if (style.display === 'none' ||
-              el.tagName === 'SCRIPT' ||
-              el.tagName === 'STYLE' ||
-              style.position === 'fixed' ||
-              style.position === 'absolute') {
-            continue;
-          }
-
-          const rect = el.getBoundingClientRect();
-          if (rect.bottom > maxBottom) {
-            maxBottom = rect.bottom;
-          }
-        }
-
-        const bodyStyle = window.getComputedStyle(body);
-        const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
-        const height = Math.ceil(maxBottom + paddingBottom);
-        // height stays 100vh (CSS); paper scrolls internally so position:fixed pins to the viewport
-      }
-
-      setTimeout(() => {
-        updateDimensions();
-        loadingOverlay.style.display = 'none';
-        iframe.style.opacity = '1';
-      }, 100);
-
-      const resizeObserver = new ResizeObserver(() => {
-        updateDimensions();
-      });
-
-      resizeObserver.observe(iframeDoc.documentElement);
-      resizeObserver.observe(iframeDoc.body);
-
-      window.addEventListener('resize', updateDimensions);
-    } catch (e) {
-      console.error('Failed to observe iframe content:', e);
-      iframe.style.height = '1000px';
-      loadingOverlay.style.display = 'none';
-      iframe.style.opacity = '1';
-    }
-  });
-
-  iframe.addEventListener('error', function() {
-    loadingOverlay.innerHTML =
-      '<p style="color: var(--gray);">Failed to load preview. <a href="/scroll/{{ scroll.url_hash }}/paper" style="color: var(--red);">Open directly</a></p>';
-  });
-
-  // Fallback timeout
-  setTimeout(function() {
-    if (loadingOverlay.style.display !== 'none') {
-      loadingOverlay.style.display = 'none';
-      iframe.style.opacity = '1';
-      iframe.style.height = '800px';
-    }
-  }, 10000);
-})();
-</script>
+<!-- Paper frame: loads the paper and talks to it only through messages -->
+<script src="/static/js/paper-frame.js"{% if nonce %} nonce="{{ nonce }}"{% endif %}></script>
 
 </body>
 </html>

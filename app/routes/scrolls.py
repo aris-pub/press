@@ -30,6 +30,7 @@ from app.emails.service import get_email_service
 from app.integrations.doi_service import mint_doi_safe
 from app.logging_config import get_logger, log_error, log_preview_event, log_request
 from app.models.scroll import Scroll, Subject
+from app.paper_bridge import inject_bridge, paper_etag
 from app.sentry_config import report_rapid_uploads, report_storage_threshold
 from app.templates_config import templates
 from app.upload import HTMLProcessor
@@ -723,14 +724,13 @@ def _paper_bare_response(scroll: Scroll, request: Request) -> Response:
         "Content-Security-Policy": _PAPER_CSP,
         "X-Robots-Tag": _PAPER_ROBOTS,
     }
-    etag = None
     if scroll.content_hash:
-        etag = f'"{scroll.content_hash}"'
+        etag = paper_etag(scroll.content_hash)
         headers["ETag"] = etag
         if _if_none_match_hit(request, etag):
             return Response(status_code=304, headers=headers)
     return Response(
-        content=scroll.html_content,
+        content=inject_bridge(scroll.html_content),
         media_type="text/html",
         headers=headers,
     )
@@ -1006,6 +1006,11 @@ ARCHIVE_FILE_TYPES = {
 }
 
 
+# HTML carries the bridge script, so it must not be cached so long that a new bridge
+# never reaches readers. Other archive files never change.
+_HTML_CACHE = "public, max-age=3600"
+
+
 def _cache_control(scroll: Scroll, published: str) -> str:
     """Previews belong to their owner and must never land in a shared cache."""
     return "private, no-store" if scroll.status == "preview" else published
@@ -1028,6 +1033,10 @@ def _archive_file_response(scroll: Scroll, path: str, data: bytes) -> Response:
         "Cache-Control": _cache_control(scroll, "public, max-age=31536000, immutable"),
     }
     media_type = ARCHIVE_FILE_TYPES.get(extension)
+    if media_type == "text/html":
+        data = inject_bridge(data)
+        headers["Cache-Control"] = _cache_control(scroll, _HTML_CACHE)
+        headers["Content-Security-Policy"] = _PAPER_CSP
     if media_type is None:
         media_type = "application/octet-stream"
         filename = PurePosixPath(path).name.replace('"', "")
@@ -1073,8 +1082,10 @@ async def get_paper_html(
         "Content-Security-Policy": _PAPER_CSP,
         "X-Robots-Tag": _PAPER_ROBOTS,
     }
+    if scroll.content_hash:
+        headers["ETag"] = paper_etag(scroll.content_hash)
     return Response(
-        content=scroll.html_content,
+        content=inject_bridge(scroll.html_content),
         media_type="text/html",
         headers=headers,
     )
@@ -1094,7 +1105,7 @@ async def get_archive_entry_point(
 
     if scroll.storage_type != "archive":
         return Response(
-            content=scroll.html_content,
+            content=inject_bridge(scroll.html_content),
             media_type="text/html",
             headers={
                 "X-Frame-Options": "SAMEORIGIN",
@@ -1114,14 +1125,15 @@ async def get_archive_entry_point(
         raise HTTPException(status_code=404, detail="Entry point not found in storage")
 
     return Response(
-        content=data,
+        content=inject_bridge(data),
         media_type="text/html",
         headers={
             "X-Frame-Options": "SAMEORIGIN",
             "Content-Security-Policy": _PAPER_CSP,
             "X-Robots-Tag": _PAPER_ROBOTS,
             "Access-Control-Allow-Origin": "*",
-            "Cache-Control": _cache_control(scroll, "public, max-age=3600"),
+            "Cache-Control": _cache_control(scroll, _HTML_CACHE),
+            "ETag": paper_etag(scroll.content_hash),
         },
     )
 

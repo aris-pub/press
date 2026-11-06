@@ -112,14 +112,14 @@ async def test_jsonld_url_uses_canonical(client, scroll_with_slug):
 
 @pytest.mark.asyncio
 async def test_iframe_src_still_uses_hash(client, scroll_with_slug):
-    """iframe src must still use /scroll/{url_hash}/paper, not canonical URL."""
+    """The paper frame must still load /scroll/{url_hash}/paper, not the canonical URL."""
     response = await client.get(f"/scroll/{scroll_with_slug.url_hash}")
     assert response.status_code == 200
 
     soup = BeautifulSoup(response.text, "html.parser")
     iframe = soup.find("iframe", {"id": "paper-frame"})
     assert iframe is not None
-    assert f"/scroll/{scroll_with_slug.url_hash}/paper" in iframe["src"]
+    assert f"/scroll/{scroll_with_slug.url_hash}/paper" in iframe["data-src"]
 
 
 @pytest.mark.asyncio
