@@ -1,9 +1,9 @@
-"""The browser-test CI jobs must not download system packages from Ubuntu's mirror.
+"""The browser-test CI jobs must download almost nothing from Ubuntu's mirror.
 
 Every job used to run `playwright install-deps`, which downloads about 181 packages
 from Ubuntu's mirror. On 2026-11-05 seven jobs stalled there for 33 to 57 minutes. The
 jobs now run inside Playwright's own image, which already has the browsers and every
-library they need.
+library they need. The one package added on top is libmagic1, which Press itself needs.
 """
 
 from pathlib import Path
@@ -29,11 +29,33 @@ def test_e2e_runs_in_the_playwright_image_matching_the_locked_version():
     assert image == f"mcr.microsoft.com/playwright:v{_locked_playwright_version()}-noble"
 
 
-def test_e2e_never_installs_system_packages_or_browsers():
+def _apt_packages(command: str) -> list[str]:
+    packages = []
+    for line in command.splitlines():
+        if "apt-get install" in line:
+            words = line.split("apt-get install", 1)[1].split()
+            packages += [w for w in words if not w.startswith("-") and w not in ("&&", "\\")]
+    return packages
+
+
+def test_e2e_never_installs_browsers():
     for step in E2E["steps"]:
-        command = step.get("run", "")
-        assert "playwright install" not in command, step.get("name")
-        assert "apt-get" not in command, step.get("name")
+        assert "playwright install" not in step.get("run", ""), step.get("name")
+
+
+def test_e2e_installs_only_libmagic_from_the_mirror():
+    """python-magic needs libmagic, which the Playwright image lacks (run 42126413342).
+
+    One small package is the only download allowed from Ubuntu's mirror.
+    """
+    installed = [p for step in E2E["steps"] for p in _apt_packages(step.get("run", ""))]
+    assert installed == ["libmagic1"]
+
+
+def test_libmagic_is_installed_before_the_server_starts():
+    names = [step.get("name", "") for step in E2E["steps"]]
+    install = next(i for i, step in enumerate(E2E["steps"]) if "libmagic1" in step.get("run", ""))
+    assert install < names.index("Start server")
 
 
 def test_e2e_jobs_have_a_time_limit():

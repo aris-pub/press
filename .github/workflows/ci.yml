@@ -121,6 +121,10 @@ jobs:
         prune-cache: false
         cache-suffix: v1
 
+    # python-magic needs libmagic, which the Playwright image does not include.
+    - name: Install libmagic
+      run: apt-get update -qq && apt-get install -y -qq --no-install-recommends libmagic1
+
     - name: Install Python 3.11
       run: uv python install 3.11
 
