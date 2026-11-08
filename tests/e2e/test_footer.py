@@ -65,10 +65,15 @@ async def test_details_modal_dark_mode(test_server):
 
         # Enable dark mode and wait for the page background to leave white
         await page.evaluate("document.documentElement.setAttribute('data-theme', 'dark')")
-        await page.wait_for_function(
-            """() => {
-                const bg = window.getComputedStyle(document.body).backgroundColor;
-                return bg !== 'rgb(255, 255, 255)' && bg !== 'rgba(0, 0, 0, 0)';
+        # wait_for_function polls with eval(), which the scroll page's CSP blocks.
+        assert await page.evaluate(
+            """async () => {
+                for (let i = 0; i < 100; i++) {
+                    const bg = window.getComputedStyle(document.body).backgroundColor;
+                    if (bg !== 'rgb(255, 255, 255)' && bg !== 'rgba(0, 0, 0, 0)') return true;
+                    await new Promise(r => setTimeout(r, 50));
+                }
+                return false;
             }"""
         )
 

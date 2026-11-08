@@ -74,6 +74,15 @@ async def _open(p):
     return browser, page, errors
 
 
+SETTINGS_SAVED = """async () => {
+  for (let i = 0; i < 100; i++) {
+    if (Object.keys(localStorage).some(k => k.startsWith("press-paper-settings:"))) return true;
+    await new Promise(r => setTimeout(r, 50));
+  }
+  return false;
+}"""
+
+
 async def test_reading_setting_survives_reload_on_scroll_page(test_server, server_db):
     url_hash, value = await _publish_paper(server_db)
     async with async_playwright() as p:
@@ -83,9 +92,8 @@ async def test_reading_setting_survives_reload_on_scroll_page(test_server, serve
             paper = page.frame_locator("#paper-frame")
             await expect(paper.locator("#saved")).to_have_text("none")
             await paper.locator("#save").click()
-            await page.wait_for_function(
-                "Object.keys(localStorage).some(k => k.startsWith('press-paper-settings:'))"
-            )
+            # wait_for_function polls with eval(), which the scroll page's CSP blocks.
+            assert await page.evaluate(SETTINGS_SAVED)
 
             await page.reload()
             await expect(paper.locator("#saved")).to_have_text(value)

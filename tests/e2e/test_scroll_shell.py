@@ -28,10 +28,15 @@ async def test_app_shell_locks_outer_page_and_pins_fixed(test_server):
         await page.locator("#paper-frame").wait_for()
 
         # Wait until the same-origin paper document is ready
-        await page.wait_for_function(
-            """() => {
-                const ifr = document.getElementById('paper-frame');
-                return ifr && ifr.contentDocument && ifr.contentDocument.body;
+        # wait_for_function polls with eval(), which the scroll page's CSP blocks.
+        assert await page.evaluate(
+            """async () => {
+                for (let i = 0; i < 100; i++) {
+                    const ifr = document.getElementById('paper-frame');
+                    if (ifr && ifr.contentDocument && ifr.contentDocument.body) return true;
+                    await new Promise(r => setTimeout(r, 50));
+                }
+                return false;
             }"""
         )
 
