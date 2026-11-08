@@ -291,3 +291,38 @@ fly ssh console
 - **Fly.io**: Monitor usage in dashboard, set spending limits
 - **Supabase**: Free tier generous, monitor database size and API calls
 - Set up billing alerts in both services
+
+### Supabase egress from papers
+
+Papers uploaded as a single HTML file are stored in the database, in the `html_content`
+column of `scrolls`. Some are over 10 MB. Supabase charges for every byte read out of the
+database, so each time Press reads a paper, it costs money.
+
+The scroll page does not read the paper. Only the paper URL inside it does
+(`/scroll/{hash}/paper`), and it answers "not modified" from the content hash without
+reading the paper. A full read still happens for every reader who has no copy yet.
+
+This is why Cloudflare caches `/scroll/{hash}/paper`. With that cache, Supabase is read
+about once a day per paper, not once per reader. Press marks those answers
+`s-maxage=86400` for Cloudflare. Previews are marked `private, no-store` and must never be
+kept. "Not found" answers carry no mark.
+
+The Cloudflare rule, "Cache paper bytes":
+
+- Field URI Path, wildcard `/scroll/*/paper*`, Eligible for cache.
+- Edge TTL: "Use cache-control header if present, bypass cache if not". Never "Ignore
+  cache-control header". That setting keeps previews and "not found" answers too.
+
+Rules for the Cloudflare cache:
+
+- Keep caching the paper URLs. Removing that cache brings the Supabase cost back.
+- Do not cache scroll pages (`/scroll/{hash}`, `/{year}/{slug}`). Each one carries its own
+  security nonce, and a cached copy breaks the page for the next reader.
+- Before deleting or changing any cache rule, read this section and check what the rule
+  covers.
+- Deploys do not clear Cloudflare. After a deploy that changes how papers are served (for
+  example `paper-bridge.js`), purge the paper URLs, or readers get the old version for up
+  to a day.
+
+Papers uploaded as zip archives are stored in Tigris, not in the database, and do not
+cost Supabase egress.

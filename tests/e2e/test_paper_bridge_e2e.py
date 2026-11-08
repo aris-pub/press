@@ -223,3 +223,26 @@ async def test_setting_follows_the_paper_to_its_next_page(test_server):
         finally:
             await browser.close()
             os.unlink(zip_path)
+
+
+async def test_download_saves_the_paper_as_uploaded(test_server, server_db):
+    """The scroll page no longer holds the paper, so Download fetches it from Press."""
+    url_hash, value = await _publish_paper(server_db)
+    async with async_playwright() as p:
+        browser, page, errors = await _open(p)
+        try:
+            await page.goto(f"{test_server}/scroll/{url_hash}")
+            await page.locator("#info-fab").click()
+            await page.locator("#info-modal.show").wait_for()
+            async with page.expect_download() as info:
+                await page.locator("#download-btn").click()
+            download = await info.value
+
+            marker = value.removeprefix("large-")
+            assert download.suggested_filename == f"Bridge_test_{marker}.html"
+            saved = open(await download.path(), encoding="utf-8").read()
+            assert saved == PAPER.format(marker=marker)
+            assert "data-press-bridge" not in saved
+            assert errors == []
+        finally:
+            await browser.close()

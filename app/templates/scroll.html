@@ -248,7 +248,7 @@
         {% if is_owner %}
         <a href="/upload?revises={{ scroll.url_hash }}" class="btn btn-secondary">New Version</a>
         {% endif %}
-        <button class="btn btn-primary" id="download-btn">Download HTML</button>
+        <a href="/scroll/{{ scroll.url_hash }}/download" class="btn btn-primary" id="download-btn">Download HTML</a>
       </div>
     </div>
 
@@ -897,7 +897,6 @@ body.modal-open {
   const modal = document.getElementById('info-modal');
   const backdrop = document.getElementById('modal-backdrop');
   const closeBtn = document.getElementById('modal-close');
-  const downloadBtn = document.getElementById('download-btn');
 
   function openModal() {
     modal.classList.add('show');
@@ -918,30 +917,10 @@ body.modal-open {
     fab.focus();
   }
 
-  function downloadHTML() {
-    const htmlContent = {{ scroll.html_content | tojson }};
-    const filename = {{ (scroll.title | replace(' ', '_') | replace('/', '_') | replace('\\', '_') | replace(':', '_') | replace('*', '_') | replace('?', '_') | replace('"', '_') | replace('<', '_') | replace('>', '_') | replace('|', '_')) | tojson }} + '.html';
-
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    URL.revokeObjectURL(url);
-  }
-
   // Event listeners
   fab.addEventListener('click', openModal);
   backdrop.addEventListener('click', closeModal);
   closeBtn.addEventListener('click', closeModal);
-  downloadBtn.addEventListener('click', downloadHTML);
 
   // Keyboard navigation
   document.addEventListener('keydown', function(e) {
