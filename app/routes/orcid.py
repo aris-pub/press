@@ -2,6 +2,7 @@
 
 import os
 import secrets
+import time
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
@@ -22,9 +23,16 @@ ORCID_CLIENT_ID = os.getenv("ORCID_CLIENT_ID", "")
 ORCID_CLIENT_SECRET = os.getenv("ORCID_CLIENT_SECRET", "")
 ORCID_BASE_URL = os.getenv("ORCID_BASE_URL", "https://sandbox.orcid.org")
 
-# Pending OAuth states: state_token -> True
-# Short-lived, cleared on use. In production, use Redis/DB before horizontal scaling.
-_pending_states: dict[str, bool] = {}
+# Pending OAuth states: state -> (session_id that started the flow or None, start time).
+# In memory, so this needs Redis or the database before running more than one machine.
+_STATE_TTL = 600
+_pending_states: dict[str, tuple[str | None, float]] = {}
+
+
+def _drop_expired_states() -> None:
+    cutoff = time.monotonic() - _STATE_TTL
+    for s in [s for s, (_, started) in _pending_states.items() if started < cutoff]:
+        del _pending_states[s]
 
 
 def _get_redirect_uri(request: Request) -> str:
@@ -44,8 +52,9 @@ async def orcid_redirect(request: Request, db: AsyncSession = Depends(get_db)):
         )
         return RedirectResponse(url=error_url, status_code=302)
 
+    _drop_expired_states()
     state = secrets.token_urlsafe(32)
-    _pending_states[state] = True
+    _pending_states[state] = (request.cookies.get("session_id"), time.monotonic())
 
     redirect_uri = _get_redirect_uri(request)
     authorize_url = (
@@ -84,13 +93,19 @@ async def orcid_callback(
         base = "/dashboard" if current_user else "/login"
         return RedirectResponse(url=f"{base}?error={error}", status_code=302)
 
-    # Validate state
+    _drop_expired_states()
     cookie_state = request.cookies.get("orcid_state")
-    if not state or not cookie_state or state != cookie_state or state not in _pending_states:
+    pending = _pending_states.pop(state, None) if state else None
+    # A paper on Press's origin can plant the orcid_state cookie, so the state must
+    # also belong to the session that started the flow.
+    if (
+        not cookie_state
+        or state != cookie_state
+        or pending is None
+        or pending[0] != request.cookies.get("session_id")
+    ):
         logger.warning("ORCID callback: invalid or missing state")
         return _error_redirect("orcid_state")
-
-    _pending_states.pop(state, None)
 
     if not code:
         logger.warning("ORCID callback: missing code")

@@ -472,3 +472,120 @@ class TestOrcidUI:
         resp = await authenticated_client.get("/dashboard?error=orcid_token")
         assert resp.status_code == 200
         assert "try again" in resp.text.lower()
+
+
+def _patched_orcid(orcid_id):
+    """Patch the token exchange so ORCID answers with orcid_id."""
+    mock_client = patch("app.routes.orcid.httpx.AsyncClient")
+    MockClient = mock_client.start()
+    MockClient.return_value.__aenter__ = AsyncMock(return_value=MockClient.return_value)
+    MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+    MockClient.return_value.post = AsyncMock(return_value=_mock_orcid_token_response(orcid_id))
+    return mock_client
+
+
+async def _start_flow(client):
+    redir = await client.get("/auth/orcid", follow_redirects=False)
+    return parse_qs(urlparse(redir.headers["location"]).query)["state"][0]
+
+
+@pytest.mark.asyncio
+class TestOrcidStateBelongsToOneBrowser:
+    """A paper script on Press's origin can set the orcid_state cookie (prs-qk8).
+
+    So the cookie alone cannot prove the reader started the flow. The state must
+    belong to the session that started it.
+    """
+
+    async def test_state_started_without_a_session_cannot_link_to_a_reader(
+        self, client, test_user, test_db
+    ):
+        from app.auth.session import create_session
+
+        attacker_state = await _start_flow(client)
+
+        # The reader's browser: their own session, plus the cookie a paper planted.
+        client.cookies.clear()
+        client.cookies.set("session_id", await create_session(test_db, test_user.id))
+        client.cookies.set("orcid_state", attacker_state)
+
+        patcher = _patched_orcid("0000-0003-6666-7777")
+        try:
+            resp = await client.get(
+                f"/auth/orcid/callback?code=attacker-code&state={attacker_state}",
+                follow_redirects=False,
+            )
+        finally:
+            patcher.stop()
+
+        assert resp.headers["location"] == "/dashboard?error=orcid_state"
+        await test_db.refresh(test_user)
+        assert test_user.orcid_id is None
+
+    async def test_state_started_by_another_user_cannot_link_to_a_reader(
+        self, client, test_user, test_db
+    ):
+        from app.auth.session import create_session
+
+        attacker = User(
+            email="attacker@example.com",
+            password_hash=get_password_hash("password123"),
+            display_name="Attacker",
+            email_verified=True,
+        )
+        test_db.add(attacker)
+        await test_db.commit()
+        client.cookies.set("session_id", await create_session(test_db, attacker.id))
+        attacker_state = await _start_flow(client)
+
+        client.cookies.clear()
+        client.cookies.set("session_id", await create_session(test_db, test_user.id))
+        client.cookies.set("orcid_state", attacker_state)
+
+        patcher = _patched_orcid("0000-0003-6666-7777")
+        try:
+            resp = await client.get(
+                f"/auth/orcid/callback?code=attacker-code&state={attacker_state}",
+                follow_redirects=False,
+            )
+        finally:
+            patcher.stop()
+
+        assert resp.headers["location"] == "/dashboard?error=orcid_state"
+        await test_db.refresh(test_user)
+        assert test_user.orcid_id is None
+
+    async def test_state_expires_after_ten_minutes(
+        self, authenticated_client, test_user, test_db, monkeypatch
+    ):
+        import app.routes.orcid as orcid_mod
+
+        now = [1_000_000.0]
+        monkeypatch.setattr(orcid_mod.time, "monotonic", lambda: now[0])
+        state = await _start_flow(authenticated_client)
+        now[0] += 601
+
+        patcher = _patched_orcid("0000-0003-6666-7777")
+        try:
+            resp = await authenticated_client.get(
+                f"/auth/orcid/callback?code=valid-code&state={state}",
+                follow_redirects=False,
+            )
+        finally:
+            patcher.stop()
+
+        assert resp.headers["location"] == "/dashboard?error=orcid_state"
+        await test_db.refresh(test_user)
+        assert test_user.orcid_id is None
+
+    async def test_old_states_are_dropped_when_new_ones_start(self, client, monkeypatch):
+        import app.routes.orcid as orcid_mod
+
+        now = [1_000_000.0]
+        monkeypatch.setattr(orcid_mod.time, "monotonic", lambda: now[0])
+        old = await _start_flow(client)
+        now[0] += 601
+        new = await _start_flow(client)
+
+        assert old not in orcid_mod._pending_states
+        assert new in orcid_mod._pending_states
