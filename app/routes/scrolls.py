@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+import re
 import tempfile
 import time
 import uuid as uuid_module
@@ -21,7 +22,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 import sentry_sdk
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import load_only, selectinload
+from sqlalchemy.orm import defer, load_only, selectinload
 
 from app.auth.session import get_current_user_from_session
 from app.config import get_base_url
@@ -519,7 +520,9 @@ async def view_scroll(request: Request, identifier: str, db: AsyncSession = Depe
     # Find scroll by content-addressable hash only (no legacy preview_id support)
     result = await db.execute(
         select(Scroll)
-        .options(selectinload(Scroll.subject), selectinload(Scroll.user))
+        .options(
+            selectinload(Scroll.subject), selectinload(Scroll.user), defer(Scroll.html_content)
+        )
         .where(
             Scroll.url_hash == identifier,
             Scroll.status == "published",
@@ -708,7 +711,13 @@ def _if_none_match_hit(request: Request, etag: str) -> bool:
 _PAPER_ROBOTS = "noindex, indexifembedded"
 
 
-def _paper_bare_response(scroll: Scroll, request: Request) -> Response:
+async def _load_paper(db: AsyncSession, scroll: Scroll) -> str:
+    """Read the paper column on its own. Callers load the scroll without it."""
+    result = await db.execute(select(Scroll.html_content).where(Scroll.id == scroll.id))
+    return result.scalar_one()
+
+
+async def _paper_bare_response(scroll: Scroll, request: Request, db: AsyncSession) -> Response:
     """Return a Response wrapping the bare manuscript HTML.
 
     For inline scrolls: returns html_content directly with the paper CSP.
@@ -719,10 +728,19 @@ def _paper_bare_response(scroll: Scroll, request: Request) -> Response:
     """
     if scroll.storage_type == "archive":
         return RedirectResponse(url=f"/scroll/{scroll.url_hash}/paper/", status_code=302)
+    return await _inline_paper_response(scroll, request, db)
+
+
+async def _inline_paper_response(
+    scroll: Scroll, request: Request, db: AsyncSession, published_cache: str = "no-cache"
+) -> Response:
+    """The browser keeps the paper and asks again each time. Press answers "not modified"
+    from the content hash without reading the paper from the database."""
     headers = {
         "X-Frame-Options": "SAMEORIGIN",
         "Content-Security-Policy": _PAPER_CSP,
         "X-Robots-Tag": _PAPER_ROBOTS,
+        "Cache-Control": _cache_control(scroll, published_cache),
     }
     if scroll.content_hash:
         etag = paper_etag(scroll.content_hash)
@@ -730,17 +748,22 @@ def _paper_bare_response(scroll: Scroll, request: Request) -> Response:
         if _if_none_match_hit(request, etag):
             return Response(status_code=304, headers=headers)
     return Response(
-        content=inject_bridge(scroll.html_content),
+        content=inject_bridge(await _load_paper(db, scroll)),
         media_type="text/html",
         headers=headers,
     )
 
 
-async def _lookup_year_slug(db: AsyncSession, year: int, slug: str, version: int | None = None):
+async def _lookup_year_slug(
+    db: AsyncSession, year: int, slug: str, version: int | None = None, with_paper: bool = True
+):
     """Look up a published scroll by year/slug, optionally pinned to a version."""
+    options = [selectinload(Scroll.subject), selectinload(Scroll.user)]
+    if not with_paper:
+        options.append(defer(Scroll.html_content))
     q = (
         select(Scroll)
-        .options(selectinload(Scroll.subject), selectinload(Scroll.user))
+        .options(*options)
         .where(
             Scroll.publication_year == year,
             Scroll.slug == slug,
@@ -778,10 +801,10 @@ def _json_metadata_response(scroll: Scroll, request: Request) -> Response:
 async def get_paper_bare_year_slug_version(
     request: Request, year: int, slug: str, version: int, db: AsyncSession = Depends(get_db)
 ):
-    scroll = await _lookup_year_slug(db, year, slug, version)
+    scroll = await _lookup_year_slug(db, year, slug, version, with_paper=False)
     if not scroll:
         raise HTTPException(status_code=404, detail="Scroll not found")
-    return _paper_bare_response(scroll, request)
+    return await _paper_bare_response(scroll, request, db)
 
 
 @router.get("/{year:int}/{slug:str}/v{version:int}.json")
@@ -798,10 +821,10 @@ async def get_scroll_metadata_year_slug_version(
 async def get_paper_bare_year_slug(
     request: Request, year: int, slug: str, db: AsyncSession = Depends(get_db)
 ):
-    scroll = await _lookup_year_slug(db, year, slug)
+    scroll = await _lookup_year_slug(db, year, slug, with_paper=False)
     if not scroll:
         raise HTTPException(status_code=404, detail="Scroll not found")
-    return _paper_bare_response(scroll, request)
+    return await _paper_bare_response(scroll, request, db)
 
 
 @router.get("/{year:int}/{slug:str}.json")
@@ -828,7 +851,9 @@ async def view_scroll_by_year_slug_version(
 
     result = await db.execute(
         select(Scroll)
-        .options(selectinload(Scroll.subject), selectinload(Scroll.user))
+        .options(
+            selectinload(Scroll.subject), selectinload(Scroll.user), defer(Scroll.html_content)
+        )
         .where(
             Scroll.publication_year == year,
             Scroll.slug == slug,
@@ -884,7 +909,9 @@ async def view_scroll_by_year_slug(
 
     result = await db.execute(
         select(Scroll)
-        .options(selectinload(Scroll.subject), selectinload(Scroll.user))
+        .options(
+            selectinload(Scroll.subject), selectinload(Scroll.user), defer(Scroll.html_content)
+        )
         .where(
             Scroll.publication_year == year,
             Scroll.slug == slug,
@@ -1009,6 +1036,10 @@ ARCHIVE_FILE_TYPES = {
 # HTML carries the bridge script, so it must not be cached so long that a new bridge
 # never reaches readers. Other archive files never change.
 _HTML_CACHE = "public, max-age=3600"
+# The bytes at a hash never change, so Cloudflare may keep them for a day and spare the
+# database read. Browsers still ask each time. Its cache rule for /scroll/*/paper* must
+# use this header, not a fixed TTL, so previews and 404s are not kept (docs/DEPLOYMENT.md).
+_PAPER_BY_HASH_CACHE = "public, max-age=0, must-revalidate, s-maxage=86400"
 
 
 def _cache_control(scroll: Scroll, published: str) -> str:
@@ -1046,7 +1077,9 @@ def _archive_file_response(scroll: Scroll, path: str, data: bytes) -> Response:
 
 async def _verify_scroll_access(request: Request, url_hash: str, db: AsyncSession) -> Scroll:
     """Look up a scroll by url_hash and verify access. Raises HTTPException on failure."""
-    result = await db.execute(select(Scroll).where(Scroll.url_hash == url_hash))
+    result = await db.execute(
+        select(Scroll).options(defer(Scroll.html_content)).where(Scroll.url_hash == url_hash)
+    )
     scroll = result.scalar_one_or_none()
     if not scroll:
         raise HTTPException(status_code=404, detail="Scroll not found")
@@ -1077,17 +1110,32 @@ async def get_paper_html(
     if scroll.storage_type == "archive":
         return RedirectResponse(url=f"/scroll/{url_hash}/paper/", status_code=301)
 
-    headers = {
-        "X-Frame-Options": "SAMEORIGIN",
-        "Content-Security-Policy": _PAPER_CSP,
-        "X-Robots-Tag": _PAPER_ROBOTS,
-    }
-    if scroll.content_hash:
-        headers["ETag"] = paper_etag(scroll.content_hash)
+    return await _inline_paper_response(scroll, request, db, _PAPER_BY_HASH_CACHE)
+
+
+_FILENAME_UNSAFE = re.compile(r'[\x00-\x1f\x7f /\\:*?"<>|]')
+
+
+@router.get("/scroll/{url_hash}/download")
+async def download_paper(request: Request, url_hash: str, db: AsyncSession = Depends(get_db)):
+    """The paper exactly as uploaded, as a file to save."""
+    from urllib.parse import quote
+
+    scroll = await _verify_scroll_access(request, url_hash, db)
+    filename = _FILENAME_UNSAFE.sub("_", scroll.title) + ".html"
+    try:
+        filename.encode("ascii")
+        disposition = f'attachment; filename="{filename}"'
+    except UnicodeEncodeError:
+        disposition = f"attachment; filename*=UTF-8''{quote(filename)}"
     return Response(
-        content=inject_bridge(scroll.html_content),
+        content=await _load_paper(db, scroll),
         media_type="text/html",
-        headers=headers,
+        headers={
+            "Content-Disposition": disposition,
+            "Cache-Control": _cache_control(scroll, "no-cache"),
+            "X-Robots-Tag": _PAPER_ROBOTS,
+        },
     )
 
 
@@ -1104,15 +1152,7 @@ async def get_archive_entry_point(
     scroll = await _verify_scroll_access(request, url_hash, db)
 
     if scroll.storage_type != "archive":
-        return Response(
-            content=inject_bridge(scroll.html_content),
-            media_type="text/html",
-            headers={
-                "X-Frame-Options": "SAMEORIGIN",
-                "Content-Security-Policy": _PAPER_CSP,
-                "X-Robots-Tag": _PAPER_ROBOTS,
-            },
-        )
+        return await _inline_paper_response(scroll, request, db, _PAPER_BY_HASH_CACHE)
 
     from app.storage import get_storage
 

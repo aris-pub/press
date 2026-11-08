@@ -50,7 +50,7 @@ async def test_scroll_page_functionality(client: AsyncClient, test_db, test_user
 
     # JavaScript: Check essential functions are present
     assert "function openModal()" in response.text
-    assert "function downloadHTML()" in response.text
+    assert 'id="download-btn"' in response.text
 
 
 async def test_scroll_not_found(client: AsyncClient):
