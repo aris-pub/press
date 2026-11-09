@@ -17,7 +17,8 @@ class TestFindsMath:
 
     def test_inline_with_commands(self):
         html = abstract_html(r"distortion $O(\log n)$.")
-        assert html == f"distortion {INLINE.format('O(\\log n)')}."
+        expected = INLINE.format(r"O(\log n)")
+        assert html == f"distortion {expected}."
 
     def test_display_dollars(self):
         assert abstract_html("see $$x^2$$ here") == f"see {DISPLAY.format('x^2')} here"
