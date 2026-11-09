@@ -187,8 +187,11 @@ async def seed_scrolls(session=None, max_html_bytes=None):
 
         scrolls_data = metadata["scrolls"]
 
+        from app.routes.main import EXAMPLE_SCROLLS
         from app.storage.content_processing import generate_permanent_url
         from app.utils.slug import generate_unique_slug
+
+        example_slugs = {e["title"]: e["href"].rsplit("/", 1)[-1] for e in EXAMPLE_SCROLLS}
 
         # Load HTML content from files and create scrolls
         created_scrolls = {}
@@ -213,7 +216,11 @@ async def seed_scrolls(session=None, max_html_bytes=None):
 
             series_id = uuid.uuid4()
             publication_year = 2026
-            slug = await generate_unique_slug(session, scroll_data["title"], publication_year)
+            # Examples get the addresses the homepage's example band links to, as in
+            # production. Otherwise every example link 404s on a PR preview.
+            slug = example_slugs.get(scroll_data["title"]) or await generate_unique_slug(
+                session, scroll_data["title"], publication_year
+            )
 
             # Assign the versioned scroll to Test User for easy testing
             owner = scroll_data["user"]
