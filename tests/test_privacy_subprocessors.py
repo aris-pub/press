@@ -38,3 +38,19 @@ async def test_privacy_subprocessor_section_exists(client: AsyncClient):
     html = response.text
 
     assert "Subprocessors" in html or "Data Processors" in html
+
+
+async def test_privacy_names_every_service_that_handles_personal_data(client: AsyncClient):
+    """Cloudflare carries all traffic, Tigris stores uploaded files, Zenodo receives
+    author metadata on publish, ORCID provides the iD and name at login."""
+    html = (await client.get("/privacy")).text
+
+    for name in ("Cloudflare", "Tigris", "Zenodo", "ORCID"):
+        assert name in html, name
+
+
+async def test_privacy_does_not_describe_comments(client: AsyncClient):
+    """Press has no comments, so the policy must not say it collects them."""
+    html = (await client.get("/privacy")).text.lower()
+
+    assert "comment" not in html

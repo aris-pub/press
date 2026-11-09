@@ -70,19 +70,10 @@ The endpoint returns JSON containing all user data:
 - **Email verification required**: Unverified users cannot export data
 
 ### Implementation
-- **Location**: `app/routes/auth.py:810-881`
+- **Location**: `export_user_data` in `app/routes/auth.py`
 - **Tests**: `tests/test_data_export.py`
 
-## Future GDPR Features
-
-### Planned Implementations
-- **Right to Erasure (Article 17)**: Account deletion with data anonymization options
-- **Right to Rectification (Article 16)**: Profile update endpoints (partially implemented)
-- **Privacy Policy**: Terms of service and privacy policy pages
-- **Consent Management**: Cookie consent and tracking preferences
-- **Data Retention**: Automated cleanup of expired tokens and old sessions
-
-### Data Minimization
+## Data Minimization
 Current data collection is minimal:
 - Email (required for authentication)
 - Display name (optional)
@@ -95,22 +86,27 @@ No third-party tracking, analytics, or advertising data is collected.
 
 ### Data Processing
 - All user data is processed exclusively for service functionality
-- No data is sold or shared with third parties
+- No data is sold. Every service that receives data is listed in the privacy policy, section 6.
 - Email service (Resend) is used only for transactional emails
 
 ### Data Storage
 - **Database**: Supabase PostgreSQL (EU region for European users)
-- **Sessions**: In-memory storage (not persisted to disk)
+- **Sessions**: in the database, expire after 24 hours
+- **Files**: Tigris
 - **Backups**: GitHub Actions (encrypted, private repository)
 
 ### User Rights
 Users can:
 - Export their data (Article 20)
-- Update their profile information (Article 16)
-- Contact support for data inquiries via GitHub issues
+- Delete their account (Article 17)
+- Ask for corrections by email (Article 16), since there is no profile edit page
+- Contact leo@leotrs.com for any data request
 
-### Future Scaling
-When migrating from in-memory sessions to database/Redis:
-- Session data will be included in GDPR export
-- Session cleanup policies will be documented
-- Retention periods will be clearly defined
+## If there is a data breach
+
+A breach is any loss, leak or unauthorized access to personal data, for example a leaked database key.
+
+1. Stop it: rotate the leaked keys, take the app down if needed.
+2. Within 72 hours of learning about it, decide whether it is likely to put people at risk. If yes, report it to the Sächsische Datenschutz- und Transparenzbeauftragte with their online form at datenschutz.sachsen.de.
+3. If the risk to people is high, email the affected users without delay.
+4. Write down every breach, even ones not reported: what happened, what data, what was done. GDPR requires this record.
