@@ -98,6 +98,7 @@ async def landing_page(
     request: Request,
     db: AsyncSession = Depends(get_db),
     verification_required: Optional[str] = None,
+    subject: Optional[str] = None,
 ):
     """Display the application landing page.
 
@@ -135,14 +136,17 @@ async def landing_page(
         Scroll.is_showcase,
     )
 
-    scrolls_result = await db.execute(
+    # ?subject= is what the subject buttons put in the address, so a reload, a shared
+    # address and the subject link on cards must show the same filtered list.
+    scrolls_query = (
         select(Scroll, Subject.name.label("subject_name"))
         .join(Subject)
         .where(Scroll.status == "published", _latest_version_filter())
         .options(scroll_columns)
-        .order_by(Scroll.created_at.desc())
-        .limit(20)
     )
+    if subject:
+        scrolls_query = scrolls_query.where(Subject.name == subject)
+    scrolls_result = await db.execute(scrolls_query.order_by(Scroll.created_at.desc()).limit(20))
     all_scrolls = scrolls_result.all()
 
     # Featured examples live in the band above; keep them out of the recent grid so
@@ -161,6 +165,7 @@ async def landing_page(
             "scrolls": recent_scrolls,
             "example_scrolls": EXAMPLE_SCROLLS,
             "show_verification_notice": verification_required == "1",
+            "subject_filter": subject,
         },
     )
 

@@ -221,9 +221,7 @@ async def test_scroll_card_subject_links(client: AsyncClient, test_db, test_user
 
     response = await client.get("/")
     assert response.status_code == 200
-    assert "preview-subject-link" in response.text
-    assert 'data-subject-name="machine-learning"' in response.text
-    assert 'data-subject-display="Machine Learning"' in response.text
+    assert 'href="/?subject=Machine%20Learning">Machine Learning</a>' in response.text
 
 
 async def test_search_no_query_redirects(client: AsyncClient):

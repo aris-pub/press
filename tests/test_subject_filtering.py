@@ -55,10 +55,9 @@ async def test_homepage_subject_filtering_data_attributes(client: AsyncClient, t
     assert 'data-subject="physics"' in html_content
     assert 'data-subject="computer-science"' in html_content
 
-    # Check that subject cards have correct data attributes for filtering
-    # Subject names are normalized to lowercase with dashes
-    assert 'data-subject-name="physics"' in html_content
-    assert 'data-subject-name="computer-science"' in html_content
+    # The subject on each card links to that subject's list
+    assert 'href="/?subject=Physics"' in html_content
+    assert 'href="/?subject=Computer%20Science"' in html_content
 
     # Verify the scroll cards have the preview class for JavaScript targeting
     assert 'class="scroll preview"' in html_content
@@ -93,7 +92,6 @@ async def test_subject_card_data_attributes(client: AsyncClient, test_db, test_u
     assert response.status_code == 200
     html_content = response.text
 
-    # Subject cards should have data-subject-name and data-subject-display attributes
-    # These are used by JavaScript for filtering
-    assert "data-subject-name=" in html_content
+    # Subject buttons filter the list, and the subject on each card links to it
+    assert 'href="/?subject=Physics"' in html_content
     assert 'class="subject-card"' in html_content

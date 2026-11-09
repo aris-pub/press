@@ -88,10 +88,7 @@
           </div>
           <div class="preview-meta">
             {% if subject_name %}
-            <span class="preview-subject-link" 
-                  data-subject-name="{{ subject_name.lower().replace(' ', '-') }}" 
-                  data-subject-display="{{ subject_name }}" 
-                  style="color: #ef4444; cursor: pointer;">{{ subject_name }}</span> | 
+            <a class="scroll-subject-link" href="/?subject={{ subject_name|urlencode }}">{{ subject_name }}</a> | 
             {% endif %}
             Submitted recently | 
             <span style="color: #ef4444;">v{{ preview.version }}</span>

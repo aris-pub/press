@@ -1172,6 +1172,10 @@ form.htmx-request .btn-primary {
 .scroll-authors { color: var(--gray-medium); margin-bottom: var(--space-md); font-size: var(--text-base); font-family: var(--font-serif); }
 .scroll-abstract { color: var(--gray-dark); margin-bottom: var(--space-md); font-size: var(--text-base); font-family: var(--font-serif); }
 .scroll-footer { display: flex; flex-direction: column; gap: 0.75rem; }
+/* The meta line sits after the card's link, so it needs the gap the footer used to give. */
+.scroll-meta-below-link { margin-top: 0.75rem; }
+.scroll-subject-link { color: var(--red); text-decoration: none; }
+.scroll-subject-link:hover { text-decoration: underline; }
 .scroll-tags { display: flex; gap: var(--space-sm); }
 .tag { background: var(--gray-bg); padding: 0.15rem 0.4rem; border-radius: var(--border-radius); font-size: var(--text-xs); color: var(--gray-medium); }
 

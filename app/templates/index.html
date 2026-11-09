@@ -50,7 +50,7 @@
     <button
       type="button"
       id="show-all-btn"
-      class="show-all-btn active"
+      class="show-all-btn{% if not subject_filter %} active{% endif %}"
       hx-get="/partials/scrolls"
       hx-target="#scrolls-section"
       hx-swap="innerHTML"
@@ -70,7 +70,7 @@
 
 <div class="recent" id="recent">
   <div id="scrolls-section">
-    <h2 id="recent-submissions-heading">Recent Scrolls</h2>
+    <h2 id="recent-submissions-heading">{% if subject_filter %}Recent {{ subject_filter }} Scrolls{% else %}Recent Scrolls{% endif %}</h2>
 
     {% if scrolls %}
     <div id="scrolls-grid" class="scrolls-grid">

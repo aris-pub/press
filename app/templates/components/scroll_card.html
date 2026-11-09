@@ -25,9 +25,10 @@ Usage:
         <span class="tag">{{ tag }}</span>
         {% endfor %}
       </div>
-      <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}{% if is_showcase %}<span class="showcase-label">Showcase</span>{% else %}Submitted {{ time_ago }}{% endif %} | <span style="color: var(--red);">{{ version }}</span></div>
     </div>
   </a>
+  {# Outside the card's link: a link inside a link is not valid HTML. #}
+  <div class="scroll-meta scroll-meta-below-link">{% if subject %}<a class="scroll-subject-link" href="/?subject={{ subject|urlencode }}">{{ subject }}</a> | {% endif %}{% if is_showcase %}<span class="showcase-label">Showcase</span>{% else %}Submitted {{ time_ago }}{% endif %} | <span style="color: var(--red);">{{ version }}</span></div>
   {% else %}
   <div class="scroll-title">{{ title }}</div>
   <div class="scroll-authors">{{ authors }}</div>
@@ -43,7 +44,7 @@ Usage:
       <span class="tag">{{ tag }}</span>
       {% endfor %}
     </div>
-    <div class="scroll-meta">{% if subject %}<span class="preview-subject-link" data-subject-name="{{ subject.lower().replace(' ', '-') }}" data-subject-display="{{ subject }}" style="color: var(--red); cursor: pointer;">{{ subject }}</span> | {% endif %}{% if is_showcase %}<span class="showcase-label">Showcase</span>{% else %}Submitted {{ time_ago }}{% endif %} | <span style="color: var(--red);">{{ version }}</span></div>
+    <div class="scroll-meta">{% if subject %}<a class="scroll-subject-link" href="/?subject={{ subject|urlencode }}">{{ subject }}</a> | {% endif %}{% if is_showcase %}<span class="showcase-label">Showcase</span>{% else %}Submitted {{ time_ago }}{% endif %} | <span style="color: var(--red);">{{ version }}</span></div>
   </div>
   {% endif %}
 </div>
