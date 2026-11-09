@@ -97,8 +97,11 @@ app/
 │   ├── scroll.py       # Research manuscript model
 │   └── subject.py      # Academic subject categorization
 ├── routes/             # FastAPI route handlers
+├── security/           # HTML and content validation
+├── storage/            # Tigris storage backend (StorageBackend)
 ├── templates/          # Jinja2 templates with component macros
 │   └── auth/           # Authentication templates (login, register, verify, reset)
+├── upload/             # Zip validation, archive processing, entry point detection
 └── database.py         # Async database configuration
 
 static/
@@ -143,11 +146,13 @@ The build process uses `pandoc` to convert Markdown to HTML fragments, then inje
 
 - **Backend**: FastAPI with async/await patterns
 - **Database**: PostgreSQL with SQLAlchemy 2.0 async
-- **Authentication**: Session-based with in-memory storage and token-based email verification
+- **Authentication**: Session-based, sessions stored in the database, and token-based email verification
 - **Email Service**: Resend API for transactional emails (verification, password reset)
 - **Frontend**: Jinja2 templates with HTMX for dynamic interactions
 - **Security**: HTTPS-only development with self-signed certificates
 - **Testing**: pytest with asyncio support, parallel execution, and Playwright e2e tests
+
+More detail is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Documentation
 
@@ -155,8 +160,8 @@ The build process uses `pandoc` to convert Markdown to HTML fragments, then inje
 - [Authentication](docs/AUTHENTICATION.md) - Session management, email verification, and security
 - [GDPR Compliance](docs/GDPR.md) - Data export and privacy features
 - [Testing](docs/TESTING.md) - Unit, integration, and E2E testing guide
+- [Architecture](docs/ARCHITECTURE.md) - Templates, storage, uploads and how papers are served
 - [Deployment](docs/DEPLOYMENT.md) - Production deployment instructions
-- [Backup Setup](docs/BACKUP_SETUP.md) - Database backup configuration
 
 ## Contributing
 

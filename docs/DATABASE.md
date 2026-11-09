@@ -84,8 +84,6 @@ just reset-db
 - **Cost**: Free using GitHub Actions
 - **Security**: Private artifacts, repository collaborators only
 
-For detailed backup setup instructions, see [BACKUP_SETUP.md](BACKUP_SETUP.md).
-
 ### Future Migration
 Plan to upgrade to **Supabase Pro Plan** ($25/month) for official backups once user base grows:
 - 14-day automated backups
