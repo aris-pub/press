@@ -58,6 +58,27 @@ def _record_signup(ip: str) -> None:
     _signup_timestamps.setdefault(ip, []).append(time.monotonic())
 
 
+# Failed logins are counted per email, not per IP: behind Cloudflare and Fly the client
+# IP comes from a header the client can set, so an IP limit can be bypassed.
+LOGIN_FAILURE_LIMIT = 10
+LOGIN_FAILURE_WINDOW = 900  # 15 minutes in seconds
+_login_failures: dict[str, list[float]] = {}
+
+
+def _login_locked(email: str) -> bool:
+    now = time.monotonic()
+    recent = [t for t in _login_failures.get(email, []) if now - t < LOGIN_FAILURE_WINDOW]
+    if recent:
+        _login_failures[email] = recent
+    else:
+        _login_failures.pop(email, None)
+    return len(recent) >= LOGIN_FAILURE_LIMIT
+
+
+def _record_login_failure(email: str) -> None:
+    _login_failures.setdefault(email, []).append(time.monotonic())
+
+
 async def _verify_turnstile(token: str, remote_ip: str) -> bool:
     """Verify a Turnstile token with Cloudflare. Returns True if valid or if Turnstile is not configured."""
     if not TURNSTILE_SECRET_KEY:
@@ -538,10 +559,29 @@ async def login_form(
 
         # Get user from database (case insensitive)
         normalized_email = email.strip().lower()
+
+        if _login_locked(normalized_email):
+            log_auth_event(
+                "login", normalized_email, False, request, error_message="Account locked"
+            )
+            return templates.TemplateResponse(
+                request,
+                "auth/partials/login_form.html",
+                {
+                    "errors": [
+                        "Too many failed sign-in attempts. Try again in 15 minutes, "
+                        "or reset your password."
+                    ],
+                    "form_data": {"email": email},
+                },
+                status_code=422,
+            )
+
         result = await db.execute(select(User).where(User.email == normalized_email))
         user = result.scalar_one_or_none()
 
         if not user or not verify_password(password, user.password_hash):
+            _record_login_failure(normalized_email)
             log_auth_event(
                 "login", normalized_email, False, request, error_message="Invalid credentials"
             )
@@ -554,6 +594,8 @@ async def login_form(
                 },
                 status_code=422,
             )
+
+        _login_failures.pop(normalized_email, None)
 
         # Create session
         session_id = await create_session(db, user.id)

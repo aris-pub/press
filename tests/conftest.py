@@ -286,11 +286,13 @@ pytest_plugins = ("pytest_asyncio",)
 @pytest.fixture(autouse=True, scope="function")
 def reset_signup_rate_limiter():
     """Reset the in-memory signup rate limiter between tests."""
-    from app.routes.auth import _signup_timestamps
+    from app.routes.auth import _login_failures, _signup_timestamps
 
     _signup_timestamps.clear()
+    _login_failures.clear()
     yield
     _signup_timestamps.clear()
+    _login_failures.clear()
 
 
 @pytest.fixture(autouse=True, scope="function")
