@@ -2,6 +2,7 @@
 
 import csv
 from datetime import datetime
+import html
 import io
 import json
 import re
@@ -688,8 +689,6 @@ def highlight_search_terms(text: str, query: str) -> str:
     terms = [term.strip() for term in query.split() if term.strip()]
 
     # Escape HTML in original text first
-    import html
-
     escaped_text = html.escape(text)
 
     # Highlight each term (case insensitive)
@@ -831,7 +830,8 @@ async def search_results(
                 "results": [],
                 "result_count": 0,
                 "error": "There was an error performing your search. Please try again.",
-                "highlight_terms": lambda text: text,
+                # The template marks this output safe, so it must still be escaped.
+                "highlight_terms": lambda text: html.escape(text or ""),
             },
         )
 

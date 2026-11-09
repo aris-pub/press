@@ -75,7 +75,7 @@
     </div>
     {% endif %}
     <div class="metadata-abstract">
-      {{ scroll.abstract }}
+      {{ scroll.abstract|abstract_html }}
     </div>
   </section>
 
@@ -301,6 +301,7 @@
 
 <!-- Paper frame: loads the paper and talks to it only through messages -->
 <script src="/static/js/paper-frame.js"{% if nonce %} nonce="{{ nonce }}"{% endif %}></script>
+<script src="/static/js/abstract-math.js"{% if nonce %} nonce="{{ nonce }}"{% endif %} defer></script>
 
 </body>
 </html>
