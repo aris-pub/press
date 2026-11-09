@@ -18,7 +18,7 @@ def get_base_url() -> str:
 
 
 def get_content_domain() -> str:
-    """Domain whose subdomains serve paper files, e.g. "scrollusercontent.com".
+    """Domain whose subdomains serve paper files, e.g. "scrollusercontent.eu".
 
     Empty means papers are served from Press's own site, as in local development, CI
     and PR previews. Read on every call so tests can set it.

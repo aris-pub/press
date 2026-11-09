@@ -71,7 +71,7 @@ If a zip has more than one HTML file, the author confirms the choice on
 
 ### The content domain
 
-When `CONTENT_DOMAIN` is set (production: `scrollusercontent.com`), published paper files
+When `CONTENT_DOMAIN` is set (production: `scrollusercontent.eu`), published paper files
 are served from `{url_hash}.<CONTENT_DOMAIN>` instead, a different site from Press. A
 paper's scripts then cannot use a reader's Press login (`docs/THREAT_MODEL.md`).
 
