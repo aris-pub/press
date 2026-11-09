@@ -143,7 +143,7 @@ Test these endpoints:
 ```bash
 # Verify cache headers are present
 curl -I https://your-domain.com/static/css/main.css
-# Should include: Cache-Control: public, max-age=31536000, immutable
+# Should include: Cache-Control: public, max-age=3600
 ```
 
 **Verify Sentry release tracking**:

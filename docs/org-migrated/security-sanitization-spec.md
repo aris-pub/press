@@ -113,4 +113,4 @@ This document specifies the HTML sanitization and JavaScript execution security 
 
 **Community Moderation**: Reputation-based system allowing trusted community members to approve interactive content.
 
-*NOTE: This specification is largely stale — the actual Press security model (iframe isolation, HTMLValidator, CSP with unsafe-inline/unsafe-eval) differs significantly from what is described above. See the Press CLAUDE.md for the current implementation. This document is retained for historical reference.*
+*NOTE: This specification is largely stale — the actual Press security model (iframe isolation, HTMLValidator, CSP with unsafe-inline/unsafe-eval) differs significantly from what is described above. This document is retained for historical reference.*
