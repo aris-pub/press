@@ -17,6 +17,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
+from app.content_domain import ContentDomainMiddleware
 from app.exception_handlers import (
     http_exception_handler,
     internal_server_error_handler,
@@ -141,6 +142,10 @@ if is_production:
 is_testing = os.getenv("TESTING", "").lower() in ("true", "1", "yes")
 rate_limit_enabled = not is_testing
 app.add_middleware(RateLimitMiddleware, enabled=rate_limit_enabled)
+
+# Requests to the content domain are mapped onto the paper routes before any other
+# middleware sees them (app/content_domain.py). Added here so only ProxyHeaders runs first.
+app.add_middleware(ContentDomainMiddleware)
 
 # Trust X-Forwarded-* headers from Fly's TLS-terminating edge so request.url.scheme
 # reflects the original https scheme. Must be the outermost middleware (added last,

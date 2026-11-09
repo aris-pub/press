@@ -69,8 +69,28 @@ If a zip has more than one HTML file, the author confirms the choice on
   links work). Other files are at `/scroll/{url_hash}/paper/{relative_path}`, cached for
   one year.
 
+### The content domain
+
+When `CONTENT_DOMAIN` is set (production: `scrollusercontent.com`), published paper files
+are served from `{url_hash}.<CONTENT_DOMAIN>` instead, a different site from Press. A
+paper's scripts then cannot use a reader's Press login (`docs/THREAT_MODEL.md`).
+
+- `app/content_domain.py` maps a request to `{url_hash}.<CONTENT_DOMAIN>/{path}` onto the
+  paper routes above, as `/scroll/{url_hash}/paper/{path}`. Nothing else in Press can be
+  reached there: other methods and every error get a plain 404, and no cookie is set.
+- Responses there may only be framed by Press (`frame-ancestors` names `BASE_URL`).
+- On Press, the paper addresses above and `/{year}/{slug}/paper` redirect (301) to the
+  content domain. The scroll page's iframe loads from it, and the scroll page CSP allows it
+  in `frame-src`.
+- Previews stay on Press, because the owner's login cookie never reaches the content
+  domain. Signed preview links will move them (prs-2m6.1).
+- The content domain uses Press's own scheme, from `BASE_URL`: https in production, http in
+  the local browser tests.
+- When `CONTENT_DOMAIN` is unset (local, CI, previews), nothing changes.
+
 ## Middleware order
 
 Middleware is added in `main.py`. The last one added runs first.
 `StaticFilesCacheMiddleware` is added first, so it runs last and sets cache headers on the
-finished response.
+finished response. `ContentDomainMiddleware` is added second to last, so only
+`ProxyHeadersMiddleware` runs before it and every other layer sees the mapped paper path.

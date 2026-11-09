@@ -726,6 +726,8 @@ async def _paper_bare_response(scroll: Scroll, request: Request, db: AsyncSessio
 
     Honors If-None-Match with a 304 when the client's tag matches content_hash.
     """
+    if moved := _content_domain_redirect(request, scroll):
+        return moved
     if scroll.storage_type == "archive":
         return RedirectResponse(url=f"/scroll/{scroll.url_hash}/paper/", status_code=302)
     return await _inline_paper_response(scroll, request, db)
@@ -1075,6 +1077,25 @@ def _archive_file_response(scroll: Scroll, path: str, data: bytes) -> Response:
     return Response(content=data, media_type=media_type, headers=headers)
 
 
+def _content_domain_redirect(request: Request, scroll: Scroll, path: str = "") -> Response | None:
+    """Published paper files live on the content domain (app/content_domain.py), so the
+    same addresses on Press redirect there. Previews stay on Press until signed preview
+    links exist (prs-2m6.1), because the owner's login cookie never reaches that domain."""
+    from app.content_domain import content_host_hash, paper_url
+
+    if (
+        scroll.status == "preview"
+        or content_host_hash(request.headers.get("host", "")) is not None
+    ):
+        return None
+    url = paper_url(scroll.url_hash, path)
+    if url is None:
+        return None
+    if request.url.query:
+        url += "?" + request.url.query
+    return RedirectResponse(url=url, status_code=301)
+
+
 async def _verify_scroll_access(request: Request, url_hash: str, db: AsyncSession) -> Scroll:
     """Look up a scroll by url_hash and verify access. Raises HTTPException on failure."""
     result = await db.execute(
@@ -1107,6 +1128,8 @@ async def get_paper_html(
 
     scroll = await _verify_scroll_access(request, url_hash, db)
 
+    if moved := _content_domain_redirect(request, scroll):
+        return moved
     if scroll.storage_type == "archive":
         return RedirectResponse(url=f"/scroll/{url_hash}/paper/", status_code=301)
 
@@ -1151,6 +1174,8 @@ async def get_archive_entry_point(
 
     scroll = await _verify_scroll_access(request, url_hash, db)
 
+    if moved := _content_domain_redirect(request, scroll):
+        return moved
     if scroll.storage_type != "archive":
         return await _inline_paper_response(scroll, request, db, _PAPER_BY_HASH_CACHE)
 
@@ -1199,6 +1224,8 @@ async def get_archive_asset(
 
     scroll = await _verify_scroll_access(request, url_hash, db)
 
+    if moved := _content_domain_redirect(request, scroll, path):
+        return moved
     if scroll.storage_type != "archive":
         raise HTTPException(status_code=404, detail="Not an archive scroll")
 
@@ -2472,6 +2499,8 @@ async def get_archive_asset_parent(
 
     scroll = await _verify_scroll_access(request, url_hash, db)
 
+    if moved := _content_domain_redirect(request, scroll, path):
+        return moved
     if scroll.storage_type != "archive":
         raise HTTPException(status_code=404, detail="Not found")
 

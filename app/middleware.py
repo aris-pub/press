@@ -171,6 +171,14 @@ def is_author_content_path(path: str) -> bool:
     return any(pattern.match(path) for pattern in _AUTHOR_CONTENT_PATHS)
 
 
+def _content_frame_src() -> str:
+    """Scroll pages frame papers from the content domain when it is set."""
+    from app.content_domain import content_origin_pattern
+
+    pattern = content_origin_pattern()
+    return f" {pattern}" if pattern else ""
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to all responses."""
 
@@ -230,7 +238,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     "img-src 'self' data: https:; "
                     "font-src 'self' data: https://fonts.gstatic.com; "
                     "connect-src 'self'; "
-                    "frame-src 'self';"
+                    f"frame-src 'self'{_content_frame_src()};"
                 )
             else:
                 # Fallback for scroll pages without nonce (shouldn't happen)
@@ -241,7 +249,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     "img-src 'self' data: https:; "
                     "font-src 'self' data: https://fonts.gstatic.com; "
                     "connect-src 'self'; "
-                    "frame-src 'self';"
+                    f"frame-src 'self'{_content_frame_src()};"
                 )
         else:
             # Standard CSP for static pages (homepage, auth, etc) - no nonces needed
@@ -252,7 +260,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "img-src 'self' data:; "
                 "font-src 'self' https://fonts.gstatic.com; "
                 "connect-src 'self' https://challenges.cloudflare.com; "
-                "frame-src 'self' https://challenges.cloudflare.com;"
+                f"frame-src 'self' https://challenges.cloudflare.com{_content_frame_src()};"
             )
         response.headers["Content-Security-Policy"] = csp
 
