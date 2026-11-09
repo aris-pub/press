@@ -1105,6 +1105,9 @@ async def _verify_scroll_access(request: Request, url_hash: str, db: AsyncSessio
     if not scroll:
         raise HTTPException(status_code=404, detail="Scroll not found")
     if scroll.status == "preview":
+        # On the content domain, a signed preview link stands in for the owner's login.
+        if getattr(request.state, "signed_preview_hash", None) == url_hash:
+            return scroll
         current_user = await get_current_user_from_session(request, db)
         if not current_user or scroll.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Scroll not found")

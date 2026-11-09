@@ -166,6 +166,8 @@ jobs:
         PORT: 8001
         CONTENT_DOMAIN: content.test
         BASE_URL: http://127.0.0.1:8001
+        # A test value, also in tests/e2e/test_content_domain_e2e.py. Not a secret.
+        PREVIEW_LINK_KEY: e2e-preview-link-key-not-a-secret
       run: |
         uv run uvicorn main:app --host 0.0.0.0 --port 8001 --log-level info > content-server.log 2>&1 &
         sleep 8

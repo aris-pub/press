@@ -24,3 +24,9 @@ def get_content_domain() -> str:
     and PR previews. Read on every call so tests can set it.
     """
     return os.getenv("CONTENT_DOMAIN", "").strip().lower().rstrip(".")
+
+
+def get_preview_link_key() -> str:
+    """Secret that signs preview links on the content domain. Empty keeps previews on
+    Press. Read on every call so tests can set it."""
+    return os.getenv("PREVIEW_LINK_KEY", "")

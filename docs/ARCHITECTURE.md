@@ -82,8 +82,14 @@ paper's scripts then cannot use a reader's Press login (`docs/THREAT_MODEL.md`).
 - On Press, the paper addresses above and `/{year}/{slug}/paper` redirect (301) to the
   content domain. The scroll page's iframe loads from it, and the scroll page CSP allows it
   in `frame-src`.
-- Previews stay on Press, because the owner's login cookie never reaches the content
-  domain. Signed preview links will move them (prs-2m6.1).
+- Previews load from `{url_hash}-{expires}-{signature}.<CONTENT_DOMAIN>`, because the
+  owner's login cookie never reaches the content domain. The preview page makes the link,
+  signed with `PREVIEW_LINK_KEY` (HMAC-SHA256 over the url_hash and expiry), and it works
+  for one hour. The content domain serves a preview only for a valid, unexpired
+  signature, never for a cookie (it drops the Cookie header). Without `PREVIEW_LINK_KEY`,
+  previews stay on Press.
+- Every content domain response carries `Referrer-Policy: no-referrer`, so a signed
+  preview host never reaches a CDN the paper loads from.
 - The content domain uses Press's own scheme, from `BASE_URL`: https in production, http in
   the local browser tests.
 - When `CONTENT_DOMAIN` is unset (local, CI, previews), nothing changes.
