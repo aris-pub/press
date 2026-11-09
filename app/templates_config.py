@@ -58,3 +58,17 @@ class TemplatesWithGlobals(Jinja2Templates):
 # Shared templates instance for all routes
 templates = TemplatesWithGlobals(directory="app/templates")
 templates.env.globals["turnstile_site_key"] = TURNSTILE_SITE_KEY
+
+
+def paper_frame_src(scroll) -> str:
+    """Address the scroll page's iframe loads. Published papers come from the content
+    domain when it is set. Previews stay on Press until signed preview links exist."""
+    from app.content_domain import paper_url
+
+    if scroll.status != "preview" and (url := paper_url(scroll.url_hash)):
+        return url
+    suffix = "/" if scroll.storage_type == "archive" else ""
+    return f"/scroll/{scroll.url_hash}/paper{suffix}"
+
+
+templates.env.globals["paper_frame_src"] = paper_frame_src

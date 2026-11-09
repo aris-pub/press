@@ -123,8 +123,9 @@
     </div>
     <iframe
       id="paper-frame"
-      data-src="/scroll/{{ scroll.url_hash }}/paper{% if scroll.storage_type == 'archive' %}/{% endif %}"
+      data-src="{{ paper_frame_src(scroll) }}"
       data-settings-key="{{ scroll.scroll_series_id or scroll.url_hash }}"
+      allow="fullscreen; clipboard-write"
       style="width: 100%; height: 100%; border: none; display: block; opacity: 0; transition: opacity 0.2s;"
       title="{{ scroll.title }}"
       scrolling="auto"

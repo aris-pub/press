@@ -15,3 +15,12 @@ def get_base_url() -> str:
     base_url = base_url.rstrip("/")
 
     return base_url
+
+
+def get_content_domain() -> str:
+    """Domain whose subdomains serve paper files, e.g. "scrollusercontent.com".
+
+    Empty means papers are served from Press's own site, as in local development, CI
+    and PR previews. Read on every call so tests can set it.
+    """
+    return os.getenv("CONTENT_DOMAIN", "").strip().lower().rstrip(".")

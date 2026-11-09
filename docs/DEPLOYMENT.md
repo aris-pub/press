@@ -13,6 +13,7 @@ Press runs in four places. Only production holds real data or production secrets
 | Data | Real users and papers | Sample papers from `examples-press`, reloaded on every deploy | Test data | Your own |
 | File storage | Tigris bucket `scroll-press-storage` | In memory, lost on restart | In memory | Your `.env` |
 | Secrets | All, set with `fly secrets set` | `SECRET_KEY` and `ENVIRONMENT=preview` only | None | Your `.env` |
+| Paper files | `{url_hash}.scrollusercontent.com` once `CONTENT_DOMAIN` is set | Press itself | Press itself, plus a second server with `CONTENT_DOMAIN=content.test` for its browser tests | Press itself |
 
 ### PR previews
 
@@ -349,6 +350,12 @@ The Cloudflare rule, "Cache paper bytes":
 - Field URI Path, wildcard `/scroll/*/paper*`, Eligible for cache.
 - Edge TTL: "Use cache-control header if present, bypass cache if not". Never "Ignore
   cache-control header". That setting keeps previews and "not found" answers too.
+
+Once `CONTENT_DOMAIN` is set, published paper files are served from the content domain
+(see `docs/ARCHITECTURE.md`), so the content domain's Cloudflare zone needs the same rule,
+for all paths. Add it before setting `CONTENT_DOMAIN`, or every paper read goes to
+Supabase. The redirects from the old scroll.press paper paths carry no cache header and
+are not cached.
 
 Rules for the Cloudflare cache:
 

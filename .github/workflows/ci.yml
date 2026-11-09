@@ -156,6 +156,21 @@ jobs:
         sleep 8
         curl -f http://localhost:8000 || exit 1
 
+    # Same database, with the content domain on, for tests/e2e/test_content_domain_e2e.py.
+    - name: Start content domain server
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/press
+        TESTING: 1
+        E2E_TESTING: 1
+        PYTHONPATH: .
+        PORT: 8001
+        CONTENT_DOMAIN: content.test
+        BASE_URL: http://127.0.0.1:8001
+      run: |
+        uv run uvicorn main:app --host 0.0.0.0 --port 8001 --log-level info > content-server.log 2>&1 &
+        sleep 8
+        curl -f http://localhost:8001 || exit 1
+
     - name: Run e2e tests (${{ matrix.name }})
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/press
@@ -165,4 +180,4 @@ jobs:
 
     - name: Show server log
       if: failure()
-      run: cat server.log
+      run: cat server.log; cat content-server.log
