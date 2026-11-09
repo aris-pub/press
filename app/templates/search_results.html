@@ -63,7 +63,6 @@
       
       <!-- Create highlighted versions of title and abstract -->
       {% set highlighted_title = highlight_terms(preview.title) %}
-      {% set highlighted_abstract = highlight_terms(preview.abstract) %}
       
       <!-- Use a custom preview card macro call with highlighted content -->
       <div class="preview search-result" data-subject="{{ subject_name.lower().replace(' ', '-') if subject_name else '' }}">
@@ -79,7 +78,7 @@
         <div class="preview-title">{{ highlighted_title|safe }}</div>
         {% endif %}
         <div class="preview-authors">{{ preview.authors }}</div>
-        <div class="preview-abstract">{{ highlighted_abstract|safe }}</div>
+        <div class="preview-abstract">{{ preview.abstract|abstract_html(query.split() if query else []) }}</div>
         <div class="preview-footer">
           <div class="preview-tags">
             {% for tag in preview.keywords or [] %}

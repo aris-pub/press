@@ -74,6 +74,18 @@ def paper_frame_src(scroll) -> str:
 templates.env.globals["paper_frame_src"] = paper_frame_src
 
 
+def _abstract_html_filter(text, terms=()):
+    """Escaped abstract with its math marked for MathJax (app/abstract_math.py)."""
+    from markupsafe import Markup
+
+    from app.abstract_math import abstract_html
+
+    return Markup(abstract_html(text, terms))
+
+
+templates.env.filters["abstract_html"] = _abstract_html_filter
+
+
 def preview_frame_src(scroll) -> str:
     """Address the preview page's iframe loads: a signed content domain link that works
     for an hour, or Press itself when there is no content domain or no signing key."""

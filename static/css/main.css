@@ -1175,6 +1175,8 @@ form.htmx-request .btn-primary {
 /* The meta line sits after the card's link, so it needs the gap the footer used to give. */
 .scroll-meta-below-link { margin-top: 0.75rem; }
 .scroll-subject-link { color: var(--red); text-decoration: none; }
+/* Display math in an abstract gets its own line and scrolls sideways if too wide. */
+.math-tex.math-display { display: block; overflow-x: auto; }
 .scroll-subject-link:hover { text-decoration: underline; }
 .scroll-tags { display: flex; gap: var(--space-sm); }
 .tag { background: var(--gray-bg); padding: 0.15rem 0.4rem; border-radius: var(--border-radius); font-size: var(--text-xs); color: var(--gray-medium); }

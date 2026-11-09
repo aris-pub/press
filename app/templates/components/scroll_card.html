@@ -13,7 +13,7 @@ Usage:
   <a href="{{ canonical_url if canonical_url else '/scroll/' + url_hash }}" class="scroll-card-link" hx-boost="false">
     <div class="scroll-title">{{ title }}</div>
     <div class="scroll-authors">{{ authors }}</div>
-    <div class="scroll-abstract">{{ abstract }}</div>
+    <div class="scroll-abstract">{{ abstract|abstract_html }}</div>
     {% if doi_status %}
     <div style="margin-top: 0.75rem;">
       {{ doi_badge(doi, doi_status, compact=True) }}
@@ -32,7 +32,7 @@ Usage:
   {% else %}
   <div class="scroll-title">{{ title }}</div>
   <div class="scroll-authors">{{ authors }}</div>
-  <div class="scroll-abstract">{{ abstract }}</div>
+  <div class="scroll-abstract">{{ abstract|abstract_html }}</div>
   {% if doi_status %}
   <div style="margin-top: 0.75rem;">
     {{ doi_badge(doi, doi_status, compact=True) }}

@@ -103,6 +103,8 @@
       })();
     </script>
 
+    <script src="/static/js/abstract-math.js"{% if nonce %} nonce="{{ nonce }}"{% endif %} defer></script>
+
     <!-- Logout needs the CSRF token. It is fetched on click rather than written into the
          page, because cached pages are shared between readers. -->
     <script{% if nonce %} nonce="{{ nonce }}"{% endif %}>
