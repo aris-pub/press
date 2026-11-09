@@ -72,3 +72,17 @@ def paper_frame_src(scroll) -> str:
 
 
 templates.env.globals["paper_frame_src"] = paper_frame_src
+
+
+def preview_frame_src(scroll) -> str:
+    """Address the preview page's iframe loads: a signed content domain link that works
+    for an hour, or Press itself when there is no content domain or no signing key."""
+    from app.content_domain import signed_preview_url
+
+    if url := signed_preview_url(scroll.url_hash):
+        return url
+    suffix = "/" if scroll.storage_type == "archive" else ""
+    return f"/scroll/{scroll.url_hash}/paper{suffix}"
+
+
+templates.env.globals["preview_frame_src"] = preview_frame_src

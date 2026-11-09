@@ -23,8 +23,10 @@ from tests.e2e.conftest import launch_browser
 pytestmark = [pytest.mark.e2e, pytest.mark.desktop, pytest.mark.mobile]
 
 DOMAIN = "content.test"
-# Started by .github/workflows/ci.yml with CONTENT_DOMAIN and BASE_URL set.
+# Started by .github/workflows/ci.yml with CONTENT_DOMAIN, BASE_URL and PREVIEW_LINK_KEY set.
 CI_CONTENT_SERVER = "http://127.0.0.1:8001"
+# A test value, the same one ci.yml gives the content domain server.
+PREVIEW_LINK_KEY = "e2e-preview-link-key-not-a-secret"
 
 PAPER = """<!DOCTYPE html>
 <html><head><title>Content domain test {marker}</title></head>
@@ -58,6 +60,18 @@ PAPER = """<!DOCTYPE html>
 """
 
 
+VALUE_STORED = """async (value) => {
+  for (let i = 0; i < 100; i++) {
+    const stored = Object.keys(localStorage)
+      .filter(k => k.startsWith("press-paper-settings:"))
+      .map(k => localStorage.getItem(k));
+    if (stored.some(v => v && v.includes(value))) return true;
+    await new Promise(r => setTimeout(r, 50));
+  }
+  return false;
+}"""
+
+
 @pytest_asyncio.fixture
 async def content_server(test_server):
     """A Press server with CONTENT_DOMAIN set. Locally the test server runs in this
@@ -67,9 +81,10 @@ async def content_server(test_server):
         return
     from app.config import get_base_url
 
-    saved = {k: os.environ.get(k) for k in ("CONTENT_DOMAIN", "BASE_URL")}
+    saved = {k: os.environ.get(k) for k in ("CONTENT_DOMAIN", "BASE_URL", "PREVIEW_LINK_KEY")}
     os.environ["CONTENT_DOMAIN"] = DOMAIN
     os.environ["BASE_URL"] = test_server
+    os.environ["PREVIEW_LINK_KEY"] = PREVIEW_LINK_KEY
     get_base_url.cache_clear()
     try:
         yield test_server
@@ -80,6 +95,47 @@ async def content_server(test_server):
             else:
                 os.environ[key] = value
         get_base_url.cache_clear()
+
+
+async def _preview_of_testuser(server_db):
+    """A preview (never published) owned by the seeded testuser@example.com."""
+    from app.models.scroll import Scroll, Subject
+    from app.models.user import User
+    from app.storage.content_processing import generate_permanent_url
+
+    marker = uuid.uuid4().hex[:8]
+    html = PAPER.replace("{marker}", marker)
+    async with server_db() as db:
+        user = (
+            await db.execute(select(User).where(User.email == "testuser@example.com"))
+        ).scalar_one()
+        subject = (await db.execute(select(Subject).limit(1))).scalar_one()
+        url_hash, content_hash, _ = await generate_permanent_url(db, html)
+        db.add(
+            Scroll(
+                title=f"Preview test {marker}",
+                authors="Test Author",
+                abstract="Synthetic preview for the signed link tests.",
+                keywords=[],
+                html_content=html,
+                license="cc-by-4.0",
+                content_hash=content_hash,
+                url_hash=url_hash,
+                status="preview",
+                user_id=user.id,
+                subject_id=subject.id,
+            )
+        )
+        await db.commit()
+    return url_hash
+
+
+async def _log_in(page, server):
+    await page.goto(f"{server}/login")
+    await page.fill('input[name="email"]', "testuser@example.com")
+    await page.fill('input[name="password"]', "testpass")
+    await page.click('button[type="submit"]')
+    await page.wait_for_url(f"{server}/dashboard")
 
 
 async def _publish(server_db):
@@ -221,7 +277,10 @@ async def test_reading_setting_survives_reload(content_server, server_db):
             paper = page.frame_locator("#paper-frame")
             await expect(paper.locator("#saved")).to_have_text("none")
             await paper.locator("#save").click()
-            await expect(paper.locator("#saved")).to_have_text("none")
+            # Reload only once the scroll page has stored this value. This paper also writes
+            # "k" on load, which sends its own settings message, so waiting for any stored
+            # settings (SETTINGS_SAVED in the bridge tests) would not be enough here.
+            assert await page.evaluate(VALUE_STORED, value)
 
             await page.reload()
             await expect(page.frame_locator("#paper-frame").locator("#saved")).to_have_text(value)
@@ -237,3 +296,36 @@ async def test_old_paper_address_redirects(content_server, server_db):
 
     assert response.status_code == 301
     assert response.headers["location"] == f"http://{url_hash}.{DOMAIN}/"
+
+
+async def test_owner_preview_loads_through_a_signed_link(content_server, server_db):
+    """prs-2m6.1: the preview's paper comes from the content domain, not from Press."""
+    url_hash = await _preview_of_testuser(server_db)
+    async with async_playwright() as p:
+        browser, page, errors, content_requests = await _open(p, content_server)
+        try:
+            await _log_in(page, content_server)
+            await page.goto(f"{content_server}/preview/{url_hash}")
+            paper = page.frame_locator("#paper-frame")
+            await expect(paper.locator("#ls")).to_have_text("v")
+            await expect(paper.locator("#parent")).to_have_text("blocked")
+
+            hosts = {urlsplit(r.url).hostname for r in content_requests}
+            assert any(h.startswith(f"{url_hash}-") for h in hosts), hosts
+            for request in content_requests:
+                assert "session_id" not in (await request.all_headers()).get("cookie", "")
+            assert errors == []
+        finally:
+            await browser.close()
+
+
+async def test_preview_without_a_valid_link_is_refused(content_server, server_db):
+    url_hash = await _preview_of_testuser(server_db)
+    async with httpx.AsyncClient() as client:
+        unsigned = await client.get(f"{content_server}/", headers={"host": f"{url_hash}.{DOMAIN}"})
+        forged = await client.get(
+            f"{content_server}/", headers={"host": f"{url_hash}-9999999999-{'0' * 32}.{DOMAIN}"}
+        )
+
+    assert unsigned.status_code == 404
+    assert forged.status_code == 404

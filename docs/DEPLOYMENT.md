@@ -12,7 +12,7 @@ Press runs in four places. Only production holds real data or production secrets
 | Database | Supabase | Its own Fly Postgres, `scroll-press-pr-<number>-db` | Postgres in the job | Local Postgres |
 | Data | Real users and papers | Sample papers from `examples-press`, reloaded on every deploy | Test data | Your own |
 | File storage | Tigris bucket `scroll-press-storage` | In memory, lost on restart | In memory | Your `.env` |
-| Secrets | All, set with `fly secrets set` | `SECRET_KEY` and `ENVIRONMENT=preview` only | None | Your `.env` |
+| Secrets | All, set with `fly secrets set`, including `PREVIEW_LINK_KEY` (any long random value, signs preview links on the content domain) | `SECRET_KEY` and `ENVIRONMENT=preview` only | None | Your `.env` |
 | Paper files | `{url_hash}.scrollusercontent.eu` once `CONTENT_DOMAIN` is set | Press itself | Press itself, plus a second server with `CONTENT_DOMAIN=content.test` for its browser tests | Press itself |
 
 ### PR previews
