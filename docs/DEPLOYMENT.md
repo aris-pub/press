@@ -2,6 +2,43 @@
 
 This guide covers deploying Scroll Press to production using Supabase (database) and Fly.io (application).
 
+## Environments
+
+Press runs in four places. Only production holds real data or production secrets.
+
+| | Production | PR preview | CI | Local |
+|---|---|---|---|---|
+| Where | Fly app `scroll-press`, behind Cloudflare at scroll.press | Fly app `scroll-press-pr-<number>` at `<app>.fly.dev` | GitHub Actions | Your machine |
+| Database | Supabase | Its own Fly Postgres, `scroll-press-pr-<number>-db` | Postgres in the job | Local Postgres |
+| Data | Real users and papers | Sample papers from `examples-press`, reloaded on every deploy | Test data | Your own |
+| File storage | Tigris bucket `scroll-press-storage` | In memory, lost on restart | In memory | Your `.env` |
+| Secrets | All, set with `fly secrets set` | `SECRET_KEY` and `ENVIRONMENT=preview` only | None | Your `.env` |
+
+### PR previews
+
+`.github/workflows/preview.yml` creates a preview app and database when a PR is opened, deploys
+it on every push, and destroys both when the PR is closed. Dependabot PRs get no preview.
+
+Previews get no production secrets. Each missing secret turns a feature off:
+
+- No storage keys: uploaded files are kept in memory (`app/storage/__init__.py`) and are gone when
+  the preview restarts.
+- No ORCID keys: the "Sign in with ORCID" button is hidden. Email login works.
+- No Resend key: no emails are sent, so new accounts on a preview cannot verify their email. Use
+  the seeded account `testuser@example.com` (see `scripts/seed.py`).
+- No Zenodo token: no DOIs are minted.
+- No Sentry DSN, Turnstile keys or Bluesky password.
+
+Rules:
+
+- Never give a preview a production secret. Preview code has not been reviewed, and a production
+  key would let it read, change or delete production data. `tests/test_preview_workflow.py` fails
+  if `preview.yml` names one.
+- If a preview needs a service to work, create a separate test account or key for it, never the
+  production one.
+- Secrets are set only when a preview app is first created. Changing `preview.yml` does not change
+  previews that already exist. Close and reopen the PR to rebuild one.
+
 ## Prerequisites
 
 - [Fly.io CLI](https://fly.io/docs/hands-on/install-flyctl/) installed

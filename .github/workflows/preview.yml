@@ -57,16 +57,11 @@ jobs:
           # Attach database (sets DATABASE_URL — app normalizes postgres:// at startup)
           flyctl postgres attach "$DB_APP" --app "$APP_NAME"
 
+          # Previews get no production secrets: no storage keys (files go to in-memory
+          # storage), no ORCID, email, Zenodo or Sentry. See docs/DEPLOYMENT.md, "Environments".
           flyctl secrets set --app "$APP_NAME" \
             SECRET_KEY="preview-${{ github.event.pull_request.number }}" \
-            ENVIRONMENT="preview" \
-            AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
-            AWS_ENDPOINT_URL_S3="${{ secrets.AWS_ENDPOINT_URL_S3 }}" \
-            AWS_REGION="auto" \
-            AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            BUCKET_NAME="${{ secrets.BUCKET_NAME }}" \
-            ORCID_CLIENT_ID="${{ secrets.ORCID_CLIENT_ID }}" \
-            ORCID_CLIENT_SECRET="${{ secrets.ORCID_CLIENT_SECRET }}"
+            ENVIRONMENT="preview"
         fi
 
     - name: Deploy preview
