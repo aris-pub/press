@@ -8,27 +8,18 @@ Your Sentry integration is configured and ready. The DSN is already set in Fly.i
 
 ### 1. Set Release Tracking ✅ CONFIGURED
 
-Release tracking is now configured via `GIT_COMMIT` build argument:
+Release tracking is configured via the `GIT_COMMIT` build argument:
 
-**Configuration** (already implemented):
-- `fly.toml` passes `GIT_COMMIT = "auto"` as build arg
-- `Dockerfile` accepts and sets `GIT_COMMIT` environment variable
-- Sentry reads `GIT_COMMIT` on startup to track releases
+- `just deploy` runs `fly deploy --build-arg GIT_COMMIT=$(git rev-parse HEAD)`.
+- `Dockerfile` accepts the build argument and sets the `GIT_COMMIT` environment variable
+  (default `dev`).
+- Sentry reads `GIT_COMMIT` on startup and uses it as the release.
+- `/health` returns it as `commit`, and `just deploy` waits until scroll.press reports the
+  new commit.
 
-**How it works**:
-```dockerfile
-# Dockerfile
-ARG GIT_COMMIT=dev
-ENV GIT_COMMIT=$GIT_COMMIT
-```
-
-```toml
-# fly.toml
-[build.args]
-  GIT_COMMIT = "auto"
-```
-
-Fly.io automatically replaces "auto" with the current git commit hash during deployment.
+Fly does not fill in the commit by itself. Until 2026-11-17, `fly.toml` passed
+`GIT_COMMIT = "auto"`, and production ran with the literal value `auto`. A plain
+`fly deploy` (without `just deploy`) sets `GIT_COMMIT` to `dev`.
 
 ### 2. Verify Production Alerts are Working
 

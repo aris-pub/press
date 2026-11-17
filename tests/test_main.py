@@ -422,6 +422,13 @@ async def test_health_check(client: AsyncClient):
     assert "scroll_count" in data["metrics"]
 
 
+async def test_health_check_reports_commit(client: AsyncClient, monkeypatch):
+    """just deploy polls /health until it reports the commit that was deployed."""
+    monkeypatch.setenv("GIT_COMMIT", "0123abcd")
+    response = await client.get("/health")
+    assert response.json()["commit"] == "0123abcd"
+
+
 # Dashboard Tests (TDD)
 
 

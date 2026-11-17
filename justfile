@@ -81,6 +81,11 @@ lint:
     uv run ruff check --fix .
     uv run ruff format .
 
+# Lint without changing files (CI runs this, so unformatted code fails the build)
+lint-check:
+    uv run ruff check .
+    uv run ruff format --check .
+
 # Database migrations
 migrate:
     uv run alembic upgrade head
@@ -161,8 +166,28 @@ email-health-check:
 deploy: build
     #!/usr/bin/env bash
     set -e
-    echo "🚀 Deploying to production..."
-    fly deploy
+    COMMIT=$(git rev-parse HEAD)
+    SITE=${PRESS_URL:-https://scroll.press}
+    echo "🚀 Deploying $COMMIT to production..."
+    fly deploy --build-arg GIT_COMMIT="$COMMIT"
+
+    # fly deploy only checks the machines. Ask the public site, through Cloudflare,
+    # which commit it is serving, so a deploy that never went live fails here.
+    echo "Waiting for $SITE/health to report $COMMIT and healthy..."
+    for i in $(seq 1 60); do
+        # /health returns 200 even when unhealthy, so check the status field too.
+        BODY=$(curl -fsS --max-time 10 "$SITE/health" || true)
+        if echo "$BODY" | grep -q "\"commit\":\"$COMMIT\"" && echo "$BODY" | grep -q '"status":"healthy"'; then
+            echo "$SITE is serving $COMMIT"
+            break
+        fi
+        if [ "$i" -eq 60 ]; then
+            echo "ERROR: $SITE/health did not report $COMMIT and healthy after 5 minutes" >&2
+            curl -sS --max-time 10 "$SITE/health" >&2 || true
+            exit 1
+        fi
+        sleep 5
+    done
 
     echo ""
     echo "✅ Deployment complete!"

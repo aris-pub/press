@@ -113,9 +113,7 @@ class TestBarePaperRoute:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_archive_scroll_redirects_to_hash_url(
-        self, client, test_db, user, subject
-    ):
+    async def test_archive_scroll_redirects_to_hash_url(self, client, test_db, user, subject):
         scroll = _make_scroll(
             user,
             subject,
@@ -127,9 +125,7 @@ class TestBarePaperRoute:
         await test_db.commit()
 
         # follow_redirects=False so we can assert the 302 target
-        response = await client.get(
-            "/2026/archive-paper/paper", follow_redirects=False
-        )
+        response = await client.get("/2026/archive-paper/paper", follow_redirects=False)
         assert response.status_code == 302
         assert response.headers["location"] == f"/scroll/{scroll.url_hash}/paper/"
 
@@ -256,9 +252,7 @@ class TestCanonicalPageAdvertisesAlternates:
         assert 'rel="alternate"' in link
 
     @pytest.mark.asyncio
-    async def test_accept_json_redirects_to_json_endpoint(
-        self, client, test_db, user, subject
-    ):
+    async def test_accept_json_redirects_to_json_endpoint(self, client, test_db, user, subject):
         scroll = _make_scroll(user, subject)
         test_db.add(scroll)
         await test_db.commit()
@@ -291,9 +285,7 @@ class TestConditionalRequests:
     a known scroll without re-downloading the body."""
 
     @pytest.mark.asyncio
-    async def test_if_none_match_on_paper_returns_304(
-        self, client, test_db, user, subject
-    ):
+    async def test_if_none_match_on_paper_returns_304(self, client, test_db, user, subject):
         scroll = _make_scroll(user, subject)
         test_db.add(scroll)
         await test_db.commit()
@@ -311,9 +303,7 @@ class TestConditionalRequests:
         assert second.headers["etag"] == etag
 
     @pytest.mark.asyncio
-    async def test_if_none_match_on_json_returns_304(
-        self, client, test_db, user, subject
-    ):
+    async def test_if_none_match_on_json_returns_304(self, client, test_db, user, subject):
         scroll = _make_scroll(user, subject)
         test_db.add(scroll)
         await test_db.commit()
@@ -329,9 +319,7 @@ class TestConditionalRequests:
         assert second.content == b""
 
     @pytest.mark.asyncio
-    async def test_if_none_match_star_returns_304(
-        self, client, test_db, user, subject
-    ):
+    async def test_if_none_match_star_returns_304(self, client, test_db, user, subject):
         scroll = _make_scroll(user, subject)
         test_db.add(scroll)
         await test_db.commit()
@@ -343,9 +331,7 @@ class TestConditionalRequests:
         assert response.status_code == 304
 
     @pytest.mark.asyncio
-    async def test_if_none_match_mismatch_returns_200(
-        self, client, test_db, user, subject
-    ):
+    async def test_if_none_match_mismatch_returns_200(self, client, test_db, user, subject):
         scroll = _make_scroll(user, subject)
         test_db.add(scroll)
         await test_db.commit()
@@ -363,9 +349,7 @@ class TestAlternateRoutesDoNotCollideWithCanonical:
     before /{year}/{slug} must not swallow the canonical route."""
 
     @pytest.mark.asyncio
-    async def test_canonical_route_still_serves_chrome_page(
-        self, client, test_db, user, subject
-    ):
+    async def test_canonical_route_still_serves_chrome_page(self, client, test_db, user, subject):
         scroll = _make_scroll(user, subject)
         test_db.add(scroll)
         await test_db.commit()

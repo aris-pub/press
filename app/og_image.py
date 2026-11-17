@@ -15,10 +15,10 @@ OG_WIDTH = 1200
 OG_HEIGHT = 630
 
 WHITE = (255, 255, 255)
-CORAL = (255, 107, 107)      # #FF6B6B, Scroll Press product color (design-system.md)
-TITLE_COLOR = (10, 10, 10)   # #0a0a0a
+CORAL = (255, 107, 107)  # #FF6B6B, Scroll Press product color (design-system.md)
+TITLE_COLOR = (10, 10, 10)  # #0a0a0a
 AUTHOR_COLOR = (122, 122, 122)  # #7a7a7a
-SLATE = (60, 73, 82)         # #3C4952, wordmark
+SLATE = (60, 73, 82)  # #3C4952, wordmark
 MARGIN = 80
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -28,11 +28,26 @@ LOGOMARK_PATH = os.path.normpath(
 
 # Minimal LaTeX -> unicode so titles do not show raw $...$ source on the card.
 _LATEX_MAP = {
-    r"\\phi": "φ", r"\\alpha": "α", r"\\beta": "β", r"\\gamma": "γ",
-    r"\\delta": "δ", r"\\epsilon": "ε", r"\\theta": "θ", r"\\lambda": "λ",
-    r"\\mu": "μ", r"\\pi": "π", r"\\sigma": "σ", r"\\omega": "ω",
-    r"\\Delta": "Δ", r"\\Sigma": "Σ", r"\\Omega": "Ω", r"\\times": "×",
-    r"\\infty": "∞", r"\\to": "→", r"\\leq": "≤", r"\\geq": "≥",
+    r"\\phi": "φ",
+    r"\\alpha": "α",
+    r"\\beta": "β",
+    r"\\gamma": "γ",
+    r"\\delta": "δ",
+    r"\\epsilon": "ε",
+    r"\\theta": "θ",
+    r"\\lambda": "λ",
+    r"\\mu": "μ",
+    r"\\pi": "π",
+    r"\\sigma": "σ",
+    r"\\omega": "ω",
+    r"\\Delta": "Δ",
+    r"\\Sigma": "Σ",
+    r"\\Omega": "Ω",
+    r"\\times": "×",
+    r"\\infty": "∞",
+    r"\\to": "→",
+    r"\\leq": "≤",
+    r"\\geq": "≥",
 }
 
 
@@ -49,7 +64,8 @@ def _clean(text: str) -> str:
 
 def _sans(size: int, bold: bool = False):
     paths = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        if bold
         else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
         "/System/Library/Fonts/SFNSText.ttf",
@@ -64,9 +80,11 @@ def _sans(size: int, bold: bool = False):
 
 def _serif(size: int, bold: bool = False):
     paths = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf" if bold
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
+        if bold
         else "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf" if bold
+        "/System/Library/Fonts/Supplemental/Georgia Bold.ttf"
+        if bold
         else "/System/Library/Fonts/Supplemental/Georgia.ttf",
         "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
         "/System/Library/Fonts/Times.ttc",

@@ -100,7 +100,9 @@ class TestReportRateLimitHit:
     @patch("app.sentry_config.sentry_sdk")
     def test_suppresses_repeat_hits_within_the_window(self, mock_sentry):
         for i in range(500):
-            report_rate_limit_hit(client_ip="1.2.3.4", path=f"/probe{i}", method="GET", now=1000.0 + i)
+            report_rate_limit_hit(
+                client_ip="1.2.3.4", path=f"/probe{i}", method="GET", now=1000.0 + i
+            )
 
         assert mock_sentry.capture_message.call_count == 1
 

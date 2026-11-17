@@ -4,9 +4,6 @@ primary_region = "fra"
 [build]
   dockerfile = "Dockerfile"
 
-  [build.args]
-    GIT_COMMIT = "auto"
-
 [env]
   PORT = "8000"
   PYTHONPATH = "."
