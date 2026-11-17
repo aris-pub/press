@@ -8,16 +8,18 @@ server for academic research documents written in web-native formats.
 from contextlib import asynccontextmanager
 import os
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 import sentry_sdk
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.content_domain import ContentDomainMiddleware
+from app.database import get_db
 from app.exception_handlers import (
     http_exception_handler,
     internal_server_error_handler,
@@ -174,8 +176,10 @@ app.add_exception_handler(Exception, internal_server_error_handler)
 
 
 # Health check endpoint for monitoring
+# The session comes from get_db, like every other route, so tests that point get_db at
+# the test database check that database (it used to open its own session).
 @app.get("/health")
-async def health_check():
+async def health_check(db: AsyncSession = Depends(get_db)):
     """Health check endpoint for load balancers and monitoring.
 
     Includes database connectivity and latency metrics to detect connection issues early.
@@ -184,38 +188,36 @@ async def health_check():
 
     from sqlalchemy import func, select, text
 
-    from app.database import AsyncSessionLocal
     from app.models.scroll import Scroll
 
     start_time = time.time()
 
     try:
-        async with AsyncSessionLocal() as db:
-            # Test database connectivity and measure latency
-            db_ping_start = time.time()
-            await db.execute(text("SELECT 1"))
-            db_latency = round((time.time() - db_ping_start) * 1000, 2)
+        # Test database connectivity and measure latency
+        db_ping_start = time.time()
+        await db.execute(text("SELECT 1"))
+        db_latency = round((time.time() - db_ping_start) * 1000, 2)
 
-            # Test scrolls table specifically (most critical table)
-            scrolls_check_start = time.time()
-            result = await db.execute(select(func.count(Scroll.id)))
-            scroll_count = result.scalar()
-            scrolls_latency = round((time.time() - scrolls_check_start) * 1000, 2)
+        # Test scrolls table specifically (most critical table)
+        scrolls_check_start = time.time()
+        result = await db.execute(select(func.count(Scroll.id)))
+        scroll_count = result.scalar()
+        scrolls_latency = round((time.time() - scrolls_check_start) * 1000, 2)
 
-            total_time = round((time.time() - start_time) * 1000, 2)
+        total_time = round((time.time() - start_time) * 1000, 2)
 
-            return {
-                "status": "healthy",
-                "service": "scroll-press",
-                "commit": os.getenv("GIT_COMMIT", "dev"),
-                "timestamp": time.time(),
-                "response_time_ms": total_time,
-                "metrics": {
-                    "db_latency_ms": db_latency,
-                    "scrolls_query_latency_ms": scrolls_latency,
-                    "scroll_count": scroll_count,
-                },
-            }
+        return {
+            "status": "healthy",
+            "service": "scroll-press",
+            "commit": os.getenv("GIT_COMMIT", "dev"),
+            "timestamp": time.time(),
+            "response_time_ms": total_time,
+            "metrics": {
+                "db_latency_ms": db_latency,
+                "scrolls_query_latency_ms": scrolls_latency,
+                "scroll_count": scroll_count,
+            },
+        }
     except Exception as e:
         total_time = round((time.time() - start_time) * 1000, 2)
 
