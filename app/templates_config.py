@@ -86,6 +86,17 @@ def _abstract_html_filter(text, terms=()):
 templates.env.filters["abstract_html"] = _abstract_html_filter
 
 
+def _name_key_filter(name: str) -> str:
+    """The same name comparison Zenodo minting uses to give the uploader's author entry
+    their ORCID, so the Details modal and Zenodo agree on which author it is."""
+    from app.integrations.doi_service import _name_key
+
+    return _name_key(name or "")
+
+
+templates.env.filters["name_key"] = _name_key_filter
+
+
 def preview_frame_src(scroll) -> str:
     """Address the preview page's iframe loads: a signed content domain link that works
     for an hour, or Press itself when there is no content domain or no signing key."""

@@ -90,3 +90,32 @@ class TestSearchHighlighting:
 
     def test_term_with_html_characters(self):
         assert abstract_html("a < b", terms=["<"]) == "a <mark>&lt;</mark> b"
+
+
+class TestEmphasis:
+    """*text* in an abstract showed as literal stars in the Details modal (prs-jm5)."""
+
+    def test_star_pair_becomes_em(self):
+        assert abstract_html("the *cycle core* of") == "the <em>cycle core</em> of"
+
+    def test_pair_can_hold_math(self):
+        out = abstract_html("the *$k$-blocking operator* is")
+        assert out == ('the <em><span class="math-tex">\\(k\\)</span>-blocking operator</em> is')
+
+    def test_stars_inside_math_are_left_alone(self):
+        out = abstract_html("at $k^*$ and $H_{k^*}$")
+        assert "<em>" not in out
+        assert "k^*" in out
+
+    def test_arithmetic_and_lone_stars_stay_stars(self):
+        assert abstract_html("2 * 3 * 4") == "2 * 3 * 4"
+        assert abstract_html("a lone * star") == "a lone * star"
+
+    def test_unclosed_star_stays_a_star(self):
+        assert abstract_html("an *open phrase") == "an *open phrase"
+
+    def test_emphasised_text_is_still_escaped(self):
+        assert abstract_html("*a <b> c*") == "<em>a &lt;b&gt; c</em>"
+
+    def test_search_terms_inside_emphasis_are_marked(self):
+        assert abstract_html("*cycle core*", terms=["core"]) == "<em>cycle <mark>core</mark></em>"
