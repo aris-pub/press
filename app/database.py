@@ -16,6 +16,10 @@ if DATABASE_URL.startswith("postgres://"):
         _disable_ssl = True
         DATABASE_URL = DATABASE_URL.replace("?sslmode=disable", "").replace("&sslmode=disable", "")
 
+# Logging every SQL statement fills the production log buffer (fly logs keeps 100 lines)
+# and hides startup and error lines, so it is opt-in for local debugging.
+SQL_ECHO = os.getenv("SQL_ECHO") == "1"
+
 # Database configuration based on URL type
 if "postgresql+asyncpg" in DATABASE_URL:
     # PostgreSQL with asyncpg - fix for Supabase/pgbouncer prepared statement issues
@@ -29,14 +33,20 @@ if "postgresql+asyncpg" in DATABASE_URL:
     if _disable_ssl:
         connect_args["ssl"] = False
     engine = create_async_engine(
-        DATABASE_URL, echo=True, connect_args=connect_args, pool_pre_ping=True, poolclass=NullPool
+        DATABASE_URL,
+        echo=SQL_ECHO,
+        connect_args=connect_args,
+        pool_pre_ping=True,
+        poolclass=NullPool,
     )
 elif "postgresql" in DATABASE_URL:
     # PostgreSQL with other drivers (psycopg2, etc)
-    engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True, poolclass=NullPool)
+    engine = create_async_engine(
+        DATABASE_URL, echo=SQL_ECHO, pool_pre_ping=True, poolclass=NullPool
+    )
 else:
     # SQLite or other databases - no special connection args needed
-    engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+    engine = create_async_engine(DATABASE_URL, echo=SQL_ECHO, pool_pre_ping=True)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
