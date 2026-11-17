@@ -65,8 +65,8 @@ async def _open(p):
     return browser, page, problems
 
 
-async def _typeset(card):
-    abstract = card.locator(".scroll-abstract")
+async def _typeset(card, abstract_selector=".scroll-abstract"):
+    abstract = card.locator(abstract_selector)
     await expect(abstract.locator("mjx-container")).to_have_count(1, timeout=15000)
     await expect(abstract).to_contain_text("between $5 and $10")
     assert "\\(" not in await abstract.inner_text()
@@ -108,7 +108,7 @@ async def test_scroll_details_modal(test_server, server_db):
         try:
             await page.goto(f"{test_server}/scroll/{url_hash}")
             await page.locator("#info-fab").click()
-            await _typeset(page.locator("#info-modal .scroll.preview"))
+            await _typeset(page.locator("#info-modal"), ".details-abstract")
             assert problems == []
         finally:
             await browser.close()
