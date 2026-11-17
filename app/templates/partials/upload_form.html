@@ -55,6 +55,29 @@
 
     {{ form_input("Authors", "authors", "text", form_data.authors if form_data else "", required=true, help_text="Comma-separated list of author names") }}
 
+    {# Only authors may post (app/upload/authorship.py). When the account name is not in the
+       author list, the uploader says which listed author they are. #}
+    {% set account_name = current_user.display_name if current_user and current_user.display_name else "" %}
+    {% set authors_value = form_data.authors if form_data and form_data.authors else "" %}
+    {% set chosen = form_data.uploader_author if form_data and form_data.uploader_author else "" %}
+    {% set author_list = namespace(names=[], found=false) %}
+    {% for n in authors_value.split(',') if n.strip() %}
+      {% set author_list.names = author_list.names + [n.strip()] %}
+      {% if n|name_key == account_name|name_key %}{% set author_list.found = true %}{% endif %}
+    {% endfor %}
+    {% set needs_choice = author_list.names and not author_list.found %}
+    <div class="form-group" id="uploader-author-group" data-account-name="{{ account_name }}" data-chosen="{{ chosen }}"{% if not needs_choice %} hidden{% endif %}>
+        <label for="uploader_author" class="form-label">We could not find your name ({{ account_name }}) in the author list. Which author are you? <span class="required">*</span></label>
+        <select id="uploader_author" name="uploader_author" class="form-select"{% if needs_choice %} required{% endif %}>
+            <option value="">Choose your name</option>
+            {% for n in author_list.names %}
+            <option value="{{ n }}"{% if chosen and n|name_key == chosen|name_key %} selected{% endif %}>{{ n }}</option>
+            {% endfor %}
+            <option value="__none__"{% if chosen == "__none__" %} selected{% endif %}>None of the above</option>
+        </select>
+        <div class="field-error" id="uploader-author-error" role="alert"{% if chosen != "__none__" %} hidden{% endif %}>You can only upload if you are one of the authors.</div>
+    </div>
+
     <div class="form-group">
         <label for="subject_id" class="form-label">Subject: <span class="required">*</span></label>
         <select id="subject_id" name="subject_id" class="form-select" required>
@@ -322,5 +345,62 @@ document.getElementById('upload-form').addEventListener('htmx:beforeRequest', fu
             uploadHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
+})();
+</script>
+
+<script>
+(function() {
+// Shows "Which author are you?" when the account name is not in the author list.
+// The server checks the same rule on submit (app/upload/authorship.py).
+const group = document.getElementById('uploader-author-group');
+const authorsInput = document.getElementById('authors');
+if (!group || !authorsInput || group.dataset.bound === 'true') {
+    return;
+}
+group.dataset.bound = 'true';
+const select = document.getElementById('uploader_author');
+const notAuthor = document.getElementById('uploader-author-error');
+const submit = document.querySelector('#upload-form button[type="submit"][value="publish"]');
+const NONE = '__none__';
+
+// Same comparison as name_key in app/upload/authorship.py.
+function key(name) {
+    const comma = name.indexOf(',');
+    if (comma !== -1) {
+        name = name.slice(comma + 1) + ' ' + name.slice(0, comma);
+    }
+    return name.split(/\s+/).filter(Boolean).join(' ').toLowerCase();
+}
+
+function listedNames() {
+    return authorsInput.value.split(',').map(function(n) { return n.trim(); }).filter(Boolean);
+}
+
+function refresh() {
+    const blocked = !group.hidden && select.value === NONE;
+    notAuthor.hidden = !blocked;
+    if (submit) {
+        submit.disabled = blocked;
+    }
+}
+
+function update() {
+    const names = listedNames();
+    const account = key(group.dataset.accountName || '');
+    const needed = names.length > 0 && !names.some(function(n) { return key(n) === account; });
+    const previous = select.value || group.dataset.chosen || '';
+    group.hidden = !needed;
+    select.required = needed;
+    select.replaceChildren(new Option('Choose your name', ''));
+    names.forEach(function(n) { select.append(new Option(n, n)); });
+    select.append(new Option('None of the above', NONE));
+    const stillListed = Array.prototype.some.call(select.options, function(o) { return o.value === previous; });
+    select.value = needed && stillListed ? previous : '';
+    refresh();
+}
+
+authorsInput.addEventListener('input', update);
+select.addEventListener('change', refresh);
+update();
 })();
 </script>

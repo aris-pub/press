@@ -201,7 +201,7 @@ async def test_upload_form_requires_csrf_token(test_user, test_db):
             "/upload-form",
             data={
                 "title": "Test Scroll",
-                "authors": "Test Author",
+                "authors": "Test Author, Test User",
                 "abstract": "Test abstract",
                 # Missing CSRF token
             },
@@ -252,7 +252,7 @@ async def test_csrf_extracted_from_multipart_form_data(
         "/upload-form",
         data={
             "title": "Test",
-            "authors": "Author",
+            "authors": "Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Abstract",
             "license": "cc-by-4.0",
@@ -294,7 +294,7 @@ async def test_csrf_multipart_rejects_missing_token(test_user, test_db):
             "/upload-form",
             data={
                 "title": "Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(subject.id),
                 "abstract": "Abstract",
                 "license": "cc-by-4.0",
@@ -336,7 +336,7 @@ async def test_csrf_multipart_rejects_invalid_token(test_user, test_db):
             "/upload-form",
             data={
                 "title": "Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(subject.id),
                 "abstract": "Abstract",
                 "license": "cc-by-4.0",

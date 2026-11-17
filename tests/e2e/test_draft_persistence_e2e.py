@@ -29,7 +29,7 @@ async def test_drafts_persist_indefinitely(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Persistent Draft")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "This draft should persist indefinitely")
             await page.fill('input[name="keywords"]', "persistence")
@@ -85,7 +85,7 @@ async def test_drafts_show_in_dashboard(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Dashboard Draft")
-            await page.fill('input[name="authors"]', "Dashboard Author")
+            await page.fill('input[name="authors"]', "Dashboard Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Mathematics")
             await page.fill('textarea[name="abstract"]', "Testing dashboard display")
             await page.fill('input[name="keywords"]', "dashboard")
@@ -152,7 +152,7 @@ async def test_continue_editing_from_dashboard(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Continue Draft")
-            await page.fill('input[name="authors"]', "Continue Author")
+            await page.fill('input[name="authors"]', "Continue Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Physics")
             await page.fill('textarea[name="abstract"]', "Testing continue button")
             await page.fill('input[name="keywords"]', "continue")
@@ -188,7 +188,7 @@ async def test_continue_editing_from_dashboard(test_server):
             title_value = await page.input_value('input[name="title"]')
             assert title_value == "Continue Draft"
             authors_value = await page.input_value('input[name="authors"]')
-            assert authors_value == "Continue Author"
+            assert authors_value == "Continue Author, Test User"
 
         finally:
             await browser.close()
@@ -212,7 +212,7 @@ async def test_delete_draft_from_dashboard(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Draft to Delete")
-            await page.fill('input[name="authors"]', "Delete Author")
+            await page.fill('input[name="authors"]', "Delete Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Biology")
             await page.fill('textarea[name="abstract"]', "Testing delete button")
             await page.fill('input[name="keywords"]', "delete")
@@ -277,7 +277,7 @@ async def test_banner_appears_on_upload_with_drafts(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Banner Test Draft")
-            await page.fill('input[name="authors"]', "Banner Author")
+            await page.fill('input[name="authors"]', "Banner Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Chemistry")
             await page.fill('textarea[name="abstract"]', "Testing banner display")
             await page.fill('input[name="keywords"]', "banner")
@@ -339,7 +339,7 @@ async def test_continue_button_loads_draft(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Banner Continue Draft")
-            await page.fill('input[name="authors"]', "Banner Continue Author")
+            await page.fill('input[name="authors"]', "Banner Continue Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Economics")
             await page.fill('textarea[name="abstract"]', "Testing banner continue")
             await page.fill('input[name="keywords"]', "banner,continue")
@@ -375,7 +375,7 @@ async def test_continue_button_loads_draft(test_server):
             title_value = await page.input_value('input[name="title"]')
             assert title_value == "Banner Continue Draft"
             authors_value = await page.input_value('input[name="authors"]')
-            assert authors_value == "Banner Continue Author"
+            assert authors_value == "Banner Continue Author, Test User"
 
             # Banner should NOT be visible when editing
             await expect(page.locator(".drafts-banner")).not_to_be_visible()
@@ -402,7 +402,7 @@ async def test_start_fresh_shows_empty_form(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Start Fresh Draft")
-            await page.fill('input[name="authors"]', "Fresh Author")
+            await page.fill('input[name="authors"]', "Fresh Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Biology")
             await page.fill('textarea[name="abstract"]', "Testing start fresh")
             await page.fill('input[name="keywords"]', "fresh")
@@ -467,7 +467,7 @@ async def test_start_fresh_dismisses_banner_for_session(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Session Test Draft")
-            await page.fill('input[name="authors"]', "Session Author")
+            await page.fill('input[name="authors"]', "Session Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Physics")
             await page.fill('textarea[name="abstract"]', "Testing session dismissal")
             await page.fill('input[name="keywords"]', "session")
@@ -533,7 +533,7 @@ async def test_banner_reappears_on_new_session(test_server):
             # Create a draft
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "New Session Test")
-            await page.fill('input[name="authors"]', "New Session Author")
+            await page.fill('input[name="authors"]', "New Session Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Chemistry")
             await page.fill('textarea[name="abstract"]', "Testing new session")
             await page.fill('input[name="keywords"]', "newsession")

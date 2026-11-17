@@ -54,7 +54,7 @@ class TestZipUploadShowsPicker:
             "/upload-form",
             data={
                 "title": "Test Scroll",
-                "authors": "Test Author",
+                "authors": "Test Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract content",
                 "keywords": "test,keywords",
@@ -88,7 +88,7 @@ class TestZipUploadShowsPicker:
             "/upload-form",
             data={
                 "title": "Multi HTML",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract",
                 "license": "cc-by-4.0",
@@ -110,7 +110,7 @@ class TestZipUploadShowsPicker:
             "/upload-form",
             data={
                 "title": "Bad Zip",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract",
                 "license": "cc-by-4.0",
@@ -140,7 +140,7 @@ class TestConfirmEntryPoint:
             "/upload-form",
             data={
                 "title": "Archive Scroll",
-                "authors": "Test Author",
+                "authors": "Test Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "A test abstract for archive",
                 "keywords": "archive,test",
@@ -176,7 +176,7 @@ class TestConfirmEntryPoint:
             "/upload-form",
             data={
                 "title": "Storage Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Testing storage",
                 "license": "cc-by-4.0",
@@ -223,7 +223,7 @@ class TestConfirmEntryPointErrorHandling:
             "/upload-form",
             data={
                 "title": "Retry Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract for retry",
                 "license": "cc-by-4.0",
@@ -271,7 +271,7 @@ class TestConfirmEntryPointErrorHandling:
             "/upload-form",
             data={
                 "title": "Error Display Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract",
                 "license": "cc-by-4.0",
@@ -307,7 +307,7 @@ class TestConfirmEntryPointErrorHandling:
             "/upload-form",
             data={
                 "title": "Session Cleanup Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract",
                 "license": "cc-by-4.0",
@@ -352,7 +352,7 @@ class TestFullUploadToServingRoundTrip:
             "/upload-form",
             data={
                 "title": "Round Trip Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract for round trip",
                 "license": "cc-by-4.0",
@@ -406,7 +406,7 @@ class TestFullUploadToServingRoundTrip:
             "/upload-form",
             data={
                 "title": "Nested Zip Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Nested archive test abstract",
                 "license": "cc-by-4.0",
@@ -467,7 +467,7 @@ class TestFullUploadToServingRoundTrip:
             "/upload-form",
             data={
                 "title": "Sibling Dir Test",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract for sibling directory references",
                 "license": "cc-by-4.0",
@@ -510,7 +510,7 @@ class TestFullUploadToServingRoundTrip:
             "/upload-form",
             data={
                 "title": "Inline Scroll",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract for inline scroll asset rejection",
                 "license": "cc-by-4.0",
@@ -534,7 +534,7 @@ class TestHtmlUploadStillWorks:
             "/upload-form",
             data={
                 "title": "HTML Scroll",
-                "authors": "Author",
+                "authors": "Author, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Test abstract",
                 "license": "cc-by-4.0",
@@ -555,7 +555,7 @@ class TestHtmlUploadStillWorks:
 
 RSM_IMPORT_LINE = '<style>@import url("static/tooltipster.bundle.css") layer(vendor);</style>'
 UPLOAD_FORM = {
-    "authors": "Author",
+    "authors": "Author, Test User",
     "abstract": "Test abstract",
     "license": "cc-by-4.0",
     "confirm_rights": "true",

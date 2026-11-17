@@ -221,7 +221,7 @@ async def test_setting_follows_the_paper_to_its_next_page(test_server):
 
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', f"Two page paper {uuid.uuid4().hex[:8]}")
-            await page.fill('input[name="authors"]', "E2E Author")
+            await page.fill('input[name="authors"]', "E2E Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "A paper with two pages.")
             await page.fill('input[name="keywords"]', "bridge")

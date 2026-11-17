@@ -24,7 +24,7 @@ async def test_resubmit_without_file_uses_existing_html(
     # Create initial preview
     form_data = {
         "title": "Original Title",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Test abstract",
         "keywords": "test",
@@ -50,7 +50,7 @@ async def test_resubmit_without_file_uses_existing_html(
     # Resubmit with modified metadata but NO new file
     modified_form_data = {
         "title": "Updated Title",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Test abstract",
         "keywords": "test",
@@ -92,7 +92,7 @@ async def test_resubmit_with_new_file_replaces_html(
     # Create initial preview
     form_data = {
         "title": "Test Title",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Test abstract",
         "keywords": "test",
@@ -147,7 +147,7 @@ async def test_edit_button_redirects_to_upload(
     # Create a preview
     form_data = {
         "title": "Test Preview",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Test abstract",
         "keywords": "test",
@@ -223,7 +223,7 @@ async def test_form_prefills_from_session_after_edit(
     # Create a preview
     form_data = {
         "title": "Original Title",
-        "authors": "Original Author",
+        "authors": "Original Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Original abstract",
         "keywords": "original, keywords",
@@ -263,7 +263,7 @@ async def test_resubmit_updates_existing_preview(
     # Create initial preview
     form_data = {
         "title": "Original Title",
-        "authors": "Original Author",
+        "authors": "Original Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Original abstract",
         "keywords": "original",
@@ -310,7 +310,7 @@ async def test_resubmit_creates_new_preview_if_content_differs(
     # Create initial preview
     form_data = {
         "title": "First Paper",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "First abstract",
         "license": "cc-by-4.0",
@@ -350,7 +350,7 @@ async def test_session_data_cleared_after_confirm(
     # Create a preview
     form_data = {
         "title": "Test Preview",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Test abstract",
         "license": "cc-by-4.0",
@@ -384,7 +384,7 @@ async def test_banner_shows_draft_title(
     # Create a draft with a title
     form_data = {
         "title": "My Research Paper",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Test abstract",
         "keywords": "test",
@@ -424,7 +424,7 @@ async def test_start_fresh_clears_session(
     # Create a draft
     form_data = {
         "title": "Draft to Clear",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Test abstract",
         "keywords": "test",
@@ -481,7 +481,7 @@ async def test_dashboard_visit_clears_preview_session(
     # Create a draft and click Edit Details to load it into session
     form_data = {
         "title": "Dashboard Clear Test",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(test_subject.id),
         "abstract": "Testing dashboard clearing session",
         "keywords": "test",

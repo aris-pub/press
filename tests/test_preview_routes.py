@@ -22,7 +22,7 @@ async def test_upload_creates_preview_scroll(
         "/upload-form",
         data={
             "title": "Test Paper",
-            "authors": "John Doe",
+            "authors": "John Doe, Test User",
             "subject_id": str(test_subject.id),
             "abstract": "This is a test abstract with enough words to pass validation checks.",
             "keywords": "test, paper",

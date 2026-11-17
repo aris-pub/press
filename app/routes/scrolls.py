@@ -35,6 +35,7 @@ from app.paper_bridge import inject_bridge, paper_etag
 from app.sentry_config import report_rapid_uploads, report_storage_threshold
 from app.templates_config import templates
 from app.upload import HTMLProcessor
+from app.upload.authorship import resolve_uploader_author
 from app.utils.slug import generate_unique_slug
 
 router = APIRouter()
@@ -398,6 +399,7 @@ async def continue_draft(request: Request, url_hash: str, db: AsyncSession = Dep
         session["preview_form_data"] = {
             "title": scroll.title,
             "authors": scroll.authors,
+            "uploader_author": scroll.uploader_author,
             "subject_id": str(scroll.subject_id),
             "abstract": scroll.abstract,
             "keywords": ", ".join(scroll.keywords) if scroll.keywords else "",
@@ -477,6 +479,7 @@ async def edit_preview(request: Request, url_hash: str, db: AsyncSession = Depen
             session["preview_form_data"] = {
                 "title": scroll.title,
                 "authors": scroll.authors,
+                "uploader_author": scroll.uploader_author,
                 "subject_id": str(scroll.subject_id),
                 "abstract": scroll.abstract,
                 "keywords": ", ".join(scroll.keywords) if scroll.keywords else "",
@@ -1373,6 +1376,7 @@ async def upload_page(request: Request, db: AsyncSession = Depends(get_db)):
         form_data = {
             "title": revising_scroll.title,
             "authors": revising_scroll.authors,
+            "uploader_author": revising_scroll.uploader_author,
             "subject_id": str(revising_scroll.subject_id),
             "abstract": revising_scroll.abstract,
             "keywords": ", ".join(revising_scroll.keywords) if revising_scroll.keywords else "",
@@ -1418,6 +1422,7 @@ async def upload_form(
     license: str = Form(...),
     confirm_rights: str = Form(None),
     action: str = Form("publish"),  # Always publish
+    uploader_author: str = Form(""),
     db: AsyncSession = Depends(get_db),
 ):
     """Process HTML scroll upload form submission.
@@ -1476,6 +1481,13 @@ async def upload_form(
         html_content = ""  # Initialize for error handler
         original_filename = None
 
+        # Only authors may post. Checked first, before the zip branch below returns.
+        uploader_author_name = None
+        if authors and authors.strip():
+            uploader_author_name = resolve_uploader_author(
+                authors, current_user.display_name, uploader_author
+            )
+
         if file and file.filename:
             original_filename = file.filename
             is_zip = (
@@ -1526,6 +1538,7 @@ async def upload_form(
                         "form_data": {
                             "title": title,
                             "authors": authors,
+                            "uploader_author": uploader_author_name,
                             "subject_id": subject_id,
                             "abstract": abstract,
                             "keywords": keywords,
@@ -1852,6 +1865,7 @@ async def upload_form(
                         user_id=current_user.id,
                         title=title,
                         authors=authors,
+                        uploader_author=uploader_author_name,
                         subject_id=subject.id,
                         abstract=abstract,
                         keywords=keyword_list,
@@ -1876,6 +1890,7 @@ async def upload_form(
                 # User is resubmitting their own preview - update it instead of creating new
                 existing.title = title
                 existing.authors = authors
+                existing.uploader_author = uploader_author_name
                 existing.subject_id = subject.id
                 existing.abstract = abstract
                 existing.keywords = keyword_list
@@ -1900,6 +1915,7 @@ async def upload_form(
                 user_id=current_user.id,
                 title=title,
                 authors=authors,
+                uploader_author=uploader_author_name,
                 subject_id=subject.id,
                 abstract=abstract,
                 keywords=keyword_list,
@@ -1945,6 +1961,7 @@ async def upload_form(
             session["preview_form_data"] = {
                 "title": title,
                 "authors": authors,
+                "uploader_author": uploader_author_name,
                 "subject_id": subject_id,
                 "abstract": abstract,
                 "keywords": keywords,
@@ -2006,6 +2023,7 @@ async def upload_form(
                 "form_data": {
                     "title": title,
                     "authors": authors,
+                    "uploader_author": uploader_author,
                     "subject_id": subject_id,
                     "abstract": abstract,
                     "keywords": keywords,
@@ -2062,6 +2080,9 @@ async def confirm_entry_point(
         abstract = form_data["abstract"].strip()
         if not title or not authors or not abstract:
             raise ValueError("Title, authors, and abstract are required.")
+        uploader_author_name = resolve_uploader_author(
+            authors, current_user.display_name, form_data.get("uploader_author") or ""
+        )
 
         license_val = form_data["license"]
         if license_val not in ("cc-by-4.0", "arr"):
@@ -2103,6 +2124,7 @@ async def confirm_entry_point(
             ):
                 existing_scroll.title = title
                 existing_scroll.authors = authors
+                existing_scroll.uploader_author = uploader_author_name
                 existing_scroll.subject_id = subject.id
                 existing_scroll.abstract = abstract
                 existing_scroll.keywords = keyword_list
@@ -2125,6 +2147,7 @@ async def confirm_entry_point(
                 user_id=current_user.id,
                 title=title,
                 authors=authors,
+                uploader_author=uploader_author_name,
                 subject_id=subject.id,
                 abstract=abstract,
                 keywords=keyword_list,
@@ -2216,6 +2239,7 @@ async def upload_html_paper(
     keywords: str = Form(""),
     license: str = Form(...),
     action: str = Form("publish"),
+    uploader_author: str = Form(""),
     db: AsyncSession = Depends(get_db),
 ):
     """Upload HTML source with enhanced security and sanitization.
@@ -2318,11 +2342,21 @@ async def upload_html_paper(
                 detail="License must be selected (CC BY 4.0 or All Rights Reserved)",
             )
 
+        # Only authors may post. Without a form to ask on, a caller whose account name is
+        # not in the list passes uploader_author: the listed name that is theirs.
+        try:
+            uploader_author_name = resolve_uploader_author(
+                authors, current_user.display_name, uploader_author
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+
         # Create scroll with enhanced metadata
         scroll = Scroll(
             user_id=current_user.id,
             title=title.strip(),
             authors=authors.strip(),
+            uploader_author=uploader_author_name,
             subject_id=subject.id,
             abstract=abstract.strip(),
             keywords=keyword_list,
@@ -2402,6 +2436,8 @@ async def upload_html_paper(
 
         return JSONResponse(content=response_data)
 
+    except HTTPException:
+        raise
     except Exception as e:
         log_error(e, request, user_id=str(current_user.id), context="html_upload")
         raise HTTPException(status_code=500, detail=f"Upload processing failed: {str(e)}")

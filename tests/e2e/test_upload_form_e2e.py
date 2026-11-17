@@ -39,7 +39,7 @@ async def test_upload_form_submission_with_file(test_server):
 
             # Fill in form fields
             await page.fill('input[name="title"]', "E2E Upload Test")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "This is a test abstract for E2E testing")
             await page.fill('input[name="keywords"]', "e2e, test, upload")
@@ -119,7 +119,7 @@ async def test_upload_form_validation_without_file(test_server):
 
             # Fill in form fields but don't upload file
             await page.fill('input[name="title"]', "No File Test")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Testing validation without file")
             await page.check('input[value="cc-by-4.0"]')
@@ -180,5 +180,40 @@ async def test_upload_form_file_size_validation(test_server):
                 if os.path.exists(temp_file_path):
                     os.unlink(temp_file_path)
 
+        finally:
+            await browser.close()
+
+
+async def test_upload_form_asks_which_author_the_uploader_is(test_server):
+    """Only authors may post (prs-e2v). The seeded user's account name is "Test User"."""
+    async with async_playwright() as p:
+        browser = await launch_browser(p)
+        page = await browser.new_page()
+
+        try:
+            await page.goto(f"{test_server}/login")
+            await page.fill('input[name="email"]', "testuser@example.com")
+            await page.fill('input[name="password"]', "testpass")
+            await page.click('button[type="submit"]')
+            await page.wait_for_url(f"{test_server}/dashboard", timeout=5000)
+            await page.goto(f"{test_server}/upload")
+
+            question = page.locator("#uploader-author-group")
+            submit = page.locator('#upload-form button[type="submit"][value="publish"]')
+
+            await page.fill('input[name="authors"]', "Ada Lovelace, T. User")
+            await expect(question).to_be_visible()
+            await expect(page.locator("#uploader_author option")).to_have_text(
+                ["Choose your name", "Ada Lovelace", "T. User", "None of the above"]
+            )
+
+            await page.select_option("#uploader_author", "__none__")
+            await expect(page.locator("#uploader-author-error")).to_be_visible()
+            await expect(submit).to_be_disabled()
+
+            # Before the fix, `display: flex` on .form-group kept a hidden question visible.
+            await page.fill('input[name="authors"]', "Ada Lovelace, Test User")
+            await expect(question).to_be_hidden()
+            await expect(submit).to_be_enabled()
         finally:
             await browser.close()

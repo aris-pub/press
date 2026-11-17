@@ -109,6 +109,9 @@ class Scroll(Base):
     # Content fields - for MVP, only HTML content is stored in database
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     authors: Mapped[str] = mapped_column(String(1000), nullable=False)  # Comma-separated for now
+    # The name in `authors` that belongs to the uploader, chosen on the upload form when
+    # their account name is not in the list. Places the uploader's ORCID.
+    uploader_author: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     abstract: Mapped[str] = mapped_column(Text, nullable=False)
     keywords: Mapped[List[str]] = mapped_column(StringArray, nullable=True)
     html_content: Mapped[str] = mapped_column(Text, nullable=False)  # Normalized HTML content

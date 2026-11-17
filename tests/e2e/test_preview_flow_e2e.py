@@ -36,7 +36,7 @@ async def test_preview_edit_button_prefills_form(test_server):
 
             # Fill in form
             await page.fill('input[name="title"]', "Test Edit Flow")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Testing the edit button functionality")
             await page.fill('input[name="keywords"]', "edit, test, preview")
@@ -78,7 +78,7 @@ async def test_preview_edit_button_prefills_form(test_server):
                 )
 
                 authors_value = await page.input_value('input[name="authors"]')
-                assert authors_value == "Test Author", (
+                assert authors_value == "Test Author, Test User", (
                     f"Expected 'Test Author', got '{authors_value}'"
                 )
 
@@ -125,7 +125,7 @@ async def test_complete_edit_and_resubmit_cycle(test_server):
 
             # Fill in form with original data
             await page.fill('input[name="title"]', "Original Title")
-            await page.fill('input[name="authors"]', "Original Author")
+            await page.fill('input[name="authors"]', "Original Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Original abstract content")
             await page.fill('input[name="keywords"]', "original, keywords")
@@ -162,7 +162,7 @@ async def test_complete_edit_and_resubmit_cycle(test_server):
 
                 # Modify form data
                 await page.fill('input[name="title"]', "Updated Title")
-                await page.fill('input[name="authors"]', "Updated Author")
+                await page.fill('input[name="authors"]', "Updated Author, Test User")
                 await page.fill('textarea[name="abstract"]', "Updated abstract content")
                 await page.fill('input[name="keywords"]', "updated, keywords")
 
@@ -217,7 +217,7 @@ async def test_cancel_preview_flow(test_server):
 
             # Fill in form
             await page.fill('input[name="title"]', "Test Cancel Flow")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Testing cancel functionality")
             await page.fill('input[name="keywords"]', "cancel, test")
@@ -335,7 +335,7 @@ async def test_edit_shows_uploaded_state_with_filename(test_server):
             # Go to upload page and create preview
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Keyboard Test")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Testing keyboard accessibility")
             await page.fill('input[name="keywords"]', "keyboard, test")
@@ -416,7 +416,7 @@ async def test_publish_preview_flow(test_server):
 
             # Fill in form
             await page.fill('input[name="title"]', "Test Publish Flow")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Testing publish functionality")
             await page.fill('input[name="keywords"]', "publish, test")

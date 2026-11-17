@@ -33,7 +33,7 @@ async def test_upload_form_publish_scroll(authenticated_client: AsyncClient, tes
 
     upload_data = {
         "title": "Test Scroll",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(subject.id),
         "abstract": "Test abstract",
         "keywords": "test, scroll",
@@ -65,7 +65,7 @@ async def test_upload_form_publish_preview(authenticated_client: AsyncClient, te
 
     upload_data = {
         "title": "Published Scroll",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(subject.id),
         "abstract": "Test abstract",
         "keywords": "test, preview",
@@ -91,7 +91,7 @@ async def test_upload_form_validation_errors(authenticated_client: AsyncClient, 
     """Test POST /upload-form validates required fields."""
     upload_data = {
         "title": "",  # Missing title
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": "invalid-uuid",
         "abstract": "Test abstract",
         "license": "cc-by-4.0",
@@ -115,7 +115,7 @@ async def test_upload_form_missing_checkbox(authenticated_client: AsyncClient, t
 
     upload_data = {
         "title": "Test Title",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(subject.id),
         "abstract": "Test abstract",
         "license": "cc-by-4.0",
@@ -311,7 +311,7 @@ async def test_upload_form_requires_auth(client: AsyncClient):
     """Test POST /upload-form redirects unauthenticated users."""
     upload_data = {
         "title": "Test Scroll",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": "test-uuid",  # Add required field
         "abstract": "Test abstract",
         "license": "cc-by-4.0",
@@ -396,7 +396,7 @@ async def test_upload_form_with_file_content_integration(
 
     upload_data = {
         "title": "Advanced ML Techniques for Research Data",
-        "authors": "Dr. Jane Smith, Prof. John Doe",
+        "authors": "Dr. Jane Smith, Prof. John Doe, Test User",
         "subject_id": str(subject.id),
         "abstract": "Novel approaches to research data analysis using ML algorithms with improved accuracy and efficiency.",
         "keywords": "machine learning, data analysis, research, neural networks, ensemble methods",
@@ -441,7 +441,7 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
     # Test with content that would fail validation (whitespace only)
     invalid_upload_data = {
         "title": "Invalid Content Test",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(subject.id),
         "abstract": "Testing server-side validation",
         "keywords": "validation, test",
@@ -464,7 +464,7 @@ async def test_upload_form_file_validation_server_side(authenticated_client: Asy
     # Test with valid minimal content
     valid_upload_data = {
         "title": "Valid Minimal Content Test",
-        "authors": "Test Author",
+        "authors": "Test Author, Test User",
         "subject_id": str(subject.id),
         "abstract": "Testing valid minimal content",
         "keywords": "minimal, valid",
