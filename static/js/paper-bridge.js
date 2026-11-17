@@ -5,7 +5,8 @@
 //   the frame's name and saved back to it by message, so reading settings survive a reload
 //   on the scroll page (on the bare paper URL they last until the page is reloaded),
 // - reports the paper's scroll position to the scroll page for its back-to-top button,
-// - scrolls to the top when the scroll page asks.
+// - scrolls to the top when the scroll page asks,
+// - opens links to other sites in a new tab.
 (function () {
   "use strict";
   var PREFIX = "press-settings:";
@@ -100,6 +101,30 @@
       }
     },
     { passive: true }
+  );
+
+  // Many sites, arXiv among them, refuse to be shown inside another site's frame, so a
+  // link to another site that opened inside the paper's frame would be blocked.
+  document.addEventListener(
+    "click",
+    function (event) {
+      var link = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+      if (!(link instanceof HTMLAnchorElement) || link.hasAttribute("download")) return;
+      if (link.target && link.target !== "_self") return;
+      var url;
+      try {
+        url = new URL(link.href, document.baseURI);
+      } catch (e) {
+        return;
+      }
+      if (url.protocol !== "http:" && url.protocol !== "https:") return;
+      if (url.origin === window.location.origin) return;
+      link.target = "_blank";
+      var rel = (link.getAttribute("rel") || "").split(/\s+/).filter(Boolean);
+      if (rel.indexOf("noopener") < 0) rel.push("noopener");
+      link.setAttribute("rel", rel.join(" "));
+    },
+    true
   );
 
   window.addEventListener("message", function (event) {

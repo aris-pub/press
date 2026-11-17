@@ -36,13 +36,13 @@ PAPER = """<!DOCTYPE html>
 """
 
 
-async def _publish_paper(server_db):
+async def _publish_paper(server_db, template=PAPER):
     from app.models.scroll import Scroll, Subject
     from app.models.user import User
     from app.storage.content_processing import generate_permanent_url
 
     marker = uuid.uuid4().hex[:8]
-    html = PAPER.format(marker=marker)
+    html = template.format(marker=marker)
     async with server_db() as db:
         user = (await db.execute(select(User).limit(1))).scalar_one()
         subject = (await db.execute(select(Subject).limit(1))).scalar_one()
@@ -64,6 +64,17 @@ async def _publish_paper(server_db):
         db.add(scroll)
         await db.commit()
     return url_hash, f"large-{marker}"
+
+
+LINKS_PAPER = """<!DOCTYPE html>
+<html><head><title>Links test {marker}</title></head>
+<body>
+<p><a id="outside" href="https://example.org/paper">A paper on another site</a></p>
+<p><a id="inside" href="#end">Jump to the end</a></p>
+<div style="height: 5000px">tall</div>
+<p id="end">end</p>
+</body></html>
+"""
 
 
 async def _open(p):
@@ -251,6 +262,36 @@ async def test_download_saves_the_paper_as_uploaded(test_server, server_db):
             saved = open(await download.path(), encoding="utf-8").read()
             assert saved == PAPER.format(marker=marker)
             assert "data-press-bridge" not in saved
+            assert errors == []
+        finally:
+            await browser.close()
+
+
+async def test_links_to_other_sites_open_in_a_new_tab(test_server, server_db):
+    """Sites like arXiv refuse to be framed, so a link to them must leave the frame."""
+    url_hash, _ = await _publish_paper(server_db, LINKS_PAPER)
+    async with async_playwright() as p:
+        browser, page, errors = await _open(p)
+        try:
+            await page.context.route(
+                "https://example.org/**",
+                lambda route: route.fulfill(status=200, body="outside", content_type="text/html"),
+            )
+            await page.goto(f"{test_server}/scroll/{url_hash}")
+            paper = page.frame_locator("#paper-frame")
+
+            async with page.context.expect_page() as new_tab:
+                await paper.locator("#outside").click()
+            tab = await new_tab.value
+            await tab.wait_for_load_state()
+            assert tab.url == "https://example.org/paper"
+            frame = page.frame(url=f"{test_server}/scroll/{url_hash}/paper")
+            assert frame is not None
+
+            # A link within the paper stays in the frame.
+            await paper.locator("#inside").click()
+            await frame.wait_for_function("window.location.hash === '#end'")
+            assert len(page.context.pages) == 2
             assert errors == []
         finally:
             await browser.close()
