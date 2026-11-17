@@ -184,7 +184,6 @@ async def test_registration_duplicate_email_mobile(test_server):
 
 
 @pytest.mark.mobile
-@pytest.mark.flaky
 async def test_mobile_menu_navigation(test_server):
     """Test mobile navigation menu functionality."""
     async with async_playwright() as p:
@@ -209,12 +208,13 @@ async def test_mobile_menu_navigation(test_server):
                 timeout=5000,
             )
 
-            # Click a navigation link
             await page.locator('.mobile-nav.open a[href="/about"]').click()
-            await page.wait_for_load_state("networkidle")
 
-            # Should navigate to about page and menu should close
-            assert "/about" in page.url
+            # The link is boosted by htmx (hx-boost on <body>), so the click swaps content
+            # and pushes the URL without a page load. wait_for_load_state("networkidle")
+            # returned at once and the URL was read before htmx finished, which failed in
+            # WebKit (runs 42126553877, 42168341582). Wait for the URL itself.
+            await expect(page).to_have_url(f"{test_server}/about")
 
         finally:
             await browser.close()
