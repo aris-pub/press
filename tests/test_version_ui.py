@@ -1,8 +1,8 @@
 """Tests for reader-facing version UI elements on the scroll page.
 
 Tests that:
-- Version indicator shows correct label (e.g. 'v2 (latest)' or 'v1 of 3')
-- Version selector shows links for all versions
+- The Version row shows the right label (e.g. 'v2 (latest)' or 'v1 of 3')
+- The All versions list links to every version
 - Old-version banner appears only when viewing a non-latest version
 - Version history in info modal lists all versions with dates and links
 - Canonical link tag always points to /{year}/{slug}
@@ -123,7 +123,7 @@ class TestVersionIndicator:
         await _create_single_scroll(test_db, user, subject)
         response = await client.get("/2026/solo-paper")
         assert response.status_code == 200
-        assert 'class="version-indicator"' not in response.text
+        assert 'class="version-row"' not in response.text
 
 
 class TestVersionSelector:
@@ -196,7 +196,7 @@ class TestVersionHistoryModal:
         response = await client.get("/2026/topology-of-manifolds")
         assert response.status_code == 200
         assert 'class="version-history"' in response.text
-        assert "Version History" in response.text
+        assert "All versions" in response.text
         # All versions should be listed with links
         assert "/2026/topology-of-manifolds/v1" in response.text
         assert "/2026/topology-of-manifolds/v2" in response.text
@@ -245,3 +245,53 @@ class TestCanonicalLinkTag:
         canonical_url = canonical_match.group(1)
         assert canonical_url.endswith("/2026/topology-of-manifolds")
         assert "/v1" not in canonical_url
+
+
+class TestDetailsModal:
+    """The Details modal puts the paper's own facts first (prs-jm5)."""
+
+    @pytest.mark.asyncio
+    async def test_old_version_links_to_latest(self, client, test_db, user, subject):
+        await _create_versioned_scrolls(test_db, user, subject, num_versions=3)
+        response = await client.get("/2026/topology-of-manifolds/v1")
+        assert "v1 of 3 · January 15, 2026" in response.text
+        assert '<a href="/2026/topology-of-manifolds">latest is v3</a>' in response.text
+
+    @pytest.mark.asyncio
+    async def test_date_has_no_leading_zero_and_no_submitted(self, client, test_db, user, subject):
+        """The old modal read "Submitted Posted March 10, 2026"."""
+        await _create_single_scroll(test_db, user, subject)
+        response = await client.get("/2026/solo-paper")
+        assert "Posted March 10, 2026" in response.text
+        assert "Submitted Posted" not in response.text
+
+    @pytest.mark.asyncio
+    async def test_minted_doi_has_link_and_copy_button(self, client, test_db, user, subject):
+        scroll = await _create_single_scroll(test_db, user, subject)
+        scroll.doi, scroll.doi_status = "10.5281/zenodo.123", "minted"
+        await test_db.commit()
+        response = await client.get("/2026/solo-paper")
+        assert 'href="https://doi.org/10.5281/zenodo.123"' in response.text
+        assert 'data-doi="10.5281/zenodo.123"' in response.text
+
+    @pytest.mark.asyncio
+    async def test_orcid_sits_next_to_the_uploaders_name(self, client, test_db, user, subject):
+        user.orcid_id = "0000-0002-1825-0097"
+        scroll = await _create_single_scroll(test_db, user, subject)
+        scroll.authors = "Ada Lovelace, Version UI Tester, Alan Turing"
+        await test_db.commit()
+        response = await client.get("/2026/solo-paper")
+        authors = response.text.split('class="details-authors">')[1].split("</div>")[0]
+        assert (
+            authors.index("Version UI Tester")
+            < authors.index("orcid.org")
+            < authors.index("Alan Turing")
+        )
+
+    @pytest.mark.asyncio
+    async def test_press_links_without_aris_line(self, client, test_db, user, subject):
+        await _create_single_scroll(test_db, user, subject)
+        response = await client.get("/2026/solo-paper")
+        links = response.text.split('class="scroll-press-links">')[1].split("</p>")[0]
+        assert 'href="/upload"' in links and 'href="/about"' in links
+        assert "Aris" not in links

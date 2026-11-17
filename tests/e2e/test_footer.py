@@ -33,9 +33,9 @@ async def test_details_modal_structure(test_server):
 
         modal = page.locator("#info-modal")
 
-        # Scroll metadata (from the scroll card)
-        assert await modal.locator(".scroll-title").count() >= 1
-        assert await modal.locator(".scroll-authors").count() >= 1
+        # The paper's own metadata comes first
+        assert await modal.locator(".details-title").count() == 1
+        assert await modal.locator(".details-authors").count() == 1
 
         # License info is present
         license_text = await modal.locator(".license-info").text_content()
@@ -44,13 +44,12 @@ async def test_details_modal_structure(test_server):
         # The scroll's own action is present
         assert await modal.locator("#download-btn").is_visible()
 
-        # Press links live in the modal as a boxed section, not a page footer
+        # Press links are one short line at the end of the modal
         box = modal.locator(".scroll-press-links")
         assert await box.count() == 1
         assert await box.locator('a[href="/"]').count() >= 1
         assert await box.locator('a[href="/upload"]').count() >= 1
         assert await box.locator('a[href="/about"]').count() >= 1
-        assert await box.locator('a[href*="aris.pub"]').count() >= 1
 
         await browser.close()
 
