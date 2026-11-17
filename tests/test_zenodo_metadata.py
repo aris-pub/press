@@ -7,12 +7,14 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
+from app.config import get_base_url
 from app.integrations.doi_service import (
     DOIService,
     attach_uploader_orcid,
     is_valid_orcid,
     merge_backfill_metadata,
     mint_doi_async,
+    press_link_paragraph,
 )
 from app.integrations.zenodo import ZenodoClient, ZenodoConfig, ZenodoDeposit
 from app.models.user import User
@@ -218,6 +220,23 @@ class TestMintDoi:
         ]
 
     @pytest.mark.asyncio
+    async def test_description_starts_with_link_to_the_version_on_press(
+        self, test_db, test_user, test_subject
+    ):
+        """A Press DOI opens the Zenodo page, so the link to Press goes at the top of it."""
+        scroll = await create_content_addressable_scroll(
+            test_db, test_user, test_subject, abstract="The abstract."
+        )
+        zenodo = self._zenodo()
+
+        await DOIService(zenodo).mint_doi_for_scroll(scroll, test_db, uploader=test_user)
+
+        description = zenodo.create_deposit.call_args.kwargs["description"]
+        url = f"{get_base_url()}{scroll.version_url}"
+        assert description.startswith(f'<p>Read this paper on Scroll Press: <a href="{url}">')
+        assert description.endswith("The abstract.")
+
+    @pytest.mark.asyncio
     async def test_no_orcid_when_uploader_has_none(self, test_db, test_user, test_subject):
         scroll = await create_content_addressable_scroll(
             test_db, test_user, test_subject, authors="Test User"
@@ -331,8 +350,9 @@ class TestBackfill:
         assert zenodo.writes == [("edit", 42), ("update", 42), ("publish", 42)]
         new = zenodo.records[42]
         for key, value in original.items():
-            if key not in ("related_identifiers", "creators"):
+            if key not in ("related_identifiers", "creators", "description"):
                 assert new[key] == value
+        assert new["description"] == press_link_paragraph(scroll, BASE_URL) + "Abstract"
         assert new["related_identifiers"] == [
             {"identifier": "10.1234/other", "relation": "cites"},
             _related(scroll.url_hash),
@@ -380,10 +400,12 @@ class TestBackfill:
 def test_merge_returns_none_when_nothing_to_change():
     class S:
         url_hash = "abc"
+        version_url = "/2026/paper/v1"
 
     metadata = {
         "creators": [{"name": "Test User", "orcid": VALID_ORCID}],
         "related_identifiers": [_related("abc")],
+        "description": press_link_paragraph(S(), BASE_URL) + "Abstract",
     }
     assert merge_backfill_metadata(metadata, S(), _user(), BASE_URL) is None
 

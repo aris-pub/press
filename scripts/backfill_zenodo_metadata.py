@@ -3,8 +3,9 @@
 
 For each published scroll with a minted DOI, reads the record's current metadata from
 Zenodo, adds a related_identifiers entry pointing at the scroll's permanent Press URL,
-and puts the uploader's ORCID on the uploader's own creator entry. All other metadata
-fields are kept as they are.
+starts the description with a link to the version on scroll.press, and puts the
+uploader's ORCID on the uploader's own creator entry. All other metadata fields are
+kept as they are.
 
 The default is a dry run that prints what would change and writes nothing. Pass
 --apply to write. Writing uses Zenodo's edit, update and publish actions on the

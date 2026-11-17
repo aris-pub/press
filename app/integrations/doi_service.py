@@ -37,6 +37,20 @@ def press_related_identifier(scroll: Scroll, base_url: Optional[str] = None) -> 
     }
 
 
+def press_link_paragraph(scroll: Scroll, base_url: Optional[str] = None) -> str:
+    """First paragraph of the Zenodo description: a link to this version on Press.
+
+    A Press DOI opens the Zenodo record page, not scroll.press, and Press cannot change
+    that for DOIs minted by Zenodo. This puts the link to the paper at the top of that page.
+    """
+    url = f"{(base_url or get_base_url()).rstrip('/')}{scroll.version_url}"
+    return f'<p>Read this paper on Scroll Press: <a href="{url}">{url}</a></p>'
+
+
+def press_description(scroll: Scroll, base_url: Optional[str] = None) -> str:
+    return press_link_paragraph(scroll, base_url) + (scroll.abstract or "")
+
+
 def _name_key(name: str) -> str:
     """Normalize a person's name so 'Last, First' and 'first  last' compare equal."""
     if "," in name:
@@ -84,7 +98,7 @@ def attach_uploader_orcid(creators: list, uploader: Optional[User]) -> list:
 def merge_backfill_metadata(
     metadata: dict, scroll: Scroll, uploader: Optional[User], base_url: Optional[str] = None
 ) -> Optional[dict]:
-    """Add the Press link and uploader ORCID to existing Zenodo metadata.
+    """Add the Press links and uploader ORCID to existing Zenodo metadata.
 
     Returns the full merged metadata, keeping every existing field, or None when
     nothing needs to change.
@@ -96,6 +110,12 @@ def merge_backfill_metadata(
     related = merged.get("related_identifiers") or []
     if not any(r.get("identifier") == link["identifier"] for r in related):
         merged["related_identifiers"] = related + [link]
+        changed = True
+
+    paragraph = press_link_paragraph(scroll, base_url)
+    description = merged.get("description") or ""
+    if paragraph not in description:
+        merged["description"] = paragraph + description
         changed = True
 
     creators = merged.get("creators") or []
@@ -167,7 +187,7 @@ class DOIService:
             fields = dict(
                 title=scroll.title,
                 creators=attach_uploader_orcid(self._parse_creators(scroll.authors), uploader),
-                description=scroll.abstract,
+                description=press_description(scroll),
                 publication_date=scroll.published_at.strftime("%Y-%m-%d"),
                 keywords=scroll.keywords or [],
                 license_id=self._map_license(scroll.license),
