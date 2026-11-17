@@ -64,7 +64,7 @@ async def test_zip_upload_shows_entry_point_picker(test_server):
 
             # Fill in form
             await page.fill('input[name="title"]', "Zip Upload E2E Test")
-            await page.fill('input[name="authors"]', "E2E Author")
+            await page.fill('input[name="authors"]', "E2E Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Test abstract for zip upload e2e test")
             await page.fill('input[name="keywords"]', "zip, e2e, test")
@@ -126,7 +126,7 @@ async def test_zip_upload_assets_load_in_iframe(test_server):
             # Upload a zip with CSS assets
             await page.goto(f"{test_server}/upload")
             await page.fill('input[name="title"]', "Asset Loading Test")
-            await page.fill('input[name="authors"]', "E2E Author")
+            await page.fill('input[name="authors"]', "E2E Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Testing asset loading from zip archives")
             await page.fill('input[name="keywords"]', "assets, css")

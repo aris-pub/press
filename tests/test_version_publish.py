@@ -408,7 +408,7 @@ class TestDuplicateContentHandling:
             "/upload-form",
             data={
                 "title": "Updated Title Only",
-                "authors": "Jane Doe",
+                "authors": "Jane Doe, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Updated abstract only",
                 "keywords": "neural,networks",
@@ -437,7 +437,7 @@ class TestDuplicateContentHandling:
             "/upload-form",
             data={
                 "title": "Updated Title Only",
-                "authors": "Jane Doe",
+                "authors": "Jane Doe, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Updated abstract only",
                 "keywords": "neural,networks",
@@ -479,7 +479,7 @@ class TestDuplicateContentHandling:
             "/upload-form",
             data={
                 "title": "Totally Different Paper",
-                "authors": "John Smith",
+                "authors": "John Smith, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Different abstract",
                 "keywords": "",
@@ -717,7 +717,7 @@ class TestMetadataOnlyRevision:
             "/upload-form",
             data={
                 "title": "Updated Title Only",
-                "authors": "Jane Doe",
+                "authors": "Jane Doe, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Updated abstract only",
                 "keywords": "neural,networks",
@@ -738,7 +738,7 @@ class TestMetadataOnlyRevision:
             "/upload-form",
             data={
                 "title": "Some Title",
-                "authors": "Jane Doe",
+                "authors": "Jane Doe, Test User",
                 "subject_id": str(test_subject.id),
                 "abstract": "Some abstract",
                 "keywords": "",

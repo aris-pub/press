@@ -55,7 +55,7 @@ class TestLicenseValidation:
         # Set content-type header for form submission
         upload_data = {
             "title": "Test Scroll",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Test abstract",
             "confirm_rights": "true",
@@ -85,7 +85,7 @@ class TestLicenseValidation:
         for license_value in ["cc-by-4.0", "arr"]:
             upload_data = {
                 "title": f"Test Scroll {license_value}",
-                "authors": "Test Author",
+                "authors": "Test Author, Test User",
                 "subject_id": str(subject.id),
                 "abstract": "Test abstract",
                 "license": license_value,

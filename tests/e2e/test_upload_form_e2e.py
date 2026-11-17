@@ -39,7 +39,7 @@ async def test_upload_form_submission_with_file(test_server):
 
             # Fill in form fields
             await page.fill('input[name="title"]', "E2E Upload Test")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "This is a test abstract for E2E testing")
             await page.fill('input[name="keywords"]', "e2e, test, upload")
@@ -119,7 +119,7 @@ async def test_upload_form_validation_without_file(test_server):
 
             # Fill in form fields but don't upload file
             await page.fill('input[name="title"]', "No File Test")
-            await page.fill('input[name="authors"]', "Test Author")
+            await page.fill('input[name="authors"]', "Test Author, Test User")
             await page.select_option('select[name="subject_id"]', label="Computer Science")
             await page.fill('textarea[name="abstract"]', "Testing validation without file")
             await page.check('input[value="cc-by-4.0"]')

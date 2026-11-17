@@ -18,6 +18,7 @@ from app.integrations.zenodo import (
 from app.logging_config import get_logger
 from app.models.scroll import Scroll
 from app.models.user import ORCID_PATTERN, User
+from app.upload.authorship import name_key as _name_key
 
 # Must match the upload_type and publication_type that create_deposit sends.
 RELATED_RESOURCE_TYPE = "publication-preprint"
@@ -51,14 +52,6 @@ def press_description(scroll: Scroll, base_url: Optional[str] = None) -> str:
     return press_link_paragraph(scroll, base_url) + (scroll.abstract or "")
 
 
-def _name_key(name: str) -> str:
-    """Normalize a person's name so 'Last, First' and 'first  last' compare equal."""
-    if "," in name:
-        family, given = name.split(",", 1)
-        name = f"{given} {family}"
-    return " ".join(name.split()).casefold()
-
-
 def is_valid_orcid(orcid: Optional[str]) -> bool:
     """Check ORCID format and its ISO 7064 11,2 check digit.
 
@@ -76,17 +69,21 @@ def is_valid_orcid(orcid: Optional[str]) -> bool:
     return digits[-1] == expected
 
 
-def attach_uploader_orcid(creators: list, uploader: Optional[User]) -> list:
+def attach_uploader_orcid(
+    creators: list, uploader: Optional[User], author_name: Optional[str] = None
+) -> list:
     """Return a copy of creators with the uploader's ORCID on the uploader's own entry.
 
-    The ORCID is attached only when exactly one creator name matches the uploader's
-    display name, so it can never land on a co-author. A creator that already has a
-    different ORCID is left alone.
+    The uploader's entry is `author_name` (the scroll's uploader_author, chosen on the
+    upload form) when given, else the uploader's display name. The ORCID is attached only
+    when exactly one creator name matches, so it can never land on a co-author. A
+    creator that already has a different ORCID is left alone.
     """
     result = copy.deepcopy(creators)
-    if uploader is None or not is_valid_orcid(uploader.orcid_id) or not uploader.display_name:
+    name = author_name or (uploader.display_name if uploader else None)
+    if uploader is None or not is_valid_orcid(uploader.orcid_id) or not name:
         return result
-    key = _name_key(uploader.display_name)
+    key = _name_key(name)
     matches = [c for c in result if _name_key(c.get("name", "")) == key]
     if len(matches) != 1:
         return result
@@ -119,7 +116,9 @@ def merge_backfill_metadata(
         changed = True
 
     creators = merged.get("creators") or []
-    new_creators = attach_uploader_orcid(creators, uploader)
+    new_creators = attach_uploader_orcid(
+        creators, uploader, getattr(scroll, "uploader_author", None)
+    )
     if new_creators != creators:
         merged["creators"] = new_creators
         changed = True
@@ -186,7 +185,9 @@ class DOIService:
 
             fields = dict(
                 title=scroll.title,
-                creators=attach_uploader_orcid(self._parse_creators(scroll.authors), uploader),
+                creators=attach_uploader_orcid(
+                    self._parse_creators(scroll.authors), uploader, scroll.uploader_author
+                ),
                 description=press_description(scroll),
                 publication_date=scroll.published_at.strftime("%Y-%m-%d"),
                 keywords=scroll.keywords or [],

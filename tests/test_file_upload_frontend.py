@@ -78,7 +78,7 @@ class TestFileUploadFormSubmission:
         # Use files parameter to upload actual file (UploadFile)
         upload_data = {
             "title": "File Upload Test",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Testing file upload functionality",
             "keywords": "test, file, upload",
@@ -105,7 +105,7 @@ class TestFileUploadFormSubmission:
 
         upload_data = {
             "title": "No File Test",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Testing missing file validation",
             "keywords": "test, empty",
@@ -133,7 +133,7 @@ class TestFileUploadFormSubmission:
 
         upload_data = {
             "title": "Minimal HTML Test",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Testing minimal HTML structure",
             "keywords": "minimal, html",
@@ -173,7 +173,7 @@ class TestFileUploadFormSubmission:
 
         upload_data = {
             "title": "Large HTML Test",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Testing large HTML content handling",
             "keywords": "large, html",
@@ -223,7 +223,7 @@ class TestFileUploadFormSubmission:
 
         upload_data = {
             "title": "Dangerous HTML Test",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Testing dangerous HTML rejection",
             "keywords": "security, validation",
@@ -255,7 +255,7 @@ class TestFileUploadFormSubmission:
 
         upload_data = {
             "title": "Non-HTML File Test",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Testing non-HTML file rejection",
             "keywords": "validation",
@@ -289,7 +289,7 @@ class TestFileUploadFormSubmission:
 
         upload_data = {
             "title": "Invalid Encoding Test",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Testing invalid UTF-8 rejection",
             "keywords": "encoding",
@@ -318,7 +318,7 @@ class TestFileUploadFormSubmission:
 
         upload_data = {
             "title": "Empty File Test",
-            "authors": "Test Author",
+            "authors": "Test Author, Test User",
             "subject_id": str(subject.id),
             "abstract": "Testing empty file rejection",
             "keywords": "validation",

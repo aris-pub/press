@@ -89,9 +89,9 @@ templates.env.filters["abstract_html"] = _abstract_html_filter
 def _name_key_filter(name: str) -> str:
     """The same name comparison Zenodo minting uses to give the uploader's author entry
     their ORCID, so the Details modal and Zenodo agree on which author it is."""
-    from app.integrations.doi_service import _name_key
+    from app.upload.authorship import name_key
 
-    return _name_key(name or "")
+    return name_key(name or "")
 
 
 templates.env.filters["name_key"] = _name_key_filter
