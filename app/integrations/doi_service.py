@@ -5,10 +5,16 @@ from datetime import datetime, timezone
 from typing import Optional
 
 import sentry_sdk
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_base_url
-from app.integrations.zenodo import ZenodoClient, ZenodoError, get_zenodo_client
+from app.integrations.zenodo import (
+    ZenodoClient,
+    ZenodoError,
+    deposit_metadata,
+    get_zenodo_client,
+)
 from app.logging_config import get_logger
 from app.models.scroll import Scroll
 from app.models.user import ORCID_PATTERN, User
@@ -101,6 +107,29 @@ def merge_backfill_metadata(
     return merged if changed else None
 
 
+async def previous_version_deposit_id(scroll: Scroll, db: AsyncSession) -> Optional[int]:
+    """Zenodo deposit of the latest earlier version of this paper that has a DOI, if any.
+
+    A new version of a paper must become a new version of the same Zenodo record, so
+    that all versions share one concept DOI.
+    """
+    if not scroll.scroll_series_id:
+        return None
+    result = await db.execute(
+        select(Scroll.zenodo_deposit_id)
+        .where(
+            Scroll.scroll_series_id == scroll.scroll_series_id,
+            Scroll.id != scroll.id,
+            Scroll.version < scroll.version,
+            Scroll.doi_status == "minted",
+            Scroll.zenodo_deposit_id.is_not(None),
+        )
+        .order_by(Scroll.version.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 class DOIService:
     """Service for minting DOIs via Zenodo API.
 
@@ -135,8 +164,7 @@ class DOIService:
 
             self.logger.info(f"Starting DOI minting for scroll {scroll.id}")
 
-            # Create Zenodo deposit with scroll metadata
-            deposit = await self.zenodo.create_deposit(
+            fields = dict(
                 title=scroll.title,
                 creators=attach_uploader_orcid(self._parse_creators(scroll.authors), uploader),
                 description=scroll.abstract,
@@ -144,7 +172,15 @@ class DOIService:
                 keywords=scroll.keywords or [],
                 license_id=self._map_license(scroll.license),
                 related_identifiers=[press_related_identifier(scroll)],
+                version=scroll.version,
             )
+            previous_deposit_id = await previous_version_deposit_id(scroll, db)
+            if previous_deposit_id:
+                deposit = await self.zenodo.create_new_version(
+                    previous_deposit_id, deposit_metadata(**fields)
+                )
+            else:
+                deposit = await self.zenodo.create_deposit(**fields)
 
             # Update scroll with Zenodo deposit ID and reserved DOI
             scroll.zenodo_deposit_id = deposit.deposit_id
