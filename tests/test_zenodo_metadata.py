@@ -7,12 +7,14 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
+from app.config import get_base_url
 from app.integrations.doi_service import (
     DOIService,
     attach_uploader_orcid,
     is_valid_orcid,
     merge_backfill_metadata,
     mint_doi_async,
+    press_link_paragraph,
 )
 from app.integrations.zenodo import ZenodoClient, ZenodoConfig, ZenodoDeposit
 from app.models.user import User
@@ -218,6 +220,23 @@ class TestMintDoi:
         ]
 
     @pytest.mark.asyncio
+    async def test_description_starts_with_link_to_the_version_on_press(
+        self, test_db, test_user, test_subject
+    ):
+        """A Press DOI opens the Zenodo page, so the link to Press goes at the top of it."""
+        scroll = await create_content_addressable_scroll(
+            test_db, test_user, test_subject, abstract="The abstract."
+        )
+        zenodo = self._zenodo()
+
+        await DOIService(zenodo).mint_doi_for_scroll(scroll, test_db, uploader=test_user)
+
+        description = zenodo.create_deposit.call_args.kwargs["description"]
+        url = f"{get_base_url()}{scroll.version_url}"
+        assert description.startswith(f'<p>Read this paper on Scroll Press: <a href="{url}">')
+        assert description.endswith("The abstract.")
+
+    @pytest.mark.asyncio
     async def test_no_orcid_when_uploader_has_none(self, test_db, test_user, test_subject):
         scroll = await create_content_addressable_scroll(
             test_db, test_user, test_subject, authors="Test User"
@@ -331,8 +350,9 @@ class TestBackfill:
         assert zenodo.writes == [("edit", 42), ("update", 42), ("publish", 42)]
         new = zenodo.records[42]
         for key, value in original.items():
-            if key not in ("related_identifiers", "creators"):
+            if key not in ("related_identifiers", "creators", "description"):
                 assert new[key] == value
+        assert new["description"] == press_link_paragraph(scroll, BASE_URL) + "Abstract"
         assert new["related_identifiers"] == [
             {"identifier": "10.1234/other", "relation": "cites"},
             _related(scroll.url_hash),
@@ -380,9 +400,127 @@ class TestBackfill:
 def test_merge_returns_none_when_nothing_to_change():
     class S:
         url_hash = "abc"
+        version_url = "/2026/paper/v1"
 
     metadata = {
         "creators": [{"name": "Test User", "orcid": VALID_ORCID}],
         "related_identifiers": [_related("abc")],
+        "description": press_link_paragraph(S(), BASE_URL) + "Abstract",
     }
     assert merge_backfill_metadata(metadata, S(), _user(), BASE_URL) is None
+
+
+class TestNewVersion:
+    """A new version of a paper must become a new version of the same Zenodo record.
+
+    Before 2026-11, each Press version got its own Zenodo record, so OpenAlex listed
+    v1 and v2 of "The rich are loopy" as two separate works.
+    """
+
+    @pytest.mark.asyncio
+    async def test_client_creates_version_drops_copied_files_and_sets_metadata(self):
+        calls = []
+
+        def handler(request):
+            body = json.loads(request.content) if request.content else None
+            calls.append((request.method, request.url.path, body))
+            path = request.url.path
+            if path.endswith("/actions/newversion"):
+                return httpx.Response(
+                    201,
+                    json={
+                        "id": 5,
+                        "links": {"latest_draft": "https://zenodo.test/api/deposit/depositions/9"},
+                    },
+                )
+            if request.method == "GET":
+                return httpx.Response(200, json={"id": 9, "files": [{"id": "f1"}], "links": {}})
+            if request.method == "DELETE":
+                return httpx.Response(204)
+            return httpx.Response(
+                200,
+                json={
+                    "id": 9,
+                    "metadata": {"prereserve_doi": {"doi": "10.5281/zenodo.9"}},
+                    "links": {"bucket": "https://zenodo.test/bucket/9"},
+                },
+            )
+
+        client = _mock_client(handler)
+        metadata = {"title": "T", "version": "2"}
+        deposit = await client.create_new_version(5, metadata)
+
+        assert calls == [
+            ("POST", "/api/deposit/depositions/5/actions/newversion", None),
+            ("GET", "/api/deposit/depositions/9", None),
+            ("DELETE", "/api/deposit/depositions/9/files/f1", None),
+            ("PUT", "/api/deposit/depositions/9", {"metadata": metadata}),
+        ]
+        assert deposit.deposit_id == 9
+        assert deposit.doi == "10.5281/zenodo.9"
+        assert deposit.bucket_url == "https://zenodo.test/bucket/9"
+
+    def _zenodo(self):
+        zenodo = AsyncMock()
+        draft = ZenodoDeposit(
+            deposit_id=2, doi="10.5281/zenodo.2", doi_url="u", bucket_url="b", status="draft"
+        )
+        zenodo.create_deposit.return_value = draft
+        zenodo.create_new_version.return_value = draft
+        zenodo.publish_deposit.return_value = draft.model_copy(update={"status": "published"})
+        return zenodo
+
+    async def _series(self, test_db, test_user, test_subject, v1_status="minted"):
+        import uuid
+
+        series = uuid.uuid4()
+        v1 = await create_content_addressable_scroll(
+            test_db, test_user, test_subject, html_content="<h1>v1</h1>"
+        )
+        v1.scroll_series_id, v1.version = series, 1
+        v1.zenodo_deposit_id, v1.doi_status = 1, v1_status
+        v2 = await create_content_addressable_scroll(
+            test_db, test_user, test_subject, html_content="<h1>v2</h1>"
+        )
+        v2.scroll_series_id, v2.version = series, 2
+        await test_db.commit()
+        return v1, v2
+
+    @pytest.mark.asyncio
+    async def test_second_version_extends_the_first_versions_record(
+        self, test_db, test_user, test_subject
+    ):
+        _, v2 = await self._series(test_db, test_user, test_subject)
+        zenodo = self._zenodo()
+
+        assert await DOIService(zenodo).mint_doi_for_scroll(v2, test_db, uploader=test_user)
+
+        zenodo.create_deposit.assert_not_called()
+        previous_id, metadata = zenodo.create_new_version.call_args.args
+        assert previous_id == 1
+        assert metadata["version"] == "2"
+        assert metadata["related_identifiers"] == [_related(v2.url_hash)]
+        assert v2.zenodo_deposit_id == 2
+        assert v2.doi_status == "minted"
+
+    @pytest.mark.asyncio
+    async def test_first_version_gets_a_new_record(self, test_db, test_user, test_subject):
+        scroll = await create_content_addressable_scroll(test_db, test_user, test_subject)
+        zenodo = self._zenodo()
+
+        await DOIService(zenodo).mint_doi_for_scroll(scroll, test_db, uploader=test_user)
+
+        zenodo.create_new_version.assert_not_called()
+        assert zenodo.create_deposit.call_args.kwargs["version"] == 1
+
+    @pytest.mark.asyncio
+    async def test_previous_version_without_a_minted_doi_is_not_extended(
+        self, test_db, test_user, test_subject
+    ):
+        _, v2 = await self._series(test_db, test_user, test_subject, v1_status="failed")
+        zenodo = self._zenodo()
+
+        await DOIService(zenodo).mint_doi_for_scroll(v2, test_db, uploader=test_user)
+
+        zenodo.create_new_version.assert_not_called()
+        zenodo.create_deposit.assert_called_once()

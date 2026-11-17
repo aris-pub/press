@@ -43,6 +43,37 @@ class ZenodoError(Exception):
         self.retryable = retryable
 
 
+def deposit_metadata(
+    title: str,
+    creators: List[Dict[str, str]],
+    description: str,
+    publication_date: str,
+    keywords: List[str],
+    license_id: str = "cc-by-4.0",
+    related_identifiers: Optional[List[Dict[str, str]]] = None,
+    version: Optional[int] = None,
+) -> dict:
+    """The metadata Press sends for a deposit, used for first deposits and new versions."""
+    metadata = {
+        "title": title,
+        "upload_type": "publication",
+        "publication_type": "preprint",
+        "description": description,
+        "creators": creators,
+        "publication_date": publication_date,
+        "keywords": keywords,
+        "access_right": "open",
+        "license": license_id,
+        "communities": [{"identifier": "scrollpress"}],
+        "prereserve_doi": True,
+    }
+    if related_identifiers:
+        metadata["related_identifiers"] = related_identifiers
+    if version is not None:
+        metadata["version"] = str(version)
+    return metadata
+
+
 class ZenodoClient:
     """Async HTTP client for Zenodo REST API.
 
@@ -74,6 +105,7 @@ class ZenodoClient:
         keywords: List[str],
         license_id: str = "cc-by-4.0",
         related_identifiers: Optional[List[Dict[str, str]]] = None,
+        version: Optional[int] = None,
     ) -> ZenodoDeposit:
         """Create a new Zenodo deposit.
 
@@ -86,6 +118,7 @@ class ZenodoClient:
             license_id: License identifier (cc-by-4.0, cc0-1.0, etc.)
             related_identifiers: Optional list of dicts with 'identifier', 'relation'
                 and 'resource_type', in the legacy deposit API format
+            version: The Press version number, sent as Zenodo's version field
 
         Returns:
             ZenodoDeposit with deposit_id, doi, and bucket_url
@@ -94,22 +127,17 @@ class ZenodoClient:
             ZenodoError: If deposit creation fails
         """
         metadata = {
-            "metadata": {
-                "title": title,
-                "upload_type": "publication",
-                "publication_type": "preprint",
-                "description": description,
-                "creators": creators,
-                "publication_date": publication_date,
-                "keywords": keywords,
-                "access_right": "open",
-                "license": license_id,
-                "communities": [{"identifier": "scrollpress"}],
-                "prereserve_doi": True,
-            }
+            "metadata": deposit_metadata(
+                title=title,
+                creators=creators,
+                description=description,
+                publication_date=publication_date,
+                keywords=keywords,
+                license_id=license_id,
+                related_identifiers=related_identifiers,
+                version=version,
+            )
         }
-        if related_identifiers:
-            metadata["metadata"]["related_identifiers"] = related_identifiers
 
         try:
             response = await self._request_with_retry(
@@ -140,6 +168,65 @@ class ZenodoClient:
             self.logger.error(f"Unexpected error creating Zenodo deposit: {e}")
             sentry_sdk.capture_exception(e)
             raise ZenodoError(f"Failed to create deposit: {e}", retryable=True)
+
+    async def create_new_version(self, previous_deposit_id: int, metadata: dict) -> ZenodoDeposit:
+        """Start a new version of a published deposit, as a draft ready for a file.
+
+        All versions share one Zenodo concept DOI, so indexes such as OpenAlex list
+        them as one work. Before 2026-11, each Press version got its own deposit,
+        and OpenAlex listed v1 and v2 of the same paper as two works.
+
+        Zenodo copies the previous version's files and metadata into the new
+        draft. The copied files are deleted, so the draft holds only the file
+        uploaded next, and `metadata` replaces the copied metadata in full.
+
+        Args:
+            previous_deposit_id: Deposit ID of any published version of the paper
+            metadata: Full deposit metadata, as built by deposit_metadata()
+
+        Returns:
+            ZenodoDeposit for the draft, with its reserved DOI and bucket URL
+
+        Raises:
+            ZenodoError: If any step fails
+        """
+        try:
+            response = await self._request_with_retry(
+                "POST", f"/api/deposit/depositions/{previous_deposit_id}/actions/newversion"
+            )
+            # latest_draft is an absolute URL ending in the draft's deposit ID.
+            draft_id = int(response.json()["links"]["latest_draft"].rstrip("/").rsplit("/", 1)[-1])
+            draft = await self.get_deposit(draft_id)
+
+            for copied in draft.get("files", []):
+                await self._request_with_retry(
+                    "DELETE", f"/api/deposit/depositions/{draft_id}/files/{copied['id']}"
+                )
+
+            updated = await self.update_deposit_metadata(draft_id, metadata)
+            doi = updated["metadata"]["prereserve_doi"]["doi"]
+
+            deposit = ZenodoDeposit(
+                deposit_id=draft_id,
+                doi=doi,
+                doi_url=f"https://doi.org/{doi}",
+                bucket_url=updated["links"]["bucket"],
+                status="draft",
+            )
+            self.logger.info(
+                f"Created new version {draft_id} of Zenodo deposit {previous_deposit_id} "
+                f"with DOI {doi}"
+            )
+            return deposit
+
+        except ZenodoError:
+            raise
+        except httpx.HTTPStatusError as e:
+            self._handle_http_error(e, "create new version")
+        except Exception as e:
+            self.logger.error(f"Unexpected error creating Zenodo new version: {e}")
+            sentry_sdk.capture_exception(e)
+            raise ZenodoError(f"Failed to create new version: {e}", retryable=True)
 
     async def upload_file(self, bucket_url: str, filename: str, content: bytes) -> bool:
         """Upload a file to Zenodo deposit bucket.
