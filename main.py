@@ -207,6 +207,7 @@ async def health_check():
             return {
                 "status": "healthy",
                 "service": "scroll-press",
+                "commit": os.getenv("GIT_COMMIT", "dev"),
                 "timestamp": time.time(),
                 "response_time_ms": total_time,
                 "metrics": {
@@ -221,6 +222,7 @@ async def health_check():
         error_details = {
             "status": "unhealthy",
             "service": "scroll-press",
+            "commit": os.getenv("GIT_COMMIT", "dev"),
             "timestamp": time.time(),
             "response_time_ms": total_time,
             "error": str(e),

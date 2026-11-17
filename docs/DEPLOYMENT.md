@@ -140,8 +140,10 @@ fly secrets set AWS_SECRET_ACCESS_KEY="your-secret-key"
 ### 3. Deploy Application
 
 ```bash
-# Deploy to Fly.io
-fly deploy
+# Deploy to Fly.io. This passes the git commit to the build, then waits until
+# https://scroll.press/health reports that commit, and fails after 5 minutes if not.
+# Set PRESS_URL to check a different site.
+just deploy
 
 # Check deployment status
 fly status
@@ -168,7 +170,7 @@ This sends a test email to verify:
 - Email delivery is working
 
 Test these endpoints:
-- `/health` - Health check (should return `{"status": "ok", "service": "scroll-press"}`)
+- `/health` - Health check (should return `"status": "healthy"` and `"commit"` set to the deployed commit)
 - `/` - Homepage loads
 - `/register` - User registration works
 - Email verification - Check that verification emails are sent and links work
@@ -187,9 +189,8 @@ curl -I https://your-domain.com/static/css/main.css
 **Verify Sentry release tracking**:
 ```bash
 # SSH into production and check GIT_COMMIT
-fly ssh console
-env | grep GIT_COMMIT
-# Should show actual git commit hash, not "dev"
+curl -s https://scroll.press/health
+# "commit" should be the deployed git commit hash, not "dev" or "auto"
 ```
 
 ## Phase 4: Custom Domain (Optional)

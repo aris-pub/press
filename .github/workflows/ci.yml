@@ -49,7 +49,7 @@ jobs:
       uses: extractions/setup-just@v1
 
     - name: Run linting
-      run: just lint
+      run: just lint-check
 
     - name: Run unit tests
       env:
