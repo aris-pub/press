@@ -6,7 +6,6 @@ import html
 import io
 import json
 import re
-import time
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -264,78 +263,6 @@ async def get_scrolls(
         )
 
     return {"scrolls": scrolls_data}
-
-
-@router.get("/health")
-async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
-    """Health check endpoint for monitoring and load balancers.
-
-    Performs basic application health checks including:
-    - Database connectivity
-    - Basic application functionality
-
-    Returns:
-        dict: Health status with timestamp and component checks
-    """
-    log_request(request)
-    start_time = time.time()
-
-    try:
-        # Test database connectivity and measure latency
-        db_ping_start = time.time()
-        await db.execute(text("SELECT 1"))
-        db_latency = round((time.time() - db_ping_start) * 1000, 2)
-
-        # Test scrolls table specifically (most critical table)
-        scrolls_check_start = time.time()
-        result = await db.execute(select(func.count(Scroll.id)))
-        scroll_count = result.scalar()
-        scrolls_latency = round((time.time() - scrolls_check_start) * 1000, 2)
-
-        # Test subjects table
-        result = await db.execute(select(func.count(Subject.id)))
-        subject_count = result.scalar()
-
-        response_time = round((time.time() - start_time) * 1000, 2)
-
-        get_logger().info(
-            f"Health check passed - total: {response_time}ms, db_ping: {db_latency}ms, "
-            f"scrolls_query: {scrolls_latency}ms"
-        )
-
-        return {
-            "status": "healthy",
-            "timestamp": time.time(),
-            "response_time_ms": response_time,
-            "components": {"database": "healthy", "models": "healthy"},
-            "metrics": {
-                "subject_count": subject_count,
-                "scroll_count": scroll_count,
-                "db_latency_ms": db_latency,
-                "scrolls_query_latency_ms": scrolls_latency,
-            },
-            "version": "0.1.0",
-        }
-
-    except Exception as e:
-        response_time = round((time.time() - start_time) * 1000, 2)
-        log_error(e, request, context="health_check")
-
-        error_details = {
-            "status": "unhealthy",
-            "timestamp": time.time(),
-            "response_time_ms": response_time,
-            "components": {"database": "unhealthy", "models": "unknown"},
-            "error": str(e),
-            "error_type": type(e).__name__,
-            "version": "0.1.0",
-        }
-
-        # Include db_latency if we got that far before failing
-        if "db_latency" in locals():
-            error_details["metrics"] = {"db_latency_ms": db_latency}
-
-        return error_details
 
 
 @router.get("/robots.txt", response_class=Response)
