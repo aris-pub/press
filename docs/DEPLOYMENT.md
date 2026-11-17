@@ -159,8 +159,8 @@ fly open
 
 **Run email health check (recommended after every deployment):**
 ```bash
-# After deploying with 'fly deploy', run:
-fly ssh console -C "python scripts/email_health_check.py"
+# just deploy runs this after every deploy. To run it on its own:
+fly ssh console -C "uv run --frozen --no-dev python scripts/email_health_check.py"
 ```
 
 This sends a test email to verify:
@@ -188,7 +188,7 @@ curl -I https://your-domain.com/static/css/main.css
 
 **Verify Sentry release tracking**:
 ```bash
-# SSH into production and check GIT_COMMIT
+# Check the commit that production is running
 curl -s https://scroll.press/health
 # "commit" should be the deployed git commit hash, not "dev" or "auto"
 ```
