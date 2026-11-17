@@ -55,11 +55,13 @@ jobs:
       env:
         DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/press
         TESTING: 1
-      run: uv run pytest -m "not e2e"
+      # Each xdist worker gets its own database (tests/ci_split.py).
+      run: uv run pytest -n 4 -m "not e2e"
 
+  # No `needs: lint-and-unit`: the e2e jobs start at the same time, so a green run
+  # takes as long as the slowest job instead of unit tests plus e2e.
   e2e:
     runs-on: ubuntu-latest
-    needs: lint-and-unit
     timeout-minutes: 30
     # Playwright's image already has the browsers and every system library they need.
     # Installing them on the runner meant downloading about 181 packages from Ubuntu's
@@ -87,9 +89,22 @@ jobs:
             marker: "e2e and mobile and not flaky"
             browser: "--browser chromium"
             timeout: 240
-          - name: universal
+          # The universal set took about 230 s in one job, so it runs as 3 jobs, each
+          # with its own database. Files are split by test count (tests/ci_split.py).
+          - name: universal-1
             marker: "e2e and not desktop and not mobile and not flaky"
             browser: ""
+            shard: "--shard 1/3"
+            timeout: 600
+          - name: universal-2
+            marker: "e2e and not desktop and not mobile and not flaky"
+            browser: ""
+            shard: "--shard 2/3"
+            timeout: 600
+          - name: universal-3
+            marker: "e2e and not desktop and not mobile and not flaky"
+            browser: ""
+            shard: "--shard 3/3"
             timeout: 600
 
     name: e2e (${{ matrix.name }})
@@ -178,7 +193,7 @@ jobs:
         DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/press
         TESTING: 1
       run: |
-        timeout ${{ matrix.timeout }} uv run pytest -m "${{ matrix.marker }}" --tb=short -v ${{ matrix.browser }}
+        timeout ${{ matrix.timeout }} uv run pytest -m "${{ matrix.marker }}" --tb=short -v ${{ matrix.browser }} ${{ matrix.shard }}
 
     - name: Show server log
       if: failure()

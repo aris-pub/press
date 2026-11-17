@@ -32,6 +32,14 @@ load_dotenv(
     override=True,
 )
 if _ci_database_url:
+    # Under pytest-xdist, each worker gets its own database (see tests/ci_split.py).
+    # This must happen before the app is imported, since app/database.py builds its
+    # engine from DATABASE_URL at import time.
+    _xdist_worker = os.getenv("PYTEST_XDIST_WORKER")
+    if _xdist_worker and "postgresql" in _ci_database_url:
+        from tests.ci_split import per_worker_database_url
+
+        _ci_database_url = per_worker_database_url(_ci_database_url, _xdist_worker)
     os.environ["DATABASE_URL"] = _ci_database_url
 
 # These imports must follow the environment setup above: importing the app runs
@@ -329,3 +337,32 @@ def pytest_configure(config):
     else:
         # Local environment - use session scope for better performance
         config._inicache["asyncio_default_test_loop_scope"] = "session"
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--shard",
+        default=None,
+        help="Run only part i of n of the selected tests, split by file, e.g. 2/3.",
+    )
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_collection_modifyitems(config, items):
+    """Apply --shard after -m has deselected tests, so the split counts only tests that run."""
+    value = config.getoption("--shard")
+    if not value:
+        return
+    from tests.ci_split import assign_files_to_shards, parse_shard
+
+    index, total = parse_shard(value)
+    files = [item.nodeid.split("::")[0] for item in items]
+    counts: dict[str, int] = {}
+    for f in files:
+        counts[f] = counts.get(f, 0) + 1
+    shard_of = assign_files_to_shards(counts, total)
+    keep = [item for item, f in zip(items, files) if shard_of[f] == index]
+    drop = [item for item, f in zip(items, files) if shard_of[f] != index]
+    if drop:
+        config.hook.pytest_deselected(items=drop)
+    items[:] = keep

@@ -74,13 +74,39 @@ def test_e2e_reaches_postgres_by_service_name():
         assert "@postgres:5432/" in url, url
 
 
+def _universal_jobs() -> list[dict]:
+    return [j for j in E2E["strategy"]["matrix"]["include"] if j["name"].startswith("universal")]
+
+
 def test_universal_suite_has_room_to_finish():
-    """On main the universal set takes about 232 s. At a 300 s limit, a few slow
-    failures kill the job before pytest prints why they failed (run 42168341582).
+    """At a 300 s limit, a few slow failures killed the universal job before pytest
+    printed why they failed (run 42168341582).
     """
-    jobs = {job["name"]: job for job in E2E["strategy"]["matrix"]["include"]}
-    assert jobs["universal"]["timeout"] >= 600
-    assert jobs["universal"]["timeout"] < E2E["timeout-minutes"] * 60
+    for job in _universal_jobs():
+        assert job["timeout"] >= 600
+        assert job["timeout"] < E2E["timeout-minutes"] * 60
+
+
+def test_universal_shards_cover_every_part_once():
+    """A missing or repeated shard would skip or double-run a third of the universal tests."""
+    shards = sorted(job["shard"] for job in _universal_jobs())
+    total = len(shards)
+    assert shards == [f"--shard {i}/{total}" for i in range(1, total + 1)]
+    assert len({job["marker"] for job in _universal_jobs()}) == 1
+
+
+def test_e2e_does_not_wait_for_unit_tests():
+    """Waiting made a green run take unit tests plus e2e, about 12 minutes."""
+    assert "needs" not in E2E
+
+
+def test_unit_tests_run_in_parallel():
+    unit = next(
+        step
+        for step in WORKFLOW["jobs"]["lint-and-unit"]["steps"]
+        if step.get("name") == "Run unit tests"
+    )
+    assert " -n " in unit["run"]
 
 
 def _step(name: str) -> dict:
