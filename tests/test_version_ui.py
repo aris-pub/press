@@ -289,6 +289,29 @@ class TestDetailsModal:
         )
 
     @pytest.mark.asyncio
+    async def test_no_orcid_when_no_author_matches_the_uploader(
+        self, client, test_db, user, subject
+    ):
+        """An icon after an unrelated name would look like that author's ORCID."""
+        user.orcid_id = "0000-0002-1825-0097"
+        scroll = await _create_single_scroll(test_db, user, subject)
+        scroll.authors = "Ada Lovelace, Alan Turing"
+        await test_db.commit()
+        response = await client.get("/2026/solo-paper")
+        authors = response.text.split('class="details-authors">')[1].split("</div>")[0]
+        assert "orcid.org" not in authors
+
+    @pytest.mark.asyncio
+    async def test_orcid_match_ignores_case_and_spacing(self, client, test_db, user, subject):
+        user.orcid_id = "0000-0002-1825-0097"
+        scroll = await _create_single_scroll(test_db, user, subject)
+        scroll.authors = "Ada Lovelace,  version  ui tester"
+        await test_db.commit()
+        response = await client.get("/2026/solo-paper")
+        authors = response.text.split('class="details-authors">')[1].split("</div>")[0]
+        assert "orcid.org" in authors
+
+    @pytest.mark.asyncio
     async def test_press_links_without_aris_line(self, client, test_db, user, subject):
         await _create_single_scroll(test_db, user, subject)
         response = await client.get("/2026/solo-paper")

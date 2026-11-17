@@ -156,11 +156,11 @@
         <div class="details-authors">
           {%- for name in scroll.authors.split(',') if name.strip() -%}
             {{ ", " if not loop.first }}{{ name.strip() }}
-            {%- if uploader and uploader.orcid_id and uploader.display_name and not orcid.shown and name.strip().lower() == uploader.display_name.strip().lower() -%}
+            {#- Only next to the matching author: an icon anywhere else would credit the wrong person. -#}
+            {%- if uploader and uploader.orcid_id and uploader.display_name and not orcid.shown and name|name_key == uploader.display_name|name_key -%}
               {%- set orcid.shown = true %} {{ orcid_link(uploader) }}
             {%- endif -%}
           {%- endfor -%}
-          {%- if uploader and uploader.orcid_id and not orcid.shown %} {{ orcid_link(uploader) }}{% endif -%}
         </div>
         <div class="details-meta">
           {%- if scroll.subject %}<a href="/?subject={{ scroll.subject.name|urlencode }}">{{ scroll.subject.name }}</a>{% if scroll.published_at %} · {% endif %}{% endif -%}
