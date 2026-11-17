@@ -535,6 +535,11 @@ button.btn, a.btn {
   flex-direction: column;
   gap: var(--space-sm);
 }
+
+/* display: flex above beats the browser's own rule for the hidden attribute. */
+.form-group[hidden] {
+  display: none;
+}
 .form-label {
   font-size: var(--text-base);
   color: var(--gray-medium);
