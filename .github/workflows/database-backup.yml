@@ -30,8 +30,11 @@ jobs:
           # Install PostgreSQL 17 client to match Supabase server version
           sudo apt-get update
           sudo apt-get install -y wget ca-certificates
-          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-          echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          # apt-key is gone from newer Ubuntu images, so the key goes in a keyring
+          # file that the source names with signed-by.
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo wget --quiet -O /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
 
